@@ -8,7 +8,7 @@ authors = ["António Capela <acapela96@hotmail.com>"]
 python = "^3.10"
 
 [tool.poetry.dev-dependencies]
-pytest = "^5.2"
+pytest = "^7.1"
 pre-commit = "^2.18.1"
 black = "^22.3.0"
 mypy = "^0.942"
