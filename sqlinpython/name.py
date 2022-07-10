@@ -1,18 +1,6 @@
 from __future__ import annotations
-from abc import ABCMeta, abstractmethod
 from typing import Optional
-
-
-class SqlElement(metaclass=ABCMeta):
-    @abstractmethod
-    def _create_query(self) -> str:
-        pass
-
-
-class CompleteSqlQuery(SqlElement, metaclass=ABCMeta):
-    @abstractmethod
-    def get_query(self) -> str:
-        pass
+from sqlinpython.base import SqlElement, CompleteSqlQuery
 
 
 class Name(SqlElement):
@@ -29,76 +17,76 @@ class ConstrainName(Name):
         return self._name
 
 
-class ColumnNameConstrain(SqlElement):
+class ColumnNameConstrainWithRowTimestamp(SqlElement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} ROW TIMESTAMP"
+        return f"{self._prev._create_query()} ROW_TIMESTAMP"
 
 
-class ColumnNameConstrainRowTimestamp(ColumnNameConstrain):
+class ColumnNameConstrainWithAscDesc(ColumnNameConstrainWithRowTimestamp):
     def __init__(self, prev: SqlElement, asc: Optional[bool]) -> None:
         self._prev = prev
         self._asc = asc
 
     @property
-    def RowTimestamp(self) -> ColumnNameConstrain:
-        return ColumnNameConstrain(self)
+    def RowTimestamp(self) -> ColumnNameConstrainWithRowTimestamp:
+        return ColumnNameConstrainWithRowTimestamp(self)
 
     def _create_query(self) -> str:
-        s = ""
+        suffix = ""
         match self._asc:
             case True:
-                s = " ASC"
+                suffix = " ASC"
             case False:
-                s = " DESC"
+                suffix = " DESC"
             case None:
-                s = ""
-        return f"{self._prev._create_query()}{s}"
+                suffix = ""
+        return f"{self._prev._create_query()}{suffix}"
 
 
-class ColumnNameConstrainAscDesc(ColumnNameConstrainRowTimestamp):
+class ColumnNameConstrain(ColumnNameConstrainWithAscDesc):
     def __init__(self, name: str) -> None:
-        self.name = name
+        self._name = name
 
     @property
-    def Asc(self) -> ColumnNameConstrainRowTimestamp:
-        return ColumnNameConstrainRowTimestamp(self, True)
+    def Asc(self) -> ColumnNameConstrainWithAscDesc:
+        return ColumnNameConstrainWithAscDesc(self, True)
 
     @property
-    def Desc(self) -> ColumnNameConstrainRowTimestamp:
-        return ColumnNameConstrainRowTimestamp(self, False)
+    def Desc(self) -> ColumnNameConstrainWithAscDesc:
+        return ColumnNameConstrainWithAscDesc(self, False)
 
     def _create_query(self) -> str:
-        return self.name
+        return self._name
 
 
-Column = ColumnNameConstrainAscDesc
+Column = ColumnNameConstrain
 
-
+# TODO: move Constrain to a diferent file
 class Constrain(SqlElement):
-    def __call__(self, constrain_name: ConstrainName) -> ConstrainAndName:
-        return ConstrainAndName(self, constrain_name)
+    def __call__(self, constrain_name: ConstrainName) -> ConstrainWithName:
+        return ConstrainWithName(self, constrain_name)
 
     def _create_query(self) -> str:
-        return "CONSTRAIN"
+        return "CONSTRAINT"
 
 
-class ConstrainAndName(SqlElement):
+class ConstrainWithName(SqlElement):
     def __init__(self, prev: SqlElement, constrain_name: ConstrainName) -> None:
         self._prev = prev
         self._constrain_name = constrain_name
 
     @property
-    def PrimaryKey(self) -> ConstrainBeginnig:
-        return ConstrainBeginnig(self)
+    def PrimaryKey(self) -> ConstrainWithPrimaryKey:
+        return ConstrainWithPrimaryKey(self)
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} {self._constrain_name._name}"
 
 
-class ConstrainBeginnig(SqlElement):
+class ConstrainWithPrimaryKey(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
@@ -106,14 +94,19 @@ class ConstrainBeginnig(SqlElement):
         return f"{self._prev._create_query()} PRIMARY KEY"
 
     def __call__(
-        self, first_column_name: ColumnNameConstrain, *column_names: ColumnNameConstrain
+        self,
+        first_column_name: ColumnNameConstrainWithRowTimestamp,
+        /,
+        *column_names: ColumnNameConstrainWithRowTimestamp,
     ) -> ConstrainQuery:
         return ConstrainQuery(self, (first_column_name, *column_names))
 
 
 class ConstrainQuery(CompleteSqlQuery):
     def __init__(
-        self, prev: SqlElement, column_names: tuple[ColumnNameConstrain, ...]
+        self,
+        prev: SqlElement,
+        column_names: tuple[ColumnNameConstrainWithRowTimestamp, ...],
     ) -> None:
         self._prev = prev
         self._column_names = column_names
@@ -123,17 +116,5 @@ class ConstrainQuery(CompleteSqlQuery):
         col_name_query = ", ".join(col_name_queries)
         return f"{self._prev._create_query()}({col_name_query})"
 
-    def get_query(self) -> str:
-        return self._create_query()
-
 
 constrain = Constrain()
-
-if __name__ == "__main__":
-    print(
-        constrain(ConstrainName("test"))
-        .PrimaryKey(
-            Column("test1"), Column("test2").Asc, Column("test3").Desc.RowTimestamp
-        )
-        .get_query()
-    )
