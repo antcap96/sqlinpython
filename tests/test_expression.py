@@ -1,5 +1,5 @@
 from sqlinpython.column_def import ColumnRef
-from sqlinpython.value import Select, Value, Any, All
+from sqlinpython.expression import All, Any, Select, Value
 
 
 def test_factor_1() -> None:
@@ -42,7 +42,7 @@ def test_rhs_operand_3() -> None:
 
 
 def test_condition_1() -> None:
-    assert (ColumnRef("FOO").eq(Value("bar")))._create_query() == "FOO = 'bar'"
+    assert (ColumnRef("FOO") == (Value("bar")))._create_query() == "FOO = 'bar'"
 
 
 def test_condition_2() -> None:
@@ -68,31 +68,23 @@ def test_condition_5() -> None:
 
 
 def test_boolean_condition_1() -> None:
-    assert (ColumnRef("N").eq(Value(1)))._create_query() == "N = 1"
+    assert (ColumnRef("N") == Value(1))._create_query() == "N = 1"
 
 
 def test_boolean_condition_2() -> None:
-    assert (~ColumnRef("N").eq(Value(1)))._create_query() == "NOT N = 1"
+    assert (~(ColumnRef("N") == Value(1)))._create_query() == "NOT N = 1"
 
 
 def test_and_condition_1() -> None:
-    assert (
-        ColumnRef("FOO")
-        .ne(Value("bar"))
-        .And(ColumnRef("ID").eq(Value(1)))
-        ._create_query()
-        == "FOO <> 'bar' AND ID = 1"
-    )
+    assert (ColumnRef("FOO") != (Value("bar"))).And(
+        ColumnRef("ID") == Value(1)
+    )._create_query() == "FOO <> 'bar' AND ID = 1"
 
 
 def test_expression_1() -> None:
-    assert (
-        ColumnRef("ID")
-        .eq(Value(1))
-        .Or(ColumnRef("NAME").eq(Value("Hi")))
-        ._create_query()
-        == "ID = 1 OR NAME = 'Hi'"
-    )
+    assert (ColumnRef("ID") == Value(1)).Or(
+        ColumnRef("NAME") == Value("Hi")
+    )._create_query() == "ID = 1 OR NAME = 'Hi'"
 
 
 def test_complex_expression_1() -> None:
@@ -135,3 +127,7 @@ def test_complex_expression_4() -> None:
     assert ((x + x).strcat(x))._create_query() == "x + x || x"
     assert (x.Or(x).Or(x))._create_query() == "x OR x OR x"
     assert (x.And(x).And(x))._create_query() == "x AND x AND x"
+
+
+def test_order_1() -> None:
+    assert ColumnRef("NAME").Desc.NullsLast._create_query() == "NAME DESC NULLS LAST"

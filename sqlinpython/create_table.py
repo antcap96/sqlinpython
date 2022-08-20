@@ -1,7 +1,7 @@
 from __future__ import annotations
 from typing import Optional, Union
 from sqlinpython.base import SqlElement, CompleteSqlQuery, NotImplementedSqlElement
-from sqlinpython.value import Value
+from sqlinpython.expression import Value
 from sqlinpython.name import ConstrainQuery
 from sqlinpython.reference import TableRef
 from sqlinpython.column_def import ColumnDef
@@ -11,11 +11,11 @@ class TableOption(NotImplementedSqlElement):
     pass
 
 
-class bindParameter(SqlElement):
+class BindParameter(SqlElement):
     pass
 
 
-class bindParameterIndex(bindParameter):
+class BindParameterIndex(BindParameter):
     def __init__(self, i: int) -> None:
         self.i = i
 
@@ -23,20 +23,20 @@ class bindParameterIndex(bindParameter):
         return f":{self.i}"
 
 
-class bindParameterQ(bindParameter):
+class BindParameterQ(BindParameter):
     def _create_query(self) -> str:
         return "?"
 
 
-class bindParam:
+class BindParam:
     @staticmethod
-    def index(i: int) -> bindParameterIndex:
-        return bindParameterIndex(i)
+    def index(i: int) -> BindParameterIndex:
+        return BindParameterIndex(i)
 
-    q = bindParameterQ()
+    q = BindParameterQ()
 
 
-SplitPoint = Union[Value, bindParameter]
+SplitPoint = Union[Value, BindParameter]
 
 
 class CreateTableWithSplitOn(CompleteSqlQuery):

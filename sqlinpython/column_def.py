@@ -1,8 +1,9 @@
 from __future__ import annotations
-from sqlinpython.base import SqlElement, CompleteSqlQuery
-from sqlinpython.reference import SqlRef
-from sqlinpython.value import Operand, Term
+
+from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.datatype import DataType
+from sqlinpython.expression import Operand, Term
+from sqlinpython.reference import SqlRef
 
 
 class ColumnRef(SqlRef, Term):

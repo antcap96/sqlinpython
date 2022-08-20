@@ -1,22 +1,68 @@
 from __future__ import annotations
-from itertools import repeat
-import typing
-from typing import Literal, Sequence, Tuple, Type, TypeVar, overload
 
-from sqlinpython.base import SqlElement, NotImplementedSqlElement
+import typing
+from itertools import repeat
+from os import preadv
+from typing import Literal, NoReturn, Sequence, Tuple, Type, TypeVar, overload
+
+from sqlinpython.base import NotImplementedSqlElement, SqlElement
 
 
 class Select(NotImplementedSqlElement):
     pass
 
 
-class Expression(SqlElement):
+class Order(SqlElement):
+    pass
+
+
+class OrderWtihNulls(Order):
+    def __init__(self, prev: SqlElement, order: bool) -> None:
+        self._prev = prev
+        self._order = order
+
+    def _create_query(self) -> str:
+        if self._order:
+            order = "FIRST"
+        else:
+            order = "LAST"
+        return f"{self._prev._create_query()} NULLS {order}"
+
+
+class OrderWithAscDesc(OrderWtihNulls):
+    def __init__(self, prev: SqlElement, ascending: bool) -> None:
+        self._prev = prev
+        self._ascending = ascending
+
+    def _create_query(self) -> str:
+        if self._ascending:
+            order = "ASC"
+        else:
+            order = "DESC"
+        return f"{self._prev._create_query()} {order}"
+
+    @property
+    def NullsFirst(self) -> OrderWtihNulls:
+        return OrderWtihNulls(self, True)
+
+    @property
+    def NullsLast(self) -> OrderWtihNulls:
+        return OrderWtihNulls(self, False)
+
+
+class Expression(OrderWithAscDesc):
     def __init__(self, prev: Expression, other: AndCondition) -> None:
         self._prev = prev
         self._other = other
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} OR {self._other._create_query()}"
+
+    def __bool__(self) -> NoReturn:
+        raise ValueError(
+            "Expressions don't have truthiness to avoid chained comparisons"
+            " behaving unexpectedly"
+        )
 
     def Or(self, other: Expression) -> Expression:
         output = _parenthesize_as_necessary(
@@ -136,7 +182,7 @@ class Expression(SqlElement):
             output_class=OperandBetween,
         )
 
-    def lt(self, other: Expression) -> Condition:
+    def __lt__(self, other: Expression) -> Condition:
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -144,7 +190,7 @@ class Expression(SqlElement):
         )
         return output
 
-    def le(self, other: Expression) -> Condition:
+    def __le__(self, other: Expression) -> Condition:
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -152,7 +198,7 @@ class Expression(SqlElement):
         )
         return output
 
-    def gt(self, other: Expression) -> Condition:
+    def __gt__(self, other: Expression) -> Condition:
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -160,7 +206,7 @@ class Expression(SqlElement):
         )
         return output
 
-    def ge(self, other: Expression) -> Condition:
+    def __ge__(self, other: Expression) -> Condition:
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -168,7 +214,7 @@ class Expression(SqlElement):
         )
         return output
 
-    def ne(self, other: Expression) -> Condition:
+    def __ne__(self, other: Expression) -> Condition:  # type: ignore
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -176,7 +222,7 @@ class Expression(SqlElement):
         )
         return output
 
-    def eq(self, other: Expression) -> Condition:
+    def __eq__(self, other: Expression) -> Condition:  # type: ignore
         output = _parenthesize_as_necessary(
             [(self, Operand), (other, RHSOperand)],
             output_class=OperandWithComparison,
@@ -213,6 +259,15 @@ class Expression(SqlElement):
         return _parenthesize_as_necessary(
             [(self, Operand), (other, Summand)], output_class=Operand, operation="||"
         )
+
+    # Order
+    @property
+    def Asc(self) -> OrderWithAscDesc:
+        return OrderWithAscDesc(self, True)
+
+    @property
+    def Desc(self) -> OrderWithAscDesc:
+        return OrderWithAscDesc(self, False)
 
 
 class AndCondition(Expression):
@@ -347,7 +402,7 @@ class RHSOperand(Condition):
 
 class AnyOrAllOperand(RHSOperand):
     def __init__(self, prev: SqlElement, other: Operand | Select):
-        self._prev = prev  # type: ignore
+        self._prev = prev
         self._other = other  # type: ignore
 
     def _create_query(self) -> str:

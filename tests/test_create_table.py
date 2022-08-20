@@ -4,11 +4,12 @@ from sqlinpython.name import ConstrainName, constrain, Column
 from sqlinpython.create_table import createTable
 from sqlinpython.create_table import (
     TableOption,
-    bindParam,
+    BindParam,
 )
 from sqlinpython.datatype import *
-from sqlinpython.reference import TableRef, quote_if_necessary
-from sqlinpython.value import Value
+from sqlinpython.reference import TableRef
+from sqlinpython.name import quote_if_necessary, Name
+from sqlinpython.expression import Value
 
 
 def test_create_table_1() -> None:
@@ -53,16 +54,16 @@ def test_create_table_3() -> None:
 
 def test_create_table_4() -> None:
     assert createTable.ifNotExists(
-        TableRef("my_case_sensitive_table", force_quote=True)
+        TableRef(Name("my_case_sensitive_table", force_quote=True))
     )(
-        ColumnRef("id", force_quote=True)(Char(10)).NotNull.PrimaryKey,
-        ColumnRef("value", force_quote=True)(Integer),
+        ColumnRef(Name("id", force_quote=True))(Char(10)).NotNull.PrimaryKey,
+        ColumnRef(Name("value", force_quote=True))(Integer),
     )(
         TableOption("DATA_BLOCK_ENCODING='NONE'"),
         TableOption("VERSIONS=5"),
         TableOption("MAX_FILESIZE=2000000"),
     ).SplitOn(
-        bindParam.q, bindParam.q, bindParam.q
+        BindParam.q, BindParam.q, BindParam.q
     ).get_query() == (
         'CREATE TABLE IF NOT EXISTS "my_case_sensitive_table"'
         ' ("id" CHAR(10) NOT NULL PRIMARY KEY, "value" INTEGER)'
@@ -88,9 +89,9 @@ def test_create_table_5() -> None:
 
 def test_create_table_6() -> None:
     assert createTable.ifNotExists(
-        TableRef("my_case_sensitive_table", force_quote=True)
-    )(ColumnRef("id", force_quote=True)(Char(10))).SplitOn(
-        Value(1), bindParam.index(2), Value("val")
+        TableRef(Name("my_case_sensitive_table", force_quote=True))
+    )(ColumnRef(Name("id", force_quote=True))(Char(10))).SplitOn(
+        Value(1), BindParam.index(2), Value("val")
     ).get_query() == (
         'CREATE TABLE IF NOT EXISTS "my_case_sensitive_table"'
         ' ("id" CHAR(10))'
