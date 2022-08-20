@@ -1,8 +1,9 @@
 from __future__ import annotations
-from typing import Optional
-from sqlinpython.base import SqlElement, CompleteSqlQuery
-import re
 
+import re
+from typing import Optional
+
+from sqlinpython.base import CompleteSqlQuery, SqlElement
 
 UNQUOTED_NAME_PATTERN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 

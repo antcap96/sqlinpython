@@ -1,36 +1,22 @@
 from __future__ import annotations
-from sqlinpython.name import Name
+
 from sqlinpython.base import SqlElement
-from sqlinpython.expression import Expression
+from sqlinpython.name import Name
 
 
 class SelectExpression(SqlElement):
     pass
 
 
-class Alias(SelectExpression):
-    def __init__(self, expression: Expression) -> None:
-        self._expression = expression
-
-    def As(self, alias: Name | str, show_as: bool = True) -> SelectExpressionWithAlias:
-        if isinstance(alias, str):
-            alias = Name(alias)
-
-        return SelectExpressionWithAlias(self, alias, show_as)
-
-    def _create_query(self) -> str:
-        return self._expression._create_query()
-
-
 class SelectExpressionWithAlias(SelectExpression):
-    def __init__(self, prev: Alias, alias: Name, show_as: bool) -> None:
+    def __init__(self, prev: SqlElement, alias: Name, explicit_as: bool) -> None:
         self._prev = prev
         self._alias = alias
-        self._show_as = show_as
+        self._explicit_as = explicit_as
 
     def _create_query(self) -> str:
         as_ = ""
-        if self._show_as:
+        if self._explicit_as:
             as_ = "AS "
         return f"{self._prev._create_query()} {as_}{self._alias._create_query()}"
 

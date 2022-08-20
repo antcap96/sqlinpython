@@ -1,15 +1,14 @@
 from __future__ import annotations
 
-import typing
 from itertools import repeat
-from os import preadv
-from typing import Literal, NoReturn, Sequence, Tuple, Type, TypeVar, overload
+from typing import TYPE_CHECKING, Literal, NoReturn, Type, TypeVar, overload
 
-from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.base import SqlElement
+from sqlinpython.name import Name
+from sqlinpython.select_expression import SelectExpression, SelectExpressionWithAlias
 
-
-class Select(NotImplementedSqlElement):
-    pass
+if TYPE_CHECKING:
+    import sqlinpython.select  # avoid circular import when importing functions
 
 
 class Order(SqlElement):
@@ -50,7 +49,7 @@ class OrderWithAscDesc(OrderWtihNulls):
         return OrderWtihNulls(self, False)
 
 
-class Expression(OrderWithAscDesc):
+class Expression(OrderWithAscDesc, SelectExpression):
     def __init__(self, prev: Expression, other: AndCondition) -> None:
         self._prev = prev
         self._other = other
@@ -65,50 +64,39 @@ class Expression(OrderWithAscDesc):
         )
 
     def Or(self, other: Expression) -> Expression:
-        output = _parenthesize_as_necessary(
-            [(self, Expression), (other, AndCondition)], output_class=Expression
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Expression)
+        other_ = _parenthesize_if_necessary(other, AndCondition)
+        return Expression(self_, other_)
 
     def And(self, other: Expression) -> AndCondition:
-        output = _parenthesize_as_necessary(
-            [(self, AndCondition), (other, BooleanCondition)],
-            output_class=AndCondition,
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, AndCondition)
+        other_ = _parenthesize_if_necessary(other, BooleanCondition)
+        return AndCondition(self_, other_)
 
     def __invert__(self) -> Expression:
-        output = _parenthesize_as_necessary(
-            [(self, Condition)], output_class=BooleanCondition
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Condition)
+        return BooleanCondition(self_)
 
     def Like(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, Operand), (True, bool)], output_class=OperandLike
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, Operand)
+        return OperandWithLike(self_, other_, True)
 
     def ILike(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, Operand), (False, bool)], output_class=OperandLike
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, Operand)
+        return OperandWithLike(self_, other_, False)
 
     def IsNull(self) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (False, bool)], output_class=OperandIsNull
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        return OperandIsNull(self_, False)
 
     def IsNotNull(self) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (True, bool)], output_class=OperandIsNull
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        return OperandIsNull(self_, True)
 
     @overload
-    def In(self, other: Select, /) -> Condition:
+    def In(self, other: sqlinpython.select.SelectType, /) -> Condition:
         ...
 
     @overload
@@ -116,25 +104,28 @@ class Expression(OrderWithAscDesc):
         ...
 
     def In(
-        self, first_arg: Select | Expression, /, *other_args: Expression
+        self,
+        first_arg: sqlinpython.select.SelectType | Expression,
+        /,
+        *other_args: Expression,
     ) -> Condition:
-        assert not isinstance(first_arg, Select) or not other_args
+        assert isinstance(first_arg, Expression) or not other_args
 
-        if isinstance(first_arg, Select):
-            output = _parenthesize_as_necessary(
-                [(self, Operand), (first_arg, Select), (False, bool)],
-                output_class=OperandInSelect,
-            )
-            return output
-        else:
+        if isinstance(first_arg, Expression):
+            self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            return _parenthesize_as_necessary(
-                [(self, Operand), *zip(operands, repeat(Operand))],
-                output_class=OperandInOperands,
+            # At least as of mypy version 0.942, lambda here is necessary
+            # for corrent type inference
+            operands_ = map(
+                lambda x, y: _parenthesize_if_necessary(x, y), operands, repeat(Operand)
             )
+            return OperandInOperands(self_, *operands_)
+        else:
+            self_ = _parenthesize_if_necessary(self, Operand)
+            return OperandInSelect(self_, first_arg, False)
 
     @overload
-    def NotIn(self, other: Select, /) -> Condition:
+    def NotIn(self, other: sqlinpython.select.SelectType, /) -> Condition:
         ...
 
     @overload
@@ -142,123 +133,105 @@ class Expression(OrderWithAscDesc):
         ...
 
     def NotIn(
-        self, first_arg: Select | Expression, /, *other_args: Expression
+        self,
+        first_arg: sqlinpython.select.SelectType | Expression,
+        /,
+        *other_args: Expression,
     ) -> Condition:
-        assert not other_args or isinstance(first_arg, Select)
+        assert isinstance(first_arg, Expression) or not other_args
 
-        if isinstance(first_arg, Select):
-            output = _parenthesize_as_necessary(
-                [(self, Operand), (first_arg, Select), (True, bool)],
-                output_class=OperandInSelect,
-            )
-            return output
-        else:
+        if isinstance(first_arg, Expression):
+            self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            return _parenthesize_as_necessary(
-                [(self, Operand), *zip(operands, repeat(Operand))],
-                output_class=OperandNotInOperands,
+            # At least as of mypy version 0.942, lambda here is necessary
+            # for corrent type inference
+            operands_ = map(
+                lambda x, y: _parenthesize_if_necessary(x, y), operands, repeat(Operand)
             )
+            return OperandNotInOperands(self_, *operands_)
+        else:
+            self_ = _parenthesize_if_necessary(self, Operand)
+            return OperandInSelect(self_, first_arg, True)
 
-    def Exists(self, other: Select) -> Condition:
-        return _parenthesize_as_necessary(
-            [(self, Operand), (other, Select), (False, bool)],
-            output_class=OperandExists,
-        )
+    def Exists(self, other: sqlinpython.select.SelectType) -> Condition:
+        self_ = _parenthesize_if_necessary(self, Operand)
+        return OperandExists(self_, other, False)
 
-    def NotExists(self, other: Select) -> Condition:
-        return _parenthesize_as_necessary(
-            [(self, Operand), (other, Select), (True, bool)], output_class=OperandExists
-        )
+    def NotExists(self, other: sqlinpython.select.SelectType) -> Condition:
+        self_ = _parenthesize_if_necessary(self, Operand)
+        return OperandExists(self_, other, True)
 
     def Between(self, low: Expression, high: Expression) -> Condition:
-        return _parenthesize_as_necessary(
-            [(self, Operand), (low, Operand), (high, Operand), (False, bool)],
-            output_class=OperandBetween,
-        )
+        self_ = _parenthesize_if_necessary(self, Operand)
+        low_ = _parenthesize_if_necessary(low, Operand)
+        high_ = _parenthesize_if_necessary(high, Operand)
+        return OperandBetween(self_, low_, high_, False)
 
     def NotBetween(self, low: Expression, high: Expression) -> Condition:
-        return _parenthesize_as_necessary(
-            [(self, Operand), (low, Operand), (high, Operand), (True, bool)],
-            output_class=OperandBetween,
-        )
+        self_ = _parenthesize_if_necessary(self, Operand)
+        low_ = _parenthesize_if_necessary(low, Operand)
+        high_ = _parenthesize_if_necessary(high, Operand)
+        return OperandBetween(self_, low_, high_, True)
 
     def __lt__(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation="<",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, "<")
 
     def __le__(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation="<=",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, "<=")
 
     def __gt__(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation=">",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, ">")
 
     def __ge__(self, other: Expression) -> Condition:
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation=">=",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, ">=")
 
     def __ne__(self, other: Expression) -> Condition:  # type: ignore
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation="<>",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, "<>")
 
     def __eq__(self, other: Expression) -> Condition:  # type: ignore
-        output = _parenthesize_as_necessary(
-            [(self, Operand), (other, RHSOperand)],
-            output_class=OperandWithComparison,
-            operation="=",
-        )
-        return output
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, RHSOperand)
+        return OperandWithComparison(self_, other_, "=")
 
     def __mul__(self, other: Expression) -> Factor:
-        return _parenthesize_as_necessary(
-            [(self, Factor), (other, Term)], output_class=Factor, operation="*"
-        )
+        self_ = _parenthesize_if_necessary(self, Factor)
+        other_ = _parenthesize_if_necessary(other, Term)
+        return Factor(self_, other_, "*")
 
     def __truediv__(self, other: Expression) -> Factor:
-        return _parenthesize_as_necessary(
-            [(self, Factor), (other, Term)], output_class=Factor, operation="/"
-        )
+        self_ = _parenthesize_if_necessary(self, Factor)
+        other_ = _parenthesize_if_necessary(other, Term)
+        return Factor(self_, other_, "/")
 
     def __mod__(self, other: Expression) -> Factor:
-        return _parenthesize_as_necessary(
-            [(self, Factor), (other, Term)], output_class=Factor, operation="%"
-        )
+        self_ = _parenthesize_if_necessary(self, Factor)
+        other_ = _parenthesize_if_necessary(other, Term)
+        return Factor(self_, other_, "%")
 
     def __add__(self, other: Expression) -> Summand:
-        return _parenthesize_as_necessary(
-            [(self, Summand), (other, Factor)], output_class=Summand, operation="+"
-        )
+        self_ = _parenthesize_if_necessary(self, Summand)
+        other_ = _parenthesize_if_necessary(other, Factor)
+        return Summand(self_, other_, "+")
 
     def __sub__(self, other: Expression) -> Summand:
-        return _parenthesize_as_necessary(
-            [(self, Summand), (other, Factor)], output_class=Summand, operation="-"
-        )
+        self_ = _parenthesize_if_necessary(self, Summand)
+        other_ = _parenthesize_if_necessary(other, Factor)
+        return Summand(self_, other_, "-")
 
     def strcat(self, other: Expression) -> Operand:
-        return _parenthesize_as_necessary(
-            [(self, Operand), (other, Summand)], output_class=Operand, operation="||"
-        )
+        self_ = _parenthesize_if_necessary(self, Operand)
+        other_ = _parenthesize_if_necessary(other, Summand)
+        return Operand(self_, other_, "||")
 
     # Order
     @property
@@ -268,6 +241,15 @@ class Expression(OrderWithAscDesc):
     @property
     def Desc(self) -> OrderWithAscDesc:
         return OrderWithAscDesc(self, False)
+
+    # SelectExpression
+    def As(
+        self, alias: Name | str, explicit_as: bool = True
+    ) -> SelectExpressionWithAlias:
+        if isinstance(alias, str):
+            alias = Name(alias)
+
+        return SelectExpressionWithAlias(self, alias, explicit_as)
 
 
 class AndCondition(Expression):
@@ -306,7 +288,7 @@ class OperandWithComparison(Condition):
         return f"{self._prev._create_query()} {self._operation} {self._other._create_query()}"
 
 
-class OperandLike(Condition):
+class OperandWithLike(Condition):
     def __init__(self, prev: Operand, other: Operand, case_sensitive: bool) -> None:
         self._prev = prev
         self._other = other
@@ -332,7 +314,9 @@ class OperandIsNull(Condition):
 
 
 class OperandInSelect(Condition):
-    def __init__(self, prev: Operand, in_select: Select, negated: bool) -> None:
+    def __init__(
+        self, prev: Operand, in_select: sqlinpython.select.SelectType, negated: bool
+    ) -> None:
         self._prev = prev
         self._in_select = in_select
         self._negated = negated
@@ -365,7 +349,9 @@ class OperandNotInOperands(Condition):
 
 
 class OperandExists(Condition):
-    def __init__(self, prev: Operand, other: Select, negated: bool) -> None:
+    def __init__(
+        self, prev: Operand, other: sqlinpython.select.SelectType, negated: bool
+    ) -> None:
         self._prev = prev
         self._other = other  # type: ignore
         self._negated = negated
@@ -401,7 +387,9 @@ class RHSOperand(Condition):
 
 
 class AnyOrAllOperand(RHSOperand):
-    def __init__(self, prev: SqlElement, other: Operand | Select):
+    def __init__(
+        self, prev: SqlElement, other: Operand | sqlinpython.select.SelectType
+    ):
         self._prev = prev
         self._other = other  # type: ignore
 
@@ -410,7 +398,9 @@ class AnyOrAllOperand(RHSOperand):
 
 
 class AnyOrAllCall(SqlElement):
-    def __call__(self, other: Operand | Select) -> AnyOrAllOperand:
+    def __call__(
+        self, other: Operand | sqlinpython.select.SelectType
+    ) -> AnyOrAllOperand:
         return AnyOrAllOperand(self, other)
 
 
@@ -503,18 +493,11 @@ class Value(TermBeforeBraquets):
 T = TypeVar("T", bound=Expression)
 
 
-def _parenthesize_as_necessary(
-    bound_types: Sequence[Tuple[object, Type[object]]],
+def _parenthesize_if_necessary(
+    expression: Expression,
     output_class: Type[T],
-    **kwargs: typing.Any,
-) -> T:
-    def parenthesize_if_not_subclass(tup: Tuple[object, Type[object]]) -> typing.Any:
-        exp, class_ = tup
-        if isinstance(exp, Expression) and not isinstance(exp, class_):
-            return ParenthesizedExpression(exp)
-        else:
-            return exp
-
-    expressions_parenthesized = map(parenthesize_if_not_subclass, bound_types)
-
-    return output_class(*expressions_parenthesized, **kwargs)
+) -> T | ParenthesizedExpression:
+    if not isinstance(expression, output_class):
+        return ParenthesizedExpression(expression)
+    else:
+        return expression

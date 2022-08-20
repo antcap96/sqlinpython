@@ -1,15 +1,11 @@
 import pytest
+
 from sqlinpython.column_def import ColumnRef
-from sqlinpython.name import ConstrainName, constrain, Column
-from sqlinpython.create_table import createTable
-from sqlinpython.create_table import (
-    TableOption,
-    BindParam,
-)
+from sqlinpython.create_table import BindParam, TableOption, createTable
 from sqlinpython.datatype import *
-from sqlinpython.reference import TableRef
-from sqlinpython.name import quote_if_necessary, Name
 from sqlinpython.expression import Value
+from sqlinpython.name import Column, ConstrainName, Name, constrain, quote_if_necessary
+from sqlinpython.select import TableRef
 
 
 def test_create_table_1() -> None:

@@ -1,5 +1,6 @@
 from sqlinpython.column_def import ColumnRef
-from sqlinpython.expression import All, Any, Select, Value
+from sqlinpython.expression import All, Any, Value
+from sqlinpython.select import Select, TableRef, TableSpec
 
 
 def test_factor_1() -> None:
@@ -36,8 +37,12 @@ def test_rhs_operand_2() -> None:
 
 def test_rhs_operand_3() -> None:
     assert (
-        All(Select("select foo from bar where bas > 5"))._create_query()
-        == "ALL(select foo from bar where bas > 5)"
+        All(
+            Select(ColumnRef("foo"))
+            .From(TableRef("bar"))
+            .Where(ColumnRef("bas") > Value(5))
+        )._create_query()
+        == "ALL(SELECT foo FROM bar WHERE bas > 5)"
     )
 
 
@@ -57,8 +62,13 @@ def test_condition_3() -> None:
 
 def test_condition_4() -> None:
     assert (
-        ColumnRef("ID").NotExists(Select("SELECT 1 FROM FOO WHERE BAR < 10"))
-    )._create_query() == "ID NOT EXISTS (SELECT 1 FROM FOO WHERE BAR < 10)"
+        ColumnRef("ID")
+        .NotExists(
+            Select(Value(1)).From(TableRef("FOO")).Where(ColumnRef("BAR") < Value(10))
+        )
+        ._create_query()
+        == "ID NOT EXISTS (SELECT 1 FROM FOO WHERE BAR < 10)"
+    )
 
 
 def test_condition_5() -> None:

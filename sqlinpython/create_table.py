@@ -1,10 +1,13 @@
 from __future__ import annotations
+
 from typing import Optional, Union
-from sqlinpython.base import SqlElement, CompleteSqlQuery, NotImplementedSqlElement
-from sqlinpython.expression import Value
+
+import sqlinpython.column_def
+import sqlinpython.expression
+import sqlinpython.reference
+import sqlinpython.select
+from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.name import ConstrainQuery
-from sqlinpython.reference import TableRef
-from sqlinpython.column_def import ColumnDef
 
 
 class TableOption(NotImplementedSqlElement):
@@ -36,7 +39,7 @@ class BindParam:
     q = BindParameterQ()
 
 
-SplitPoint = Union[Value, BindParameter]
+SplitPoint = Union[sqlinpython.expression.Value, BindParameter]
 
 
 class CreateTableWithSplitOn(CompleteSqlQuery):
@@ -74,7 +77,7 @@ class CreateTableWithColumnDef(CreateTableWithOptions):
     def __init__(
         self,
         prev: SqlElement,
-        column_defs: tuple[ColumnDef, ...],
+        column_defs: tuple[sqlinpython.column_def.ColumnDef, ...],
         constrain: Optional[ConstrainQuery],
     ) -> None:
         self._prev = prev
@@ -96,15 +99,17 @@ class CreateTableWithColumnDef(CreateTableWithOptions):
 
 
 class CreateTableWithRef(SqlElement):
-    def __init__(self, prev: SqlElement, table_ref: TableRef) -> None:
+    def __init__(
+        self, prev: SqlElement, table_ref: sqlinpython.select.TableRef
+    ) -> None:
         self._prev = prev
         self._table_ref = table_ref
 
     def __call__(
         self,
-        first_column_def: ColumnDef,
+        first_column_def: sqlinpython.column_def.ColumnDef,
         /,
-        *column_defs: ColumnDef,
+        *column_defs: sqlinpython.column_def.ColumnDef,
         constrain: Optional[ConstrainQuery] = None,
     ) -> CreateTableWithColumnDef:
         return CreateTableWithColumnDef(
@@ -120,7 +125,7 @@ class CreateTableIfNotExists(SqlElement):
         self._prev = prev
 
     # TODO consider passing the arguments of TableRef directly here
-    def __call__(self, table_ref: TableRef) -> CreateTableWithRef:
+    def __call__(self, table_ref: sqlinpython.select.TableRef) -> CreateTableWithRef:
         return CreateTableWithRef(self, table_ref)
 
     def _create_query(self) -> str:

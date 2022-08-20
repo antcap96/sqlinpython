@@ -1,4 +1,5 @@
 from typing import Optional
+
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 
@@ -26,10 +27,6 @@ class SqlRef(SqlElement):
             )
         else:
             return self._base_name._create_query()
-
-
-class TableRef(SqlRef):
-    pass
 
 
 class SequenceRef(SqlRef):

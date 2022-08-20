@@ -18,3 +18,8 @@ repos:
     -   id: mypy
         args: [--strict]
         additional_dependencies: [pytest==7.1.1]
+-   repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        name: isort (python)
