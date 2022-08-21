@@ -1,18 +1,13 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from typing import Optional
 
 from sqlinpython.base import SqlElement
 
 
-class DataType(SqlElement):
+class DataType(SqlElement, metaclass=ABCMeta):
     pass
-
-
-class DataTypeWithType(DataType):
-    @property
-    def Array(self) -> DataTypeWithArray:
-        return DataTypeWithArray(self)
 
 
 class DataTypeWithArray(DataType):
@@ -34,6 +29,12 @@ class DataTypeWithBrackets(DataType):
     def _create_query(self) -> str:
         dim = "" if self._dimension is None else str(self._dimension)
         return f"{self._prev._create_query()}[{dim}]"
+
+
+class DataTypeWithType(DataType, metaclass=ABCMeta):
+    @property
+    def Array(self) -> DataTypeWithArray:
+        return DataTypeWithArray(self)
 
 
 # CHAR

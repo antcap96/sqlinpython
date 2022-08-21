@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from itertools import repeat
 from typing import TYPE_CHECKING, Literal, NoReturn, Type, TypeVar, overload
 
@@ -78,10 +79,14 @@ class Expression(OrderWithAscDesc, SelectExpression):
         if isinstance(first_arg, Expression):
             self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            # At least as of mypy version 0.942, lambda here is necessary
-            # for corrent type inference
+            # At least as of mypy version 0.971, lambda here is necessary
+            # for current type inference
             operands_ = map(
-                lambda x, y: _parenthesize_if_necessary(x, y), operands, repeat(Operand)
+                lambda x, y: _parenthesize_if_necessary(
+                    x, y
+                ),  # pylint: disable=unnecessary-lambda
+                operands,
+                repeat(Operand),
             )
             return OperandInOperands(self_, *operands_)
         else:
@@ -107,10 +112,14 @@ class Expression(OrderWithAscDesc, SelectExpression):
         if isinstance(first_arg, Expression):
             self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            # At least as of mypy version 0.942, lambda here is necessary
-            # for corrent type inference
+            # At least as of mypy version 0.971, lambda here is necessary
+            # for current type inference
             operands_ = map(
-                lambda x, y: _parenthesize_if_necessary(x, y), operands, repeat(Operand)
+                lambda x, y: _parenthesize_if_necessary(
+                    x, y
+                ),  # pylint: disable=unnecessary-lambda
+                operands,
+                repeat(Operand),
             )
             return OperandNotInOperands(self_, *operands_)
         else:
@@ -192,7 +201,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
         other_ = _parenthesize_if_necessary(other, Factor)
         return Summand(self_, other_, "-")
 
-    def strcat(self, other: Expression) -> Operand:
+    def Strcat(self, other: Expression) -> Operand:
         self_ = _parenthesize_if_necessary(self, Operand)
         other_ = _parenthesize_if_necessary(other, Summand)
         return Operand(self_, other_, "||")
@@ -249,7 +258,8 @@ class OperandWithComparison(Condition):
         self._operation = operation
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._operation} {self._other._create_query()}"
+        op = self._operation
+        return f"{self._prev._create_query()} {op} {self._other._create_query()}"
 
 
 class OperandWithLike(Condition):
@@ -296,8 +306,8 @@ class OperandInOperands(Condition):
         self._operands = operands
 
     def _create_query(self) -> str:
-        _in = ", ".join(operand._create_query() for operand in self._operands)
-        return f"{self._prev._create_query()} IN ({_in})"
+        in_ = ", ".join(operand._create_query() for operand in self._operands)
+        return f"{self._prev._create_query()} IN ({in_})"
 
 
 class OperandNotInOperands(Condition):
@@ -306,8 +316,8 @@ class OperandNotInOperands(Condition):
         self._operands = operands
 
     def _create_query(self) -> str:
-        _in = ", ".join(operand._create_query() for operand in self._operands)
-        return f"{self._prev._create_query()} NOT IN ({_in})"
+        in_ = ", ".join(operand._create_query() for operand in self._operands)
+        return f"{self._prev._create_query()} NOT IN ({in_})"
 
 
 class OperandExists(Condition):
@@ -355,7 +365,7 @@ class AnyOrAllOperand(RHSOperand):
         return f"{self._prev._create_query()}({self._other._create_query()})"
 
 
-class AnyOrAllCall(SqlElement):
+class AnyOrAllCall(SqlElement, metaclass=ABCMeta):
     def __call__(self, other: Operand | SelectType) -> AnyOrAllOperand:
         return AnyOrAllOperand(self, other)
 
@@ -381,7 +391,8 @@ class Operand(RHSOperand):
         self._operation = operation
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._operation} {self._other._create_query()}"
+        op = self._operation
+        return f"{self._prev._create_query()} {op} {self._other._create_query()}"
 
 
 class Summand(Operand):
@@ -393,7 +404,8 @@ class Summand(Operand):
         self._operation = operation  # type: ignore
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._operation} {self._other._create_query()}"
+        op = self._operation
+        return f"{self._prev._create_query()} {op} {self._other._create_query()}"
 
 
 class Factor(Summand):
@@ -408,11 +420,12 @@ class Factor(Summand):
         self._operation = operation  # type: ignore
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._operation} {self._other._create_query()}"
+        op = self._operation
+        return f"{self._prev._create_query()} {op} {self._other._create_query()}"
 
 
 class Term(Factor):
-    def __init__(self, prev: TermBeforeBraquets, expression: Expression) -> None:
+    def __init__(self, prev: TermBeforeBracket, expression: Expression) -> None:
         self._prev = prev
         self._expression = expression
 
@@ -420,12 +433,12 @@ class Term(Factor):
         return f"{self._prev._create_query()}[{self._expression._create_query()}]"
 
 
-class TermBeforeBraquets(Term):
+class TermBeforeBracket(Term):
     def __getitem__(self, expression: Expression) -> Term:
         return Term(self, expression)
 
 
-class ParenthesizedExpression(TermBeforeBraquets):
+class ParenthesizedExpression(TermBeforeBracket):
     def __init__(self, prev: Expression) -> None:
         self._prev = prev
 
@@ -433,7 +446,7 @@ class ParenthesizedExpression(TermBeforeBraquets):
         return f"({self._prev._create_query()})"
 
 
-class Value(TermBeforeBraquets):
+class Value(TermBeforeBracket):
     def __init__(self, value: str | int | float | bool | None, /) -> None:
         self._value = value
 

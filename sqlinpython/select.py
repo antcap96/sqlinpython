@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from typing import Literal
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
@@ -61,7 +62,7 @@ class SelectKeyword(SelectStatementWithHint):
     def __init__(self) -> None:
         pass
 
-    def hint(self, hint: Hint) -> SelectStatementWithHint:
+    def Hint(self, hint: Hint) -> SelectStatementWithHint:
         return SelectStatementWithHint(self, hint)
 
     def _create_query(self) -> str:
@@ -100,19 +101,11 @@ class SelectWithAlias(TableSpec):
         return f"{self._prev._create_query()} {as_}{self._alias._create_query()}"
 
 
-class SelectType(CompleteSqlQuery):
-    def As(self, alias: Name | str, explicit_as: bool = True) -> SelectWithAlias:
-        if isinstance(alias, str):
-            alias = Name(alias)
-
-        return SelectWithAlias(self.Parenticies, alias, explicit_as)
-
-    @property
-    def Parenticies(self) -> SelectWithParenticies:
-        return SelectWithParenticies(self)
+class SelectType(CompleteSqlQuery, metaclass=ABCMeta):
+    pass
 
 
-class SelectWithParenticies(TableSpec):
+class SelectWithParentheses(TableSpec):
     def __init__(self, select: SelectType) -> None:
         self._select = select
 
@@ -130,6 +123,16 @@ class SelectWithFetchComplete(SelectType):
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} {self._row_only}"
 
+    def As(self, alias: Name | str, explicit_as: bool = True) -> SelectWithAlias:
+        if isinstance(alias, str):
+            alias = Name(alias)
+
+        return SelectWithAlias(self.Parentheses, alias, explicit_as)
+
+    @property
+    def Parentheses(self) -> SelectWithParentheses:
+        return SelectWithParentheses(self)
+
 
 class SelectWithFetchCount(SqlElement):
     def __init__(
@@ -143,7 +146,8 @@ class SelectWithFetchCount(SqlElement):
         self._param = Value(param) if isinstance(param, int) else param
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._operation} {self._param._create_query()}"
+        op = self._operation
+        return f"{self._prev._create_query()} {op} {self._param._create_query()}"
 
     @property
     def RowOnly(self) -> SelectWithFetchComplete:
@@ -229,7 +233,10 @@ class SelectWithUnionAll(SelectWithOrderBy):
         self._select_statement = select_statement
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} UNION ALL {self._select_statement._create_query()}"
+        return (
+            f"{self._prev._create_query()} UNION ALL"
+            f" {self._select_statement._create_query()}"
+        )
 
     def UnionAll(self, select_statement: SelectStatement) -> SelectWithUnionAll:
         return SelectWithUnionAll(self, select_statement)

@@ -1,5 +1,5 @@
 import sqlinpython.functions as f
-from sqlinpython.column_def import ColumnDef, ColumnRef
+from sqlinpython.column_def import ColumnRef
 from sqlinpython.datatype import Varchar
 from sqlinpython.expression import Value
 from sqlinpython.select import Select
@@ -55,7 +55,8 @@ def test_select_query_5() -> None:
             )
         )
         .get_query()
-        == "SELECT d.dept_id, e.dept_id, e.name FROM DEPT d JOIN EMPL e ON e.dept_id = d.dept_id"
+        == "SELECT d.dept_id, e.dept_id, e.name "
+        "FROM DEPT d JOIN EMPL e ON e.dept_id = d.dept_id"
     )
 
 
@@ -96,7 +97,7 @@ def test_select_3() -> None:
 def test_select_recursive_1() -> None:
     assert (
         Select(ColumnRef("a"))
-        .From(Select(All).From(TableRef("test")).Parenticies)
+        .From(Select(All).From(TableRef("test")).Parentheses)
         .get_query()
         == "SELECT a FROM (SELECT * FROM test)"
     )

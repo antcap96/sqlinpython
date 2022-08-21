@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from abc import ABCMeta
+
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.datatype import DataType
 from sqlinpython.expression import Operand, Term
@@ -11,7 +13,7 @@ class ColumnRef(SqlRef, Term):
         return ColumnDefWithDataType(self, data_type)
 
 
-class ColumnDef(CompleteSqlQuery):
+class ColumnDef(CompleteSqlQuery, metaclass=ABCMeta):
     pass
 
 

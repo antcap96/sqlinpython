@@ -1,8 +1,8 @@
 import pytest
 
+import sqlinpython.datatype as dt
 from sqlinpython.column_def import ColumnRef
 from sqlinpython.create_table import BindParam, TableOption, createTable
-from sqlinpython.datatype import *
 from sqlinpython.expression import Value
 from sqlinpython.name import Column, ConstrainName, Name, constrain, quote_if_necessary
 from sqlinpython.table_spec import TableRef
@@ -11,7 +11,7 @@ from sqlinpython.table_spec import TableRef
 def test_create_table_1() -> None:
     assert (
         createTable(TableRef("my_schema", "my_table"))(
-            ColumnRef("id")(Bigint).NotNull.PrimaryKey, ColumnRef("date")(Date)
+            ColumnRef("id")(dt.Bigint).NotNull.PrimaryKey, ColumnRef("date")(dt.Date)
         ).get_query()
         == "CREATE TABLE my_schema.my_table (id BIGINT NOT NULL PRIMARY KEY, date DATE)"
     )
@@ -23,9 +23,9 @@ def test_create_table_1() -> None:
 )
 def test_create_table_2() -> None:
     assert createTable(TableRef("my_table"))(
-        ColumnRef("id")(Integer).NotNull.PrimaryKey.Desc,
-        ColumnRef("date")(Date).NotNull,
-        ColumnRef("m", "db_utilization")(Decimal),
+        ColumnRef("id")(dt.Integer).NotNull.PrimaryKey.Desc,
+        ColumnRef("date")(dt.Date).NotNull,
+        ColumnRef("m", "db_utilization")(dt.Decimal),
         ColumnRef("i", "db_utilization"),  # type: ignore
     )(TableOption("m.DATA_BLOCK_ENCODING='DIFF'")).get_query() == (
         "CREATE TABLE my_table (id INTEGER NOT NULL PRIMARY KEY DESC, date DATE NOT NULL,"
@@ -36,9 +36,9 @@ def test_create_table_2() -> None:
 
 def test_create_table_3() -> None:
     assert createTable(TableRef("stats", "prod_metrics"))(
-        ColumnRef("host")(Char(50)).NotNull,
-        ColumnRef("created_date")(Date).NotNull,
-        ColumnRef("txn_count")(Bigint),
+        ColumnRef("host")(dt.Char(50)).NotNull,
+        ColumnRef("created_date")(dt.Date).NotNull,
+        ColumnRef("txn_count")(dt.Bigint),
         constrain=constrain(ConstrainName("pk")).PrimaryKey(
             Column("host"), Column("created_date")
         ),
@@ -49,11 +49,11 @@ def test_create_table_3() -> None:
 
 
 def test_create_table_4() -> None:
-    assert createTable.ifNotExists(
+    assert createTable.IfNotExists(
         TableRef(Name("my_case_sensitive_table", force_quote=True))
     )(
-        ColumnRef(Name("id", force_quote=True))(Char(10)).NotNull.PrimaryKey,
-        ColumnRef(Name("value", force_quote=True))(Integer),
+        ColumnRef(Name("id", force_quote=True))(dt.Char(10)).NotNull.PrimaryKey,
+        ColumnRef(Name("value", force_quote=True))(dt.Integer),
     )(
         TableOption("DATA_BLOCK_ENCODING='NONE'"),
         TableOption("VERSIONS=5"),
@@ -68,10 +68,10 @@ def test_create_table_4() -> None:
 
 
 def test_create_table_5() -> None:
-    assert createTable.ifNotExists(TableRef("my_schema", "my_table"))(
-        ColumnRef("org_id")(Char(15)),
-        ColumnRef("entity_id")(Char(15)),
-        ColumnRef("payload")(Binary(1000)),
+    assert createTable.IfNotExists(TableRef("my_schema", "my_table"))(
+        ColumnRef("org_id")(dt.Char(15)),
+        ColumnRef("entity_id")(dt.Char(15)),
+        ColumnRef("payload")(dt.Binary(1000)),
         constrain=constrain(ConstrainName("pk")).PrimaryKey(
             Column("org_id"), Column("entity_id")
         ),
@@ -84,10 +84,10 @@ def test_create_table_5() -> None:
 
 
 def test_create_table_6() -> None:
-    assert createTable.ifNotExists(
+    assert createTable.IfNotExists(
         TableRef(Name("my_case_sensitive_table", force_quote=True))
-    )(ColumnRef(Name("id", force_quote=True))(Char(10))).SplitOn(
-        Value(1), BindParam.index(2), Value("val")
+    )(ColumnRef(Name("id", force_quote=True))(dt.Char(10))).SplitOn(
+        Value(1), BindParam.Index(2), Value("val")
     ).get_query() == (
         'CREATE TABLE IF NOT EXISTS "my_case_sensitive_table"'
         ' ("id" CHAR(10))'

@@ -1,13 +1,15 @@
 from __future__ import annotations
 
+from abc import ABCMeta
+
 from sqlinpython.base import SqlElement
 
 
-class Order(SqlElement):
+class Order(SqlElement, metaclass=ABCMeta):
     pass
 
 
-class OrderWtihNulls(Order):
+class OrderWithNulls(Order):
     def __init__(self, prev: SqlElement, order: bool) -> None:
         self._prev = prev
         self._order = order
@@ -20,7 +22,7 @@ class OrderWtihNulls(Order):
         return f"{self._prev._create_query()} NULLS {order}"
 
 
-class OrderWithAscDesc(OrderWtihNulls):
+class OrderWithAscDesc(OrderWithNulls):
     def __init__(self, prev: SqlElement, ascending: bool) -> None:
         self._prev = prev
         self._ascending = ascending
@@ -33,9 +35,9 @@ class OrderWithAscDesc(OrderWtihNulls):
         return f"{self._prev._create_query()} {order}"
 
     @property
-    def NullsFirst(self) -> OrderWtihNulls:
-        return OrderWtihNulls(self, True)
+    def NullsFirst(self) -> OrderWithNulls:
+        return OrderWithNulls(self, True)
 
     @property
-    def NullsLast(self) -> OrderWtihNulls:
-        return OrderWtihNulls(self, False)
+    def NullsLast(self) -> OrderWithNulls:
+        return OrderWithNulls(self, False)

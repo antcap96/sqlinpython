@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABCMeta
 from typing import Optional, Union
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
@@ -13,16 +14,16 @@ class TableOption(NotImplementedSqlElement):
     pass
 
 
-class BindParameter(SqlElement):
+class BindParameter(SqlElement, metaclass=ABCMeta):
     pass
 
 
 class BindParameterIndex(BindParameter):
     def __init__(self, i: int) -> None:
-        self.i = i
+        self._i = i
 
     def _create_query(self) -> str:
-        return f":{self.i}"
+        return f":{self._i}"
 
 
 class BindParameterQ(BindParameter):
@@ -32,7 +33,7 @@ class BindParameterQ(BindParameter):
 
 class BindParam:
     @staticmethod
-    def index(i: int) -> BindParameterIndex:
+    def Index(i: int) -> BindParameterIndex:
         return BindParameterIndex(i)
 
     q = BindParameterQ()
@@ -134,7 +135,7 @@ class CreateTable(CreateTableIfNotExists):
         pass
 
     @property
-    def ifNotExists(self) -> CreateTableIfNotExists:
+    def IfNotExists(self) -> CreateTableIfNotExists:
         return CreateTableIfNotExists(self)
 
     def _create_query(self) -> str:

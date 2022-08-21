@@ -1,10 +1,12 @@
 from __future__ import annotations
 
+from abc import ABCMeta
+
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 
 
-class SelectExpression(SqlElement):
+class SelectExpression(SqlElement, metaclass=ABCMeta):
     pass
 
 

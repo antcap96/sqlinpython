@@ -82,7 +82,7 @@ class ColumnNameConstrain(ColumnNameConstrainWithAscDesc):
 
 Column = ColumnNameConstrain
 
-# TODO: move Constrain to a diferent file
+# TODO: move Constrain to a different file
 class Constrain(SqlElement):
     def __call__(self, constrain_name: ConstrainName) -> ConstrainWithName:
         return ConstrainWithName(self, constrain_name)
@@ -101,7 +101,7 @@ class ConstrainWithName(SqlElement):
         return ConstrainWithPrimaryKey(self)
 
     def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._constrain_name._name}"
+        return f"{self._prev._create_query()} {self._constrain_name._create_query()}"
 
 
 class ConstrainWithPrimaryKey(SqlElement):

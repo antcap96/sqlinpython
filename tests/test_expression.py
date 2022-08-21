@@ -25,7 +25,7 @@ def test_summand_2() -> None:
 
 
 def test_operand_1() -> None:
-    assert (Value("foo").strcat(ColumnRef("s")))._create_query() == "'foo' || s"
+    assert (Value("foo").Strcat(ColumnRef("s")))._create_query() == "'foo' || s"
 
 
 def test_rhs_operand_1() -> None:
@@ -130,12 +130,12 @@ def test_complex_expression_4() -> None:
     assert (
         x + x * (x % (x - x) * x / x) - x
     )._create_query() == "x + x * (x % (x - x) * x / x) - x"
-    assert (x.strcat(x).strcat(x).strcat(x))._create_query() == "x || x || x || x"
-    assert (x.strcat(x.strcat(x).strcat(x)))._create_query() == "x || (x || x || x)"
-    assert (x + x.strcat(x))._create_query() == "x + (x || x)"
-    assert (x * x.strcat(x))._create_query() == "x * (x || x)"
-    assert ((x * x).strcat(x))._create_query() == "x * x || x"
-    assert ((x + x).strcat(x))._create_query() == "x + x || x"
+    assert (x.Strcat(x).Strcat(x).Strcat(x))._create_query() == "x || x || x || x"
+    assert (x.Strcat(x.Strcat(x).Strcat(x)))._create_query() == "x || (x || x || x)"
+    assert (x + x.Strcat(x))._create_query() == "x + (x || x)"
+    assert (x * x.Strcat(x))._create_query() == "x * (x || x)"
+    assert ((x * x).Strcat(x))._create_query() == "x * x || x"
+    assert ((x + x).Strcat(x))._create_query() == "x + x || x"
     assert (x.Or(x).Or(x))._create_query() == "x OR x OR x"
     assert (x.And(x).And(x))._create_query() == "x AND x AND x"
 
