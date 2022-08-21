@@ -5,7 +5,7 @@ from sqlinpython.create_table import BindParam, TableOption, createTable
 from sqlinpython.datatype import *
 from sqlinpython.expression import Value
 from sqlinpython.name import Column, ConstrainName, Name, constrain, quote_if_necessary
-from sqlinpython.select import TableRef
+from sqlinpython.table_spec import TableRef
 
 
 def test_create_table_1() -> None:

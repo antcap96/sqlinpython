@@ -116,11 +116,11 @@ class ConstrainWithPrimaryKey(SqlElement):
         first_column_name: ColumnNameConstrainWithRowTimestamp,
         /,
         *column_names: ColumnNameConstrainWithRowTimestamp,
-    ) -> ConstrainQuery:
-        return ConstrainQuery(self, (first_column_name, *column_names))
+    ) -> ConstrainType:
+        return ConstrainType(self, (first_column_name, *column_names))
 
 
-class ConstrainQuery(CompleteSqlQuery):
+class ConstrainType(CompleteSqlQuery):
     def __init__(
         self,
         prev: SqlElement,

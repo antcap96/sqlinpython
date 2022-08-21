@@ -2,123 +2,17 @@ from __future__ import annotations
 
 from typing import Literal
 
-import sqlinpython.create_table
-import sqlinpython.expression
-import sqlinpython.select_expression
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
+from sqlinpython.create_table import BindParameter
+from sqlinpython.expression import Expression, Value
 from sqlinpython.name import Name
-from sqlinpython.reference import SqlRef
-
-from .column_def import ColumnDef
+from sqlinpython.order import Order
+from sqlinpython.select_expression import SelectExpression
+from sqlinpython.table_spec import TableSpec, TableSpecWithJoin
 
 
 class Hint(NotImplementedSqlElement):
     pass
-
-
-class TableSpecWithJoin(SqlElement):
-    def Join(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "", on)
-
-    def InnerJoin(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "INNER", on)
-
-    def LeftJoin(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "LEFT", on)
-
-    def LeftOuterJoin(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "LEFT OUTER", on)
-
-    def RightJoin(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "RIGHT", on)
-
-    def RightOuterJoin(
-        self, other: TableSpec, on: sqlinpython.expression.Expression
-    ) -> TableSpecWithJoin:
-        return TableSpecWithJoin(self, other, "RIGHT OUTER", on)
-
-    def __init__(
-        self,
-        prev: SqlElement,
-        with_: TableSpecWithJoin,
-        how: Literal["", "INNER", "LEFT", "LEFT OUTER", "RIGHT", "RIGHT OUTER"],
-        on: sqlinpython.expression.Expression,
-    ) -> None:
-        self._prev = prev
-        self._with = with_
-        self._how = how
-        self._on = on
-
-    def _create_query(self) -> str:
-        join = self._how + " JOIN" if self._how else "JOIN"
-        return (
-            f"{self._prev._create_query()} {join} {self._with._create_query()}"
-            f" ON {self._on._create_query()}"
-        )
-
-
-class TableSpec(TableSpecWithJoin):
-    pass
-
-
-class AliasedTableRef(TableSpec):
-    pass
-
-
-class TableRefWithTableSample(AliasedTableRef):
-    def __init__(self, prev: SqlElement, fraction: float):
-        self._prev = prev
-        self._fraction = fraction
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} TABLESAMPLE({self._fraction})"
-
-
-class TableRefWithColumnDef(TableRefWithTableSample):
-    def __init__(self, prev: SqlElement, column_defs: tuple[ColumnDef, ...]) -> None:
-        self._prev = prev
-        self._column_defs = column_defs
-
-    def _create_query(self) -> str:
-        column_defs = ", ".join(col._create_query() for col in self._column_defs)
-        return f"{self._prev._create_query()}({column_defs})"
-
-    def TableSample(self, fraction: float) -> TableRefWithTableSample:
-        return TableRefWithTableSample(self, fraction)
-
-
-class TableRefWithAlias(TableRefWithColumnDef):
-    def __init__(self, prev: SqlElement, alias: Name, explicit_as: bool):
-        self._prev = prev
-        self._alias = alias
-        self._explicit_as = explicit_as
-
-    def _create_query(self) -> str:
-        as_ = ""
-        if self._explicit_as:
-            as_ = "AS "
-        return f"{self._prev._create_query()} {as_}{self._alias._create_query()}"
-
-    def __call__(self, *column_defs: ColumnDef) -> TableRefWithColumnDef:
-        return TableRefWithColumnDef(self, column_defs)
-
-
-class TableRef(SqlRef, TableRefWithAlias):
-    def As(self, alias: Name | str, explicit_as: bool = True) -> TableRefWithAlias:
-        if isinstance(alias, str):
-            alias = Name(alias)
-
-        return TableRefWithAlias(self, alias, explicit_as)
 
 
 class SelectStatementWithDistinctOrAll(SqlElement):
@@ -128,9 +22,9 @@ class SelectStatementWithDistinctOrAll(SqlElement):
 
     def __call__(
         self,
-        first_select_expression: sqlinpython.select_expression.SelectExpression,
+        first_select_expression: SelectExpression,
         /,
-        *other_select_expressions: sqlinpython.select_expression.SelectExpression,
+        *other_select_expressions: SelectExpression,
     ) -> SelectStatementWithSelectExpression:
         """
         TODO: Explain All
@@ -178,7 +72,7 @@ class SelectStatementWithSelectExpression(SqlElement):
     def __init__(
         self,
         prev: SqlElement,
-        select_expressions: tuple[sqlinpython.select_expression.SelectExpression, ...],
+        select_expressions: tuple[SelectExpression, ...],
     ) -> None:
         self._prev = prev
         self._select_expressions = select_expressions
@@ -242,13 +136,11 @@ class SelectWithFetchCount(SqlElement):
         self,
         prev: SelectWithFetch,
         operation: Literal["NEXT", "FIRST"],
-        param: int | sqlinpython.create_table.BindParameter,
+        param: int | BindParameter,
     ) -> None:
         self._prev = prev
         self._operation = operation
-        self._param = (
-            sqlinpython.expression.Value(param) if isinstance(param, int) else param
-        )
+        self._param = Value(param) if isinstance(param, int) else param
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} {self._operation} {self._param._create_query()}"
@@ -269,14 +161,10 @@ class SelectWithFetch(SqlElement):
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} FETCH"
 
-    def Next(
-        self, param: int | sqlinpython.create_table.BindParameter
-    ) -> SelectWithFetchCount:
+    def Next(self, param: int | BindParameter) -> SelectWithFetchCount:
         return SelectWithFetchCount(self, "NEXT", param)
 
-    def First(
-        self, param: int | sqlinpython.create_table.BindParameter
-    ) -> SelectWithFetchCount:
+    def First(self, param: int | BindParameter) -> SelectWithFetchCount:
         return SelectWithFetchCount(self, "FIRST", param)
 
 
@@ -294,13 +182,9 @@ class SelectWithOffsetComplete(SelectWithFetchComplete):
 
 
 class SelectWithOffset(SelectWithOffsetComplete):
-    def __init__(
-        self, prev: SqlElement, param: int | sqlinpython.create_table.BindParameter
-    ) -> None:
+    def __init__(self, prev: SqlElement, param: int | BindParameter) -> None:
         self._prev = prev
-        self._param = (
-            sqlinpython.expression.Value(param) if isinstance(param, int) else param
-        )
+        self._param = Value(param) if isinstance(param, int) else param
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} OFFSET {self._param._create_query()}"
@@ -315,27 +199,19 @@ class SelectWithOffset(SelectWithOffsetComplete):
 
 
 class SelectWithLimit(SelectWithOffsetComplete):
-    def __init__(
-        self, prev: SqlElement, param: int | sqlinpython.create_table.BindParameter
-    ) -> None:
+    def __init__(self, prev: SqlElement, param: int | BindParameter) -> None:
         self._prev = prev
-        self._param = (
-            sqlinpython.expression.Value(param) if isinstance(param, int) else param
-        )
+        self._param = Value(param) if isinstance(param, int) else param
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} LIMIT {self._param._create_query()}"
 
-    def Offset(
-        self, param: int | sqlinpython.create_table.BindParameter
-    ) -> SelectWithOffset:
+    def Offset(self, param: int | BindParameter) -> SelectWithOffset:
         return SelectWithOffset(self, param)
 
 
 class SelectWithOrderBy(SelectWithLimit):
-    def __init__(
-        self, prev: SqlElement, orders: tuple[sqlinpython.expression.Order, ...]
-    ) -> None:
+    def __init__(self, prev: SqlElement, orders: tuple[Order, ...]) -> None:
         self._prev = prev
         self._orders = orders
 
@@ -343,9 +219,7 @@ class SelectWithOrderBy(SelectWithLimit):
         orders = ", ".join(order._create_query() for order in self._orders)
         return f"{self._prev._create_query()} ORDER BY {orders}"
 
-    def Limit(
-        self, param: int | sqlinpython.create_table.BindParameter
-    ) -> SelectWithLimit:
+    def Limit(self, param: int | BindParameter) -> SelectWithLimit:
         return SelectWithLimit(self, param)
 
 
@@ -362,8 +236,8 @@ class SelectWithUnionAll(SelectWithOrderBy):
 
     def OrderBy(
         self,
-        first_order: sqlinpython.expression.Order,
-        *other_orders: sqlinpython.expression.Order,
+        first_order: Order,
+        *other_orders: Order,
     ) -> SelectWithOrderBy:
         orders = (first_order, *other_orders)
         return SelectWithOrderBy(self, orders)
@@ -374,9 +248,7 @@ class SelectStatement(SelectWithUnionAll):
 
 
 class SelectStatementWithHaving(SelectStatement):
-    def __init__(
-        self, prev: SqlElement, expression: sqlinpython.expression.Expression
-    ) -> None:
+    def __init__(self, prev: SqlElement, expression: Expression) -> None:
         self._prev = prev
         self._expression = expression
 
@@ -388,14 +260,14 @@ class SelectStatementWithGroupBy(SelectStatementWithHaving):
     def __init__(
         self,
         prev: SqlElement,
-        expressions: tuple[sqlinpython.expression.Expression, ...],
+        expressions: tuple[Expression, ...],
     ) -> None:
         self._prev = prev
         self._expressions = expressions
 
     def Having(
         self,
-        expression: sqlinpython.expression.Expression,
+        expression: Expression,
     ) -> SelectStatementWithHaving:
         return SelectStatementWithHaving(self, expression)
 
@@ -407,17 +279,15 @@ class SelectStatementWithGroupBy(SelectStatementWithHaving):
 
 
 class SelectStatementWithWhere(SelectStatementWithGroupBy):
-    def __init__(
-        self, prev: SqlElement, expression: sqlinpython.expression.Expression
-    ) -> None:
+    def __init__(self, prev: SqlElement, expression: Expression) -> None:
         self._prev = prev
         self._expression = expression
 
     def GroupBy(
         self,
-        first_expression: sqlinpython.expression.Expression,
+        first_expression: Expression,
         /,
-        *other_expressions: sqlinpython.expression.Expression,
+        *other_expressions: Expression,
     ) -> SelectStatementWithGroupBy:
         expressions = (first_expression, *other_expressions)
         return SelectStatementWithGroupBy(self, expressions)
@@ -431,9 +301,7 @@ class SelectStatementWithFrom(SelectStatementWithWhere):
         self._prev = prev
         self._table_spec = table_spec
 
-    def Where(
-        self, expression: sqlinpython.expression.Expression
-    ) -> SelectStatementWithWhere:
+    def Where(self, expression: Expression) -> SelectStatementWithWhere:
         return SelectStatementWithWhere(self, expression)
 
     def _create_query(self) -> str:

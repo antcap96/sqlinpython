@@ -5,48 +5,12 @@ from typing import TYPE_CHECKING, Literal, NoReturn, Type, TypeVar, overload
 
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
+from sqlinpython.order import OrderWithAscDesc
 from sqlinpython.select_expression import SelectExpression, SelectExpressionWithAlias
 
+# avoid circular import when importing functions
 if TYPE_CHECKING:
-    import sqlinpython.select  # avoid circular import when importing functions
-
-
-class Order(SqlElement):
-    pass
-
-
-class OrderWtihNulls(Order):
-    def __init__(self, prev: SqlElement, order: bool) -> None:
-        self._prev = prev
-        self._order = order
-
-    def _create_query(self) -> str:
-        if self._order:
-            order = "FIRST"
-        else:
-            order = "LAST"
-        return f"{self._prev._create_query()} NULLS {order}"
-
-
-class OrderWithAscDesc(OrderWtihNulls):
-    def __init__(self, prev: SqlElement, ascending: bool) -> None:
-        self._prev = prev
-        self._ascending = ascending
-
-    def _create_query(self) -> str:
-        if self._ascending:
-            order = "ASC"
-        else:
-            order = "DESC"
-        return f"{self._prev._create_query()} {order}"
-
-    @property
-    def NullsFirst(self) -> OrderWtihNulls:
-        return OrderWtihNulls(self, True)
-
-    @property
-    def NullsLast(self) -> OrderWtihNulls:
-        return OrderWtihNulls(self, False)
+    from sqlinpython.select import SelectType
 
 
 class Expression(OrderWithAscDesc, SelectExpression):
@@ -96,7 +60,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
         return OperandIsNull(self_, True)
 
     @overload
-    def In(self, other: sqlinpython.select.SelectType, /) -> Condition:
+    def In(self, other: SelectType, /) -> Condition:
         ...
 
     @overload
@@ -105,7 +69,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
 
     def In(
         self,
-        first_arg: sqlinpython.select.SelectType | Expression,
+        first_arg: SelectType | Expression,
         /,
         *other_args: Expression,
     ) -> Condition:
@@ -125,7 +89,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
             return OperandInSelect(self_, first_arg, False)
 
     @overload
-    def NotIn(self, other: sqlinpython.select.SelectType, /) -> Condition:
+    def NotIn(self, other: SelectType, /) -> Condition:
         ...
 
     @overload
@@ -134,7 +98,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
 
     def NotIn(
         self,
-        first_arg: sqlinpython.select.SelectType | Expression,
+        first_arg: SelectType | Expression,
         /,
         *other_args: Expression,
     ) -> Condition:
@@ -153,11 +117,11 @@ class Expression(OrderWithAscDesc, SelectExpression):
             self_ = _parenthesize_if_necessary(self, Operand)
             return OperandInSelect(self_, first_arg, True)
 
-    def Exists(self, other: sqlinpython.select.SelectType) -> Condition:
+    def Exists(self, other: SelectType) -> Condition:
         self_ = _parenthesize_if_necessary(self, Operand)
         return OperandExists(self_, other, False)
 
-    def NotExists(self, other: sqlinpython.select.SelectType) -> Condition:
+    def NotExists(self, other: SelectType) -> Condition:
         self_ = _parenthesize_if_necessary(self, Operand)
         return OperandExists(self_, other, True)
 
@@ -314,9 +278,7 @@ class OperandIsNull(Condition):
 
 
 class OperandInSelect(Condition):
-    def __init__(
-        self, prev: Operand, in_select: sqlinpython.select.SelectType, negated: bool
-    ) -> None:
+    def __init__(self, prev: Operand, in_select: SelectType, negated: bool) -> None:
         self._prev = prev
         self._in_select = in_select
         self._negated = negated
@@ -349,9 +311,7 @@ class OperandNotInOperands(Condition):
 
 
 class OperandExists(Condition):
-    def __init__(
-        self, prev: Operand, other: sqlinpython.select.SelectType, negated: bool
-    ) -> None:
+    def __init__(self, prev: Operand, other: SelectType, negated: bool) -> None:
         self._prev = prev
         self._other = other  # type: ignore
         self._negated = negated
@@ -387,9 +347,7 @@ class RHSOperand(Condition):
 
 
 class AnyOrAllOperand(RHSOperand):
-    def __init__(
-        self, prev: SqlElement, other: Operand | sqlinpython.select.SelectType
-    ):
+    def __init__(self, prev: SqlElement, other: Operand | SelectType):
         self._prev = prev
         self._other = other  # type: ignore
 
@@ -398,9 +356,7 @@ class AnyOrAllOperand(RHSOperand):
 
 
 class AnyOrAllCall(SqlElement):
-    def __call__(
-        self, other: Operand | sqlinpython.select.SelectType
-    ) -> AnyOrAllOperand:
+    def __call__(self, other: Operand | SelectType) -> AnyOrAllOperand:
         return AnyOrAllOperand(self, other)
 
 

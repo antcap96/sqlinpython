@@ -2,8 +2,9 @@ import sqlinpython.functions as f
 from sqlinpython.column_def import ColumnDef, ColumnRef
 from sqlinpython.datatype import Varchar
 from sqlinpython.expression import Value
-from sqlinpython.select import Select, TableRef
+from sqlinpython.select import Select
 from sqlinpython.select_expression import All
+from sqlinpython.table_spec import TableRef
 
 
 def test_select_query_1() -> None:
