@@ -23,17 +23,17 @@ class SelectExpressionWithAlias(SelectExpression):
         return f"{self._prev._create_query()} {as_}{self._alias._create_query()}"
 
 
-class AllKeyword(SelectExpression):
-    def __call__(self, family: Name | str) -> FamilyNameAll:
+class StarKeyword(SelectExpression):
+    def __call__(self, family: Name | str) -> FamilyNameStar:
         if isinstance(family, str):
             family = Name(family)
-        return FamilyNameAll(family)
+        return FamilyNameStar(family)
 
     def _create_query(self) -> str:
         return "*"
 
 
-class FamilyNameAll(SelectExpression):
+class FamilyNameStar(SelectExpression):
     def __init__(self, family: Name):
         self._family = family
 
@@ -41,4 +41,5 @@ class FamilyNameAll(SelectExpression):
         return f"{self._family._create_query()}.*"
 
 
-All = AllKeyword()
+# TODO: This name might not be the best
+Star = StarKeyword()

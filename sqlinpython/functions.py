@@ -1,7 +1,8 @@
 from abc import abstractmethod
 from typing import Any
+
 from sqlinpython.expression import Term
-from sqlinpython.select_expression import AllKeyword
+from sqlinpython.select_expression import StarKeyword
 
 
 class Function(Term):
@@ -31,7 +32,7 @@ class Sum(Function):
 
 
 class Count(Function):
-    def __init__(self, term: Term | AllKeyword, *, distinct: bool = False) -> None:
+    def __init__(self, term: Term | StarKeyword, *, distinct: bool = False) -> None:
         self._distinct = distinct
         self._term = term
 

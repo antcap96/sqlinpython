@@ -1,16 +1,24 @@
 import pytest
 
-import sqlinpython.datatype as dt
-from sqlinpython.column_def import ColumnRef
-from sqlinpython.create_table import BindParam, TableOption, createTable
-from sqlinpython.expression import Value
-from sqlinpython.name import Column, ConstrainName, Name, constrain, quote_if_necessary
-from sqlinpython.table_spec import TableRef
+from sqlinpython import (
+    BindParam,
+    ColumnName,
+    ColumnRef,
+    Constrain,
+    ConstrainName,
+    CreateTable,
+    Name,
+    TableOption,
+    TableRef,
+    Value,
+)
+from sqlinpython import datatype as dt
+from sqlinpython.name import quote_if_necessary
 
 
 def test_create_table_1() -> None:
     assert (
-        createTable(TableRef("my_schema", "my_table"))(
+        CreateTable(TableRef("my_schema", "my_table"))(
             ColumnRef("id")(dt.Bigint).NotNull.PrimaryKey, ColumnRef("date")(dt.Date)
         ).get_query()
         == "CREATE TABLE my_schema.my_table (id BIGINT NOT NULL PRIMARY KEY, date DATE)"
@@ -18,38 +26,40 @@ def test_create_table_1() -> None:
 
 
 @pytest.mark.xfail(
-    reason="this test fails because create table is recieving a column ref"
+    reason="this test fails because create table is receiving a column ref"
     " without datatype. Not sure if this is valid..."
 )
 def test_create_table_2() -> None:
-    assert createTable(TableRef("my_table"))(
+    assert CreateTable(TableRef("my_table"))(
         ColumnRef("id")(dt.Integer).NotNull.PrimaryKey.Desc,
         ColumnRef("date")(dt.Date).NotNull,
         ColumnRef("m", "db_utilization")(dt.Decimal),
         ColumnRef("i", "db_utilization"),  # type: ignore
     )(TableOption("m.DATA_BLOCK_ENCODING='DIFF'")).get_query() == (
-        "CREATE TABLE my_table (id INTEGER NOT NULL PRIMARY KEY DESC, date DATE NOT NULL,"
+        "CREATE TABLE my_table (id INTEGER NOT NULL PRIMARY KEY DESC,"
+        " date DATE NOT NULL,"
         " m.db_utilization DECIMAL, i.db_utilization)"
         " m.DATA_BLOCK_ENCODING='DIFF'"
     )
 
 
 def test_create_table_3() -> None:
-    assert createTable(TableRef("stats", "prod_metrics"))(
+    assert CreateTable(TableRef("stats", "prod_metrics"))(
         ColumnRef("host")(dt.Char(50)).NotNull,
         ColumnRef("created_date")(dt.Date).NotNull,
         ColumnRef("txn_count")(dt.Bigint),
-        constrain=constrain(ConstrainName("pk")).PrimaryKey(
-            Column("host"), Column("created_date")
+        constrain=Constrain(ConstrainName("pk")).PrimaryKey(
+            ColumnName("host"), ColumnName("created_date")
         ),
     ).get_query() == (
-        "CREATE TABLE stats.prod_metrics (host CHAR(50) NOT NULL, created_date DATE NOT NULL,"
+        "CREATE TABLE stats.prod_metrics (host CHAR(50) NOT NULL,"
+        " created_date DATE NOT NULL,"
         " txn_count BIGINT CONSTRAINT pk PRIMARY KEY(host, created_date))"
     )
 
 
 def test_create_table_4() -> None:
-    assert createTable.IfNotExists(
+    assert CreateTable.IfNotExists(
         TableRef(Name("my_case_sensitive_table", force_quote=True))
     )(
         ColumnRef(Name("id", force_quote=True))(dt.Char(10)).NotNull.PrimaryKey,
@@ -68,12 +78,12 @@ def test_create_table_4() -> None:
 
 
 def test_create_table_5() -> None:
-    assert createTable.IfNotExists(TableRef("my_schema", "my_table"))(
+    assert CreateTable.IfNotExists(TableRef("my_schema", "my_table"))(
         ColumnRef("org_id")(dt.Char(15)),
         ColumnRef("entity_id")(dt.Char(15)),
         ColumnRef("payload")(dt.Binary(1000)),
-        constrain=constrain(ConstrainName("pk")).PrimaryKey(
-            Column("org_id"), Column("entity_id")
+        constrain=Constrain(ConstrainName("pk")).PrimaryKey(
+            ColumnName("org_id"), ColumnName("entity_id")
         ),
     )(TableOption("TTL=86400")).get_query() == (
         "CREATE TABLE IF NOT EXISTS my_schema.my_table ("
@@ -84,7 +94,7 @@ def test_create_table_5() -> None:
 
 
 def test_create_table_6() -> None:
-    assert createTable.IfNotExists(
+    assert CreateTable.IfNotExists(
         TableRef(Name("my_case_sensitive_table", force_quote=True))
     )(ColumnRef(Name("id", force_quote=True))(dt.Char(10))).SplitOn(
         Value(1), BindParam.Index(2), Value("val")

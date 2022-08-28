@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from abc import ABCMeta
-from itertools import repeat
 from typing import TYPE_CHECKING, Literal, NoReturn, Type, TypeVar, overload
 
 from sqlinpython.base import SqlElement
@@ -9,7 +8,7 @@ from sqlinpython.name import Name
 from sqlinpython.order import OrderWithAscDesc
 from sqlinpython.select_expression import SelectExpression, SelectExpressionWithAlias
 
-# avoid circular import when importing functions
+# avoid circular dependencies
 if TYPE_CHECKING:
     from sqlinpython.select import SelectType
 
@@ -79,15 +78,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
         if isinstance(first_arg, Expression):
             self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            # At least as of mypy version 0.971, lambda here is necessary
-            # for current type inference
-            operands_ = map(
-                lambda x, y: _parenthesize_if_necessary(
-                    x, y
-                ),  # pylint: disable=unnecessary-lambda
-                operands,
-                repeat(Operand),
-            )
+            operands_ = [_parenthesize_if_necessary(x, Operand) for x in operands]
             return OperandInOperands(self_, *operands_)
         else:
             self_ = _parenthesize_if_necessary(self, Operand)
@@ -112,15 +103,7 @@ class Expression(OrderWithAscDesc, SelectExpression):
         if isinstance(first_arg, Expression):
             self_ = _parenthesize_if_necessary(self, Operand)
             operands = (first_arg, *other_args)
-            # At least as of mypy version 0.971, lambda here is necessary
-            # for current type inference
-            operands_ = map(
-                lambda x, y: _parenthesize_if_necessary(
-                    x, y
-                ),  # pylint: disable=unnecessary-lambda
-                operands,
-                repeat(Operand),
-            )
+            operands_ = [_parenthesize_if_necessary(x, Operand) for x in operands]
             return OperandNotInOperands(self_, *operands_)
         else:
             self_ = _parenthesize_if_necessary(self, Operand)

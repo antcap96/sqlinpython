@@ -130,7 +130,7 @@ class CreateTableIfNotExists(SqlElement):
         return f"{self._prev._create_query()} IF NOT EXISTS"
 
 
-class CreateTable(CreateTableIfNotExists):
+class CreateTableKeyword(CreateTableIfNotExists):
     def __init__(self) -> None:
         pass
 
@@ -142,4 +142,4 @@ class CreateTable(CreateTableIfNotExists):
         return "CREATE TABLE"
 
 
-createTable = CreateTable()
+CreateTable = CreateTableKeyword()

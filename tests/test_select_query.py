@@ -1,14 +1,10 @@
 import sqlinpython.functions as f
-from sqlinpython.column_def import ColumnRef
+from sqlinpython import ColumnRef, Select, Star, TableRef, Value
 from sqlinpython.datatype import Varchar
-from sqlinpython.expression import Value
-from sqlinpython.select import Select
-from sqlinpython.select_expression import All
-from sqlinpython.table_spec import TableRef
 
 
 def test_select_query_1() -> None:
-    assert Select(All).From(TableRef("TEST")).get_query() == "SELECT * FROM TEST"
+    assert Select(Star).From(TableRef("TEST")).get_query() == "SELECT * FROM TEST"
 
 
 def test_select_query_2() -> None:
@@ -62,14 +58,14 @@ def test_select_query_5() -> None:
 
 def test_select_1() -> None:
     assert (
-        Select(All).From(TableRef("TEST")).Limit(1000).get_query()
+        Select(Star).From(TableRef("TEST")).Limit(1000).get_query()
         == "SELECT * FROM TEST LIMIT 1000"
     )
 
 
 def test_select_2() -> None:
     assert (
-        Select(All).From(TableRef("TEST")).Limit(1000).Offset(100).get_query()
+        Select(Star).From(TableRef("TEST")).Limit(1000).Offset(100).get_query()
         == "SELECT * FROM TEST LIMIT 1000 OFFSET 100"
     )
 
@@ -97,7 +93,7 @@ def test_select_3() -> None:
 def test_select_recursive_1() -> None:
     assert (
         Select(ColumnRef("a"))
-        .From(Select(All).From(TableRef("test")).Parentheses)
+        .From(Select(Star).From(TableRef("test")).Parentheses)
         .get_query()
         == "SELECT a FROM (SELECT * FROM test)"
     )
@@ -106,7 +102,7 @@ def test_select_recursive_1() -> None:
 def test_select_recursive_2() -> None:
     assert (
         Select(ColumnRef("b", "a"))
-        .From(Select(All).From(TableRef("test")).As("b"))
+        .From(Select(Star).From(TableRef("test")).As("b"))
         .get_query()
         == "SELECT b.a FROM (SELECT * FROM test) AS b"
     )

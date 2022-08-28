@@ -1,7 +1,4 @@
-from sqlinpython.column_def import ColumnRef
-from sqlinpython.expression import All, Any, Value
-from sqlinpython.select import Select
-from sqlinpython.table_spec import TableRef
+from sqlinpython import All, Any, ColumnRef, Select, TableRef, Value
 
 
 def test_factor_1() -> None:
