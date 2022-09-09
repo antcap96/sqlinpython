@@ -10,10 +10,13 @@ Examples
 
 A simple example usage of this library might look like this:
 
->>> from sqlinpython import Select, TableRef, ColumnRef
+.. code:: python
 
->>> Select(ColumnRef("a")).From(TableRef("b")).get_query()
-'SELECT a FROM b'
+    from sqlinpython import Select, TableRef, ColumnRef
+    assert (
+        Select(ColumnRef("a")).From(TableRef("b")).get_query()
+        == 'SELECT a FROM b'
+    )
 
 But the library is capable of much more complex queries like the following:
 
