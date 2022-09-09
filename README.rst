@@ -51,7 +51,7 @@ Although for larger queries, for the sake of readability, you should probably sp
     )
     sales_people.UnionAll(reviewers).get_query()
 
-Further examples can be seen in the `test <./test>`_ directory.
+Further examples can be seen in the `tests <./tests>`_ directory.
 
 Potential problems
 ------------------
