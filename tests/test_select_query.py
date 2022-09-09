@@ -47,7 +47,7 @@ def test_select_query_5() -> None:
             .As("d", explicit_as=False)
             .Join(
                 TableRef("EMPL").As("e", explicit_as=False),
-                on=ColumnRef("e", "dept_id") == (ColumnRef("d", "dept_id")),
+                on=ColumnRef("e", "dept_id") == ColumnRef("d", "dept_id"),
             )
         )
         .get_query()
@@ -87,6 +87,28 @@ def test_select_3() -> None:
         " UNION ALL SELECT reviewer_name"
         " FROM CUSTOMER_REVIEW"
         " WHERE score >= 8.0"
+    )
+
+
+def test_select_4() -> None:
+    assert (
+        Select(ColumnRef("full_name"))
+        .From(TableRef("SALES_PERSON"))
+        .Where(ColumnRef("ranking") >= Value(5.0))
+        .UnionAll(
+            Select(ColumnRef("reviewer_name"))
+            .From(TableRef("CUSTOMER_REVIEW"))
+            .GroupBy(ColumnRef("reviewer_name"))
+            .Having(f.Avg(ColumnRef("score")) >= Value(8.0))
+        )
+        .get_query()
+        == "SELECT full_name"
+        " FROM SALES_PERSON"
+        " WHERE ranking >= 5.0"
+        " UNION ALL SELECT reviewer_name"
+        " FROM CUSTOMER_REVIEW"
+        " GROUP BY reviewer_name"
+        " HAVING AVG(score) >= 8.0"
     )
 
 
