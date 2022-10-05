@@ -1,4 +1,14 @@
-from sqlinpython import All, Any, ColumnRef, Select, TableRef, Value
+import pytest
+
+from sqlinpython import (
+    All,
+    Any,
+    ColumnRef,
+    RowValueConstructor,
+    Select,
+    TableRef,
+    Value,
+)
 
 
 def test_factor_1() -> None:
@@ -139,3 +149,17 @@ def test_complex_expression_4() -> None:
 
 def test_order_1() -> None:
     assert ColumnRef("NAME").Desc.NullsLast._create_query() == "NAME DESC NULLS LAST"
+
+
+def test_row_value_constructor_1() -> None:
+    assert (
+        RowValueConstructor(
+            ColumnRef("col1"), ColumnRef("col2"), Value(5)
+        )._create_query()
+        == "(col1, col2, 5)"
+    )
+
+
+def test_row_value_constructor_too_few_arguments() -> None:
+    with pytest.raises(TypeError):
+        RowValueConstructor(ColumnRef("col1"))._create_query()  # type: ignore
