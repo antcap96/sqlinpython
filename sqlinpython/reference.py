@@ -28,7 +28,3 @@ class SqlRef(SqlElement):
             )
         else:
             return self._base_name._create_query()
-
-
-class SequenceRef(SqlRef):
-    pass
