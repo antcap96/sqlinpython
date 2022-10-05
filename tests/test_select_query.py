@@ -151,8 +151,3 @@ def test_table_spec_3() -> None:
         ._create_query()
         == "(SELECT feature FROM PRODUCT_METRICS) AS PM"
     )
-
-
-# table spec tests
-# PRODUCT_METRICS(referrer VARCHAR)
-# ( SELECT feature FROM PRODUCT_METRICS ) AS PM
