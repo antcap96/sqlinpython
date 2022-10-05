@@ -5,8 +5,8 @@ from typing import Optional, Union
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.column_def import ColumnDef
+from sqlinpython.constrain import ConstrainType
 from sqlinpython.expression import TermBeforeBracket, Value
-from sqlinpython.name import ConstrainType
 from sqlinpython.table_spec import TableRef
 
 
