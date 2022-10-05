@@ -5,7 +5,7 @@ from typing import Optional, Union
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.column_def import ColumnDef
-from sqlinpython.expression import Value
+from sqlinpython.expression import TermBeforeBracket, Value
 from sqlinpython.name import ConstrainType
 from sqlinpython.table_spec import TableRef
 
@@ -14,8 +14,9 @@ class TableOption(NotImplementedSqlElement):
     pass
 
 
-class BindParameter(SqlElement, metaclass=ABCMeta):
-    pass
+class BindParameter(TermBeforeBracket, metaclass=ABCMeta):
+    def __init__(self) -> None:
+        pass
 
 
 class BindParameterIndex(BindParameter):

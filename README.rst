@@ -68,4 +68,4 @@ These types are not yet part of a public api and their names might be changed in
 State
 -----
 
-The library is not yet complete, with some syntax e.g. ``CASE WHEN`` not implemented.
+The library is not yet complete, with some syntax not implemented.

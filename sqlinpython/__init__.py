@@ -1,6 +1,7 @@
 __version__ = "0.1.0"
 
 from sqlinpython import datatype, functions
+from sqlinpython.case import Case
 from sqlinpython.column_def import ColumnRef
 from sqlinpython.create_table import BindParam, CreateTable, TableOption
 from sqlinpython.expression import All, Any, Value
@@ -17,6 +18,7 @@ __all__ = [
     "All",
     "Any",
     "Value",
+    "Case",
     "ColumnName",
     "Constrain",
     "ConstrainName",

@@ -46,13 +46,13 @@ def test_select_query_5() -> None:
             TableRef("DEPT")
             .As("d", explicit_as=False)
             .Join(
-                TableRef("EMPL").As("e", explicit_as=False),
+                TableRef("EMP").As("e", explicit_as=False),
                 on=ColumnRef("e", "dept_id") == ColumnRef("d", "dept_id"),
             )
         )
         .get_query()
         == "SELECT d.dept_id, e.dept_id, e.name "
-        "FROM DEPT d JOIN EMPL e ON e.dept_id = d.dept_id"
+        "FROM DEPT d JOIN EMP e ON e.dept_id = d.dept_id"
     )
 
 

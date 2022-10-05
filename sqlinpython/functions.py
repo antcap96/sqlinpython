@@ -1,11 +1,11 @@
 from abc import abstractmethod
 from typing import Any
 
-from sqlinpython.expression import Term
+from sqlinpython.expression import Term, TermBeforeBracket
 from sqlinpython.select_expression import StarKeyword
 
 
-class Function(Term):
+class Function(TermBeforeBracket):
     @abstractmethod
     def __init__(self, *args: Any) -> None:
         pass
