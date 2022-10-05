@@ -14,11 +14,12 @@ class SqlRef(SqlElement):
         if isinstance(base_name, str):
             base_name = Name(base_name)
 
-        schema_name = name if base_name is not None else None
         if base_name is None:
-            base_name = name
-        self._base_name = base_name
-        self._schema_name = schema_name
+            self._base_name = name
+            self._schema_name = None
+        else:
+            self._base_name = base_name
+            self._schema_name = name
 
     def _create_query(self) -> str:
         if self._schema_name:
