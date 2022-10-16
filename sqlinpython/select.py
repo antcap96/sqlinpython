@@ -28,7 +28,7 @@ class SelectStatementWithDistinctOrAll(SqlElement):
         *other_select_expressions: SelectExpression,
     ) -> SelectStatementWithSelectExpression:
         """
-        TODO: Explain All
+        TODO: Explain Star
         """
         select_expressions = (first_select_expression, *other_select_expressions)
         return SelectStatementWithSelectExpression(self, select_expressions)
