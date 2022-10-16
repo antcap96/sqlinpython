@@ -114,9 +114,7 @@ def test_select_4() -> None:
 
 def test_select_recursive_1() -> None:
     assert (
-        Select(ColumnRef("a"))
-        .From(Select(Star).From(TableRef("test")).Parentheses)
-        .get_query()
+        Select(ColumnRef("a")).From(Select(Star).From(TableRef("test"))).get_query()
         == "SELECT a FROM (SELECT * FROM test)"
     )
 

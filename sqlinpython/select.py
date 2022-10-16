@@ -78,7 +78,9 @@ class SelectStatementWithSelectExpression(SqlElement):
         self._prev = prev
         self._select_expressions = select_expressions
 
-    def From(self, table_spec: TableSpecWithJoin) -> SelectStatementWithFrom:
+    def From(
+        self, table_spec: TableSpecWithJoin | SelectType
+    ) -> SelectStatementWithFrom:
         return SelectStatementWithFrom(self, table_spec)
 
     def _create_query(self) -> str:
@@ -102,7 +104,15 @@ class SelectWithAlias(TableSpec):
 
 
 class SelectType(CompleteSqlQuery, metaclass=ABCMeta):
-    pass
+    def As(self, alias: Name | str, explicit_as: bool = True) -> SelectWithAlias:
+        if isinstance(alias, str):
+            alias = Name(alias)
+
+        return SelectWithAlias(self._parentheses, alias, explicit_as)
+
+    @property
+    def _parentheses(self) -> SelectWithParentheses:
+        return SelectWithParentheses(self)
 
 
 class SelectWithParentheses(TableSpec):
@@ -122,16 +132,6 @@ class SelectWithFetchComplete(SelectType):
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} {self._row_only}"
-
-    def As(self, alias: Name | str, explicit_as: bool = True) -> SelectWithAlias:
-        if isinstance(alias, str):
-            alias = Name(alias)
-
-        return SelectWithAlias(self.Parentheses, alias, explicit_as)
-
-    @property
-    def Parentheses(self) -> SelectWithParentheses:
-        return SelectWithParentheses(self)
 
 
 class SelectWithFetchCount(SqlElement):
@@ -304,9 +304,15 @@ class SelectStatementWithWhere(SelectStatementWithGroupBy):
 
 
 class SelectStatementWithFrom(SelectStatementWithWhere):
-    def __init__(self, prev: SqlElement, table_spec: TableSpecWithJoin) -> None:
+    def __init__(
+        self, prev: SqlElement, table_spec: TableSpecWithJoin | SelectType
+    ) -> None:
         self._prev = prev
-        self._table_spec = table_spec
+        self._table_spec: TableSpecWithJoin
+        if isinstance(table_spec, SelectType):
+            self._table_spec = table_spec._parentheses
+        else:
+            self._table_spec = table_spec
 
     def Where(self, expression: Expression) -> SelectStatementWithWhere:
         return SelectStatementWithWhere(self, expression)
