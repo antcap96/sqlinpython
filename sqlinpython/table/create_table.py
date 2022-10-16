@@ -1,46 +1,16 @@
 from __future__ import annotations
 
-from abc import ABCMeta
-from typing import Optional, Union
+from typing import Optional
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
+from sqlinpython.bind_parameter import SplitPoint
 from sqlinpython.column_def import ColumnDef
-from sqlinpython.constrain import ConstrainType
-from sqlinpython.expression import TermBeforeBracket, Value
-from sqlinpython.table_spec import TableRef
+from sqlinpython.table.constrain import ConstrainType
+from sqlinpython.table.table_spec import TableRef
 
 
 class TableOption(NotImplementedSqlElement):
     pass
-
-
-class BindParameter(TermBeforeBracket, metaclass=ABCMeta):
-    def __init__(self) -> None:
-        pass
-
-
-class BindParameterIndex(BindParameter):
-    def __init__(self, i: int) -> None:
-        self._i = i
-
-    def _create_query(self) -> str:
-        return f":{self._i}"
-
-
-class BindParameterQ(BindParameter):
-    def _create_query(self) -> str:
-        return "?"
-
-
-class BindParam:
-    @staticmethod
-    def Index(i: int) -> BindParameterIndex:
-        return BindParameterIndex(i)
-
-    q = BindParameterQ()
-
-
-SplitPoint = Union[Value, BindParameter]
 
 
 class CreateTableWithSplitOn(CompleteSqlQuery):
@@ -144,50 +114,3 @@ class CreateTableKeyword(CreateTableIfNotExists):
 
 
 CreateTable = CreateTableKeyword()
-
-
-class DropTableWithCascade(CompleteSqlQuery):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} CASCADE"
-
-
-class DropTableWithTableRef(DropTableWithCascade):
-    def __init__(self, prev: SqlElement, table_ref: TableRef) -> None:
-        self._prev = prev
-        self._table_ref = table_ref
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._table_ref._create_query()}"
-
-    @property
-    def Cascade(self) -> DropTableWithCascade:
-        return DropTableWithCascade(self)
-
-
-class DropTableWithIfExists(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} IF EXISTS"
-
-    def __call__(self, table_ref: TableRef) -> DropTableWithTableRef:
-        return DropTableWithTableRef(self, table_ref)
-
-
-class DropTableKeyword(DropTableWithIfExists):
-    def __init__(self) -> None:
-        pass
-
-    def _create_query(self) -> str:
-        return "DROP TABLE"
-
-    @property
-    def IfExists(self) -> DropTableWithIfExists:
-        return DropTableWithIfExists(self)
-
-
-DropTable = DropTableKeyword()

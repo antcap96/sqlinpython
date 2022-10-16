@@ -4,12 +4,12 @@ from abc import ABCMeta
 from typing import Literal
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
-from sqlinpython.create_table import BindParameter
+from sqlinpython.bind_parameter import BindParameter
 from sqlinpython.expression import Expression, Value
 from sqlinpython.name import Name
 from sqlinpython.order import Order
 from sqlinpython.select_expression import SelectExpression
-from sqlinpython.table_spec import TableSpec, TableSpecWithJoin
+from sqlinpython.table.table_spec import TableSpec, TableSpecWithJoin
 
 
 class Hint(NotImplementedSqlElement):

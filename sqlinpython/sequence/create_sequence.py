@@ -4,7 +4,7 @@ from abc import ABCMeta
 from typing import Literal
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
-from sqlinpython.create_table import BindParameter
+from sqlinpython.bind_parameter import BindParameter
 from sqlinpython.expression import Value
 from sqlinpython.sequence.core import SequenceRef
 
