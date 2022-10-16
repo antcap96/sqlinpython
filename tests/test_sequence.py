@@ -1,4 +1,4 @@
-from sqlinpython import CreateSequence, Current, Next, SequenceRef, Value
+from sqlinpython import CreateSequence, Current, DropSequence, Next, SequenceRef, Value
 
 
 def test_create_sequence_test_1() -> None:
@@ -54,4 +54,18 @@ def test_sequence_3() -> None:
     assert (
         Current.Value.For(SequenceRef("my_schema", "my_id_generator"))._create_query()
         == "CURRENT VALUE FOR my_schema.my_id_generator"
+    )
+
+
+def test_drop_sequence_1() -> None:
+    assert (
+        DropSequence(SequenceRef("my_sequence")).get_query()
+        == "DROP SEQUENCE my_sequence"
+    )
+
+
+def test_drop_sequence_2() -> None:
+    assert (
+        DropSequence.IfExists(SequenceRef("my_schema", "my_sequence")).get_query()
+        == "DROP SEQUENCE IF EXISTS my_schema.my_sequence"
     )

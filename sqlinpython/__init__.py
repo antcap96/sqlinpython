@@ -5,8 +5,14 @@ from sqlinpython.case import Case
 from sqlinpython.cast import Cast
 from sqlinpython.column_def import ColumnRef
 from sqlinpython.constrain import Constrain, ConstrainName
-from sqlinpython.create_sequence import CreateSequence, Current, Next, SequenceRef
-from sqlinpython.create_table import BindParam, CreateTable, TableOption
+from sqlinpython.create_sequence import (
+    CreateSequence,
+    Current,
+    DropSequence,
+    Next,
+    SequenceRef,
+)
+from sqlinpython.create_table import BindParam, CreateTable, DropTable, TableOption
 from sqlinpython.expression import All, Any, Value
 from sqlinpython.name import ColumnName, Name
 from sqlinpython.row_value_constructor import RowValueConstructor
@@ -27,6 +33,8 @@ __all__ = [
     "CreateSequence",
     "CreateTable",
     "Current",
+    "DropSequence",
+    "DropTable",
     "Name",
     "Next",
     "RowValueConstructor",

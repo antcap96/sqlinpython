@@ -7,6 +7,7 @@ from sqlinpython import (
     Constrain,
     ConstrainName,
     CreateTable,
+    DropTable,
     Name,
     TableOption,
     TableRef,
@@ -102,6 +103,27 @@ def test_create_table_6() -> None:
         'CREATE TABLE IF NOT EXISTS "my_case_sensitive_table"'
         ' ("id" CHAR(10))'
         " SPLIT ON(1, :2, 'val')"
+    )
+
+
+def test_drop_table_1() -> None:
+    assert (
+        DropTable(TableRef("my_schema", "my_table")).get_query()
+        == "DROP TABLE my_schema.my_table"
+    )
+
+
+def test_drop_table_2() -> None:
+    assert (
+        DropTable.IfExists(TableRef("my_table")).get_query()
+        == "DROP TABLE IF EXISTS my_table"
+    )
+
+
+def test_drop_table_3() -> None:
+    assert (
+        DropTable(TableRef("my_schema", "my_table")).Cascade.get_query()
+        == "DROP TABLE my_schema.my_table CASCADE"
     )
 
 
