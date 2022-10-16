@@ -1,11 +1,10 @@
 from __future__ import annotations
 
-from sqlinpython.base import SqlElement
 from sqlinpython.datatype import DataType
-from sqlinpython.expression import Expression
+from sqlinpython.expression import Expression, Term
 
 
-class Cast(SqlElement):
+class Cast(Term):
     def __init__(self, expression: Expression, _as: DataType) -> None:
         self._expression = expression
         self._as = _as
