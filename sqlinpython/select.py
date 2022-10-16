@@ -78,10 +78,11 @@ class SelectStatementWithSelectExpression(SqlElement):
         self._prev = prev
         self._select_expressions = select_expressions
 
-    def From(
-        self, table_spec: TableSpecWithJoin | SelectType
-    ) -> SelectStatementWithFrom:
-        return SelectStatementWithFrom(self, table_spec)
+    def From(self, arg: TableSpecWithJoin | SelectType) -> SelectStatementWithFrom:
+        if isinstance(arg, SelectType):
+            return SelectStatementWithFrom(self, arg._parentheses)
+        else:
+            return SelectStatementWithFrom(self, arg)
 
     def _create_query(self) -> str:
         select_query = ", ".join(
@@ -304,15 +305,9 @@ class SelectStatementWithWhere(SelectStatementWithGroupBy):
 
 
 class SelectStatementWithFrom(SelectStatementWithWhere):
-    def __init__(
-        self, prev: SqlElement, table_spec: TableSpecWithJoin | SelectType
-    ) -> None:
+    def __init__(self, prev: SqlElement, table_spec: TableSpecWithJoin) -> None:
         self._prev = prev
-        self._table_spec: TableSpecWithJoin
-        if isinstance(table_spec, SelectType):
-            self._table_spec = table_spec._parentheses
-        else:
-            self._table_spec = table_spec
+        self._table_spec = table_spec
 
     def Where(self, expression: Expression) -> SelectStatementWithWhere:
         return SelectStatementWithWhere(self, expression)
