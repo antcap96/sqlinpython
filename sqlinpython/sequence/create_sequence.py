@@ -6,11 +6,7 @@ from typing import Literal
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.create_table import BindParameter
 from sqlinpython.expression import Value
-from sqlinpython.reference import SqlRef
-
-
-class SequenceRef(SqlRef):
-    pass
+from sqlinpython.sequence.core import SequenceRef
 
 
 class CreateSequenceQuery(CompleteSqlQuery, metaclass=ABCMeta):
@@ -150,105 +146,3 @@ class CreateSequenceKeyword(CreateSequenceWithIfNotExists):
 
 
 CreateSequence = CreateSequenceKeyword()
-
-
-# Sequence
-
-
-class SequenceQuery(SqlElement, metaclass=ABCMeta):
-    pass
-
-
-class SequenceWithFor(SequenceQuery):
-    def __init__(self, prev: SqlElement, sequence_ref: SequenceRef) -> None:
-        self._prev = prev
-        self._sequence_ref = sequence_ref
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} FOR {self._sequence_ref._create_query()}"
-
-
-class SequenceWithValueMixin(SqlElement, metaclass=ABCMeta):
-    def For(self, sequence_ref: SequenceRef) -> SequenceWithFor:
-        return SequenceWithFor(self, sequence_ref)
-
-
-class SequenceWithValue(SequenceWithValueMixin):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} VALUE"
-
-
-class SequenceWithValues(SequenceWithValueMixin):
-    def __init__(self, prev: SqlElement, n: int) -> None:
-        self._prev = prev
-        self._n = n
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._n} VALUES"
-
-
-class SequenceStartMixin(SqlElement, metaclass=ABCMeta):
-    @property
-    def Value(self) -> SequenceWithValue:
-        return SequenceWithValue(self)
-
-    def Values(self, n: int) -> SequenceWithValues:
-        return SequenceWithValues(self, n)
-
-
-class NextKeyword(SequenceStartMixin):
-    def __init__(self) -> None:
-        pass
-
-    def _create_query(self) -> str:
-        return f"NEXT"
-
-
-class CurrentKeyword(SequenceStartMixin):
-    def __init__(self) -> None:
-        pass
-
-    def _create_query(self) -> str:
-        return f"CURRENT"
-
-
-Next = NextKeyword()
-Current = CurrentKeyword()
-
-
-class DropSequenceWithSequenceRef(CompleteSqlQuery):
-    def __init__(self, prev: SqlElement, sequence_ref: SequenceRef) -> None:
-        self._prev = prev
-        self._sequence_ref = sequence_ref
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._sequence_ref._create_query()}"
-
-
-class DropSequenceWithIfExists(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} IF EXISTS"
-
-    def __call__(self, table_ref: SequenceRef) -> DropSequenceWithSequenceRef:
-        return DropSequenceWithSequenceRef(self, table_ref)
-
-
-class DropSequenceKeyword(DropSequenceWithIfExists):
-    def __init__(self) -> None:
-        pass
-
-    def _create_query(self) -> str:
-        return "DROP SEQUENCE"
-
-    @property
-    def IfExists(self) -> DropSequenceWithIfExists:
-        return DropSequenceWithIfExists(self)
-
-
-DropSequence = DropSequenceKeyword()
