@@ -1,25 +1,28 @@
-[tool.poetry]
+[project]
 name = "sqlinpython"
 version = "0.1.0"
 description = ""
-authors = ["António Capela <acapela96@hotmail.com>"]
+authors = [
+    { name = "António Capela", email = "acapela96@hotmail.com" }
+]
+requires-python = ">=3.10"
 
-[tool.poetry.dependencies]
-python = "^3.10"
+dependencies = []
 
-[tool.poetry.dev-dependencies]
-pytest = "^7.1"
-pre-commit = "^2.18.1"
-black = "^22.3.0"
-mypy = "^0.942"
-pylint = "^2.14.5"
+[project.optional-dependencies]
+dev = [
+    "mypy",
+    "ruff",
+    "ty",
+    "pre-commit",
+    "ipykernel"
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["uv_build>=0.9.0,<0.10.0"]
+build-backend = "uv_build"
 
-[tool.mypy]
-strict = true
-
-[tool.isort]
-profile = "black"
+[tool.ruff]
+target-version = "py310"
+#lint.select = ["E", "F", "I", "UP"]
+fix = true
