@@ -22,7 +22,11 @@ class DropTableWithIfExists(SqlElement):
         self._prev = prev
 
     def __call__(
-        self, schema: Name | str, table: Name | str | None = None, /
+        # TODO: Consider specific TableName and SchemaName
+        self,
+        schema: Name | str,
+        table: Name | str | None = None,
+        /,
     ) -> DropTableComplete:
         if isinstance(schema, str):
             schema = Name(schema)
