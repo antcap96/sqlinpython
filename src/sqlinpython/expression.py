@@ -1,6 +1,18 @@
 from __future__ import annotations
 
-from sqlinpython.base import SqlElement
+import typing
+from typing import overload
+
+from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.name import Name
+
+
+class SelectStatement(NotImplementedSqlElement):
+    pass
+
+
+class TableFunction(NotImplementedSqlElement):
+    pass
 
 
 class Expression(SqlElement):
@@ -28,6 +40,99 @@ class Expression(SqlElement):
     def Is(self) -> IsExpression:
         self_ = _parenthesize_if_necessary(self, Expression4)
         return IsExpression(self_)
+
+    def Between(self, lower: Expression, upper: Expression) -> BetweenExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        lower_ = _parenthesize_if_necessary(lower, Expression5)
+        upper_ = _parenthesize_if_necessary(upper, Expression5)
+        return BetweenExpression(self_, lower_, upper_)
+
+    @overload
+    def In(self) -> EmptyInExpression: ...
+    @overload
+    def In(self, select_stmt: SelectStatement, /) -> InExpressionWithSelect: ...
+    @overload
+    def In(
+        self, expr: Expression, /, *exprs: Expression
+    ) -> InExpressionWithExpressions: ...
+    @overload
+    def In(self, table_name: Name, /) -> InExpressionWithTableName: ...
+    @overload
+    def In(
+        self, schema_name: Name, table_name: Name, /
+    ) -> InExpressionWithTableName: ...
+    @overload
+    def In(self, table_function: TableFunction, /) -> InExpressionWithTableFunction: ...
+    @overload
+    def In(
+        self, schema_name: Name, table_function: TableFunction, /
+    ) -> InExpressionWithTableFunction: ...
+    def In(
+        self, *exprs: Expression | SelectStatement | Name | TableFunction
+    ) -> (
+        EmptyInExpression
+        | InExpressionWithSelect
+        | InExpressionWithExpressions
+        | InExpressionWithTableName
+        | InExpressionWithTableFunction
+    ):
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        match exprs:
+            case []:
+                return EmptyInExpression(self_)
+            case [select_stmt] if isinstance(select_stmt, SelectStatement):
+                return InExpressionWithSelect(self_, select_stmt)
+            case [table_name] if isinstance(table_name, Name):
+                return InExpressionWithTableName(self_, table_name)
+            case [schema_name, table_name] if isinstance(
+                schema_name, Name
+            ) and isinstance(table_name, Name):
+                return InExpressionWithTableName(self_, schema_name, table_name)
+            case [table_function] if isinstance(table_function, TableFunction):
+                return InExpressionWithTableFunction(self_, table_function)
+            case [schema_name, table_function] if isinstance(
+                schema_name, Name
+            ) and isinstance(table_function, TableFunction):
+                return InExpressionWithTableFunction(self_, schema_name, table_function)
+            case _:
+                assert all(isinstance(expr, Expression) for expr in exprs)
+                exprs = typing.cast(tuple[Expression, ...], exprs)
+                return InExpressionWithExpressions(self_, exprs)
+
+    def Glob(self, pattern: Expression) -> MatchLikeExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self_, pattern_, "GLOB")
+
+    def Regexp(self, pattern: Expression) -> MatchLikeExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self_, pattern_, "REGEXP")
+
+    def Match(self, pattern: Expression) -> MatchLikeExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self_, pattern_, "MATCH")
+
+    def Like(self, pattern: Expression) -> LikeExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return LikeExpression(self_, pattern_)
+
+    @property
+    def IsNull(self) -> NullCompareExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        return NullCompareExpression(self_, "ISNULL")
+
+    @property
+    def NotNull(self) -> NullCompareExpression:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        return NullCompareExpression(self_, "NOTNULL")
+
+    @property
+    def Not(self) -> NegatedOperator:
+        self_ = _parenthesize_if_necessary(self, Expression4)
+        return NegatedOperator(self_)
 
 
 class Expression1(Expression):
@@ -143,7 +248,7 @@ class IsNotExpression(IsDistinctFromExpression):
 
 
 class IsExpression(IsNotExpression):
-    def __init__(self, prev: Expression3) -> None:
+    def __init__(self, prev: Expression4) -> None:
         self._prev = prev
 
     @property
@@ -152,6 +257,224 @@ class IsExpression(IsNotExpression):
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} IS"
+
+
+class BetweenExpression(SqlElement):
+    def __init__(self, prev: SqlElement, lower: Expression5, upper: Expression) -> None:
+        self._prev = prev
+        self._lower = lower
+        self._upper = upper
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} BETWEEN {self._lower._create_query()} AND {self._upper._create_query()}"
+
+
+class EmptyInExpression(Expression4):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} IN ()"
+
+
+class InExpressionWithSelect(Expression4):
+    def __init__(self, prev: SqlElement, select_stmt: SelectStatement) -> None:
+        self._prev = prev
+        self._select_stmt = select_stmt
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} IN ({self._select_stmt._create_query()})"
+
+
+class InExpressionWithExpressions(Expression4):
+    def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
+        self._prev = prev
+        self._exprs = exprs
+
+    def _create_query(self) -> str:
+        args = ", ".join(expr._create_query() for expr in self._exprs)
+        return f"{self._prev._create_query()} IN ({args})"
+
+
+class InExpressionWithTableName(Expression4):
+    def __init__(
+        self, prev: SqlElement, name1: Name, name2: Name | None = None
+    ) -> None:
+        self._prev = prev
+        self._name1 = name1
+        self._name2 = name2
+
+    def _create_query(self) -> str:
+        if self._name2 is None:
+            return f"{self._prev._create_query()} IN {self._name1._create_query()}"
+        else:
+            return f"{self._prev._create_query()} IN {self._name1._create_query()}.{self._name2._create_query()}"
+
+
+class InExpressionWithTableFunction(SqlElement):
+    def __init__(
+        self,
+        prev: SqlElement,
+        name1: TableFunction | Name,
+        name2: TableFunction | None = None,
+    ) -> None:
+        self._prev = prev
+        self._name1 = name1
+        self._name2 = name2
+
+    def __call__(self, *args: Expression) -> InExpressionWithTableFunctionArgs:
+        return InExpressionWithTableFunctionArgs(self, args)
+
+    def _create_query(self) -> str:
+        if self._name2 is None:
+            return f"{self._prev._create_query()} IN {self._name1._create_query()}"
+        else:
+            return f"{self._prev._create_query()} IN {self._name1._create_query()}.{self._name2._create_query()}"
+
+
+class InExpressionWithTableFunctionArgs(Expression4):
+    def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
+        self._prev = prev
+        self._exprs = exprs
+
+    def _create_query(self) -> str:
+        args = ", ".join(expr._create_query() for expr in self._exprs)
+        return f"{self._prev._create_query()}({args})"
+
+
+class MatchLikeExpression(Expression4):
+    def __init__(
+        self,
+        prev: SqlElement,
+        pattern: Expression,
+        op: typing.Literal["MATCH", "REGEXP", "GLOB"],
+    ) -> None:
+        self._prev = prev
+        self._pattern = pattern
+        self._op = op
+
+    def _create_query(self) -> str:
+        return (
+            f"{self._prev._create_query()} {self._op} {self._pattern._create_query()}"
+        )
+
+
+# TODO: Maybe this should take prev.prev, pattern and escape, which might allow
+# some expressions to not be parenthesized.
+class LikeExpressionWithEscape(Expression4):
+    def __init__(self, prev: SqlElement, escape: Expression) -> None:
+        self._prev = prev
+        self._escape = escape
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} ESCAPE {self._escape._create_query()}"
+
+
+class LikeExpression(LikeExpressionWithEscape):
+    def __init__(self, prev: SqlElement, pattern: Expression) -> None:
+        self._prev = prev
+        self._pattern = pattern
+
+    def Escape(self, escape: Expression) -> LikeExpressionWithEscape:
+        return LikeExpressionWithEscape(self, escape)
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} LIKE {self._pattern._create_query()}"
+
+
+class NullCompareExpression(Expression4):
+    def __init__(
+        self, prev: SqlElement, op: typing.Literal["ISNULL", "NOTNULL", "NULL"]
+    ) -> None:
+        self._prev = prev
+        self._op = op
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} {self._op}"
+
+
+class NegatedOperator(SqlElement):
+    def __init__(self, prev: Expression4) -> None:
+        self._prev = prev
+
+    def Between(self, lower: Expression, upper: Expression) -> BetweenExpression:
+        lower_ = _parenthesize_if_necessary(lower, Expression5)
+        upper_ = _parenthesize_if_necessary(upper, Expression5)
+        return BetweenExpression(self, lower_, upper_)
+
+    @overload
+    def In(self) -> EmptyInExpression: ...
+    @overload
+    def In(self, select_stmt: SelectStatement, /) -> InExpressionWithSelect: ...
+    @overload
+    def In(
+        self, expr: Expression, /, *exprs: Expression
+    ) -> InExpressionWithExpressions: ...
+    @overload
+    def In(self, table_name: Name, /) -> InExpressionWithTableName: ...
+    @overload
+    def In(
+        self, schema_name: Name, table_name: Name, /
+    ) -> InExpressionWithTableName: ...
+    @overload
+    def In(self, table_function: TableFunction, /) -> InExpressionWithTableFunction: ...
+    @overload
+    def In(
+        self, schema_name: Name, table_function: TableFunction, /
+    ) -> InExpressionWithTableFunction: ...
+    def In(
+        self, *exprs: Expression | SelectStatement | Name | TableFunction
+    ) -> (
+        EmptyInExpression
+        | InExpressionWithSelect
+        | InExpressionWithExpressions
+        | InExpressionWithTableName
+        | InExpressionWithTableFunction
+    ):
+        match exprs:
+            case []:
+                return EmptyInExpression(self)
+            case [select_stmt] if isinstance(select_stmt, SelectStatement):
+                return InExpressionWithSelect(self, select_stmt)
+            case [table_name] if isinstance(table_name, Name):
+                return InExpressionWithTableName(self, table_name)
+            case [schema_name, table_name] if isinstance(
+                schema_name, Name
+            ) and isinstance(table_name, Name):
+                return InExpressionWithTableName(self, schema_name, table_name)
+            case [table_function] if isinstance(table_function, TableFunction):
+                return InExpressionWithTableFunction(self, table_function)
+            case [schema_name, table_function] if isinstance(
+                schema_name, Name
+            ) and isinstance(table_function, TableFunction):
+                return InExpressionWithTableFunction(self, schema_name, table_function)
+            case _:
+                assert all(isinstance(expr, Expression) for expr in exprs)
+                exprs = typing.cast(tuple[Expression, ...], exprs)
+                return InExpressionWithExpressions(self, exprs)
+
+    def Glob(self, pattern: Expression) -> MatchLikeExpression:
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self, pattern_, "GLOB")
+
+    def Regexp(self, pattern: Expression) -> MatchLikeExpression:
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self, pattern_, "REGEXP")
+
+    def Match(self, pattern: Expression) -> MatchLikeExpression:
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return MatchLikeExpression(self, pattern_, "MATCH")
+
+    def Like(self, pattern: Expression) -> LikeExpression:
+        pattern_ = _parenthesize_if_necessary(pattern, Expression5)
+        return LikeExpression(self, pattern_)
+
+    @property
+    def Null(self) -> NullCompareExpression:
+        return NullCompareExpression(self, "NULL")
+
+    def _create_query(self) -> str:
+        return f"{self._prev._create_query()} NOT"
 
 
 class Expression5(Expression4):
