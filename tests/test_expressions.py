@@ -1,4 +1,5 @@
 from sqlinpython import expression as expr
+from sqlinpython.name import Name
 
 
 def test_literal() -> None:
@@ -54,3 +55,56 @@ def test_auto_parentheses() -> None:
     f = expr.Literal(False)
     assert expr.Not(t.Or(f).And(t))._create_query() == "NOT ((TRUE OR FALSE) AND TRUE)"
     assert expr.Not(t).And(f).Or(t)._create_query() == "NOT TRUE AND FALSE OR TRUE"
+
+
+def test_in() -> None:
+    t = expr.Literal(True)
+    f = expr.Literal(False)
+    assert t.In()._create_query() == "TRUE IN ()"
+    assert t.In(t, f)._create_query() == "TRUE IN (TRUE, FALSE)"
+    # TODO: SelectStatement
+    assert t.In(Name("a"))._create_query() == "TRUE IN a"
+    assert t.In(Name('a"'))._create_query() == 'TRUE IN "a"""'
+    assert t.In(Name("a"), Name("b"))._create_query() == "TRUE IN a.b"
+    assert t.In(Name('a"'), Name('b"'))._create_query() == 'TRUE IN "a"""."b"""'
+    # TODO: TableFunction
+
+    assert t.Not.In()._create_query() == "TRUE NOT IN ()"
+    assert t.Not.In(t, f)._create_query() == "TRUE NOT IN (TRUE, FALSE)"
+    # TODO: SelectStatement
+    assert t.Not.In(Name("a"))._create_query() == "TRUE NOT IN a"
+    assert t.Not.In(Name('a"'))._create_query() == 'TRUE NOT IN "a"""'
+    assert t.Not.In(Name("a"), Name("b"))._create_query() == "TRUE NOT IN a.b"
+    assert t.Not.In(Name('a"'), Name('b"'))._create_query() == 'TRUE NOT IN "a"""."b"""'
+    # TODO: TableFunction
+
+    assert expr.Not(t).In()._create_query() == "(NOT TRUE) IN ()"
+
+
+def test_like_likes() -> None:
+    t = expr.Literal(True)
+    f = expr.Literal(False)
+    assert t.Like(f)._create_query() == "TRUE LIKE FALSE"
+    assert t.Not.Like(f)._create_query() == "TRUE NOT LIKE FALSE"
+    assert t.Like(expr.Not(f))._create_query() == "TRUE LIKE (NOT FALSE)"
+    assert t.Like(f).Escape(t)._create_query() == "TRUE LIKE FALSE ESCAPE TRUE"
+    assert (
+        t.Like(expr.Not(f)).Escape(t)._create_query()
+        == "TRUE LIKE (NOT FALSE) ESCAPE TRUE"
+    )
+    assert t.Glob(f)._create_query() == "TRUE GLOB FALSE"
+    assert t.Not.Glob(f)._create_query() == "TRUE NOT GLOB FALSE"
+    assert t.Glob(expr.Not(f))._create_query() == "TRUE GLOB (NOT FALSE)"
+    assert t.Regexp(f)._create_query() == "TRUE REGEXP FALSE"
+    assert t.Not.Regexp(f)._create_query() == "TRUE NOT REGEXP FALSE"
+    assert t.Regexp(expr.Not(f))._create_query() == "TRUE REGEXP (NOT FALSE)"
+    assert t.Match(f)._create_query() == "TRUE MATCH FALSE"
+    assert t.Not.Match(f)._create_query() == "TRUE NOT MATCH FALSE"
+    assert t.Match(expr.Not(f))._create_query() == "TRUE MATCH (NOT FALSE)"
+
+
+def test_null_compare() -> None:
+    t = expr.Literal(True)
+    assert t.IsNull._create_query() == "TRUE ISNULL"
+    assert t.NotNull._create_query() == "TRUE NOTNULL"
+    assert t.Not.Null._create_query() == "TRUE NOT NULL"
