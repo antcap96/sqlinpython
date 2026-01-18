@@ -719,7 +719,51 @@ def _parenthesize_if_necessary[T](
         return expression
 
 
-class FloatLiteral(Expression12):
+# TODOs:
+# bind-parameter
+# schema.table.column
+# function-call
+# tuple
+# cast
+# Exists
+# Case
+# raise-function
+
+
+class CurrentTimeKeyword(Expression13):
+    def __init__(self) -> None:
+        pass
+
+    def _create_query(self) -> str:
+        return "CURRENT_TIME"
+
+
+CurrentTime = CurrentTimeKeyword()
+
+
+class CurrentDateKeyword(Expression13):
+    def __init__(self) -> None:
+        pass
+
+    def _create_query(self) -> str:
+        return "CURRENT_DATE"
+
+
+CurrentDate = CurrentDateKeyword()
+
+
+class CurrentTimestampKeyword(Expression13):
+    def __init__(self) -> None:
+        pass
+
+    def _create_query(self) -> str:
+        return "CURRENT_TIMESTAMP"
+
+
+CurrentTimestamp = CurrentTimestampKeyword()
+
+
+class FloatLiteral(Expression13):
     def __init__(self, value: float) -> None:
         self._value = value
 
@@ -728,7 +772,7 @@ class FloatLiteral(Expression12):
         return str(self._value)
 
 
-class IntLiteral(Expression12):
+class IntLiteral(Expression13):
     def __init__(self, value: int) -> None:
         self._value = value
 
@@ -736,7 +780,7 @@ class IntLiteral(Expression12):
         return str(self._value)
 
 
-class StringLiteral(Expression12):
+class StringLiteral(Expression13):
     def __init__(self, value: str) -> None:
         self._value = value
 
@@ -744,7 +788,7 @@ class StringLiteral(Expression12):
         return f'"{self._value}"'
 
 
-class BooleanLiteral(Expression12):
+class BooleanLiteral(Expression13):
     def __init__(self, value: bool) -> None:
         self._value = value
 
@@ -752,7 +796,7 @@ class BooleanLiteral(Expression12):
         return str(self._value).upper()
 
 
-class NullLiteral(Expression12):
+class NullLiteral(Expression13):
     def __init__(self) -> None:
         pass
 
@@ -763,7 +807,7 @@ class NullLiteral(Expression12):
 type SqlLiteral = float | str | None | bool
 
 
-def Literal(value: SqlLiteral) -> Expression12:
+def Literal(value: SqlLiteral) -> Expression13:
     # The order of bool, int and float is necessary due to the type hierarchy
     if isinstance(value, bool):
         return BooleanLiteral(value)

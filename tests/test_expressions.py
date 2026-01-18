@@ -9,6 +9,9 @@ def test_literal() -> None:
     assert expr.Literal(None)._create_query() == "NULL"
     assert expr.Literal(True)._create_query() == "TRUE"
     assert expr.Literal(False)._create_query() == "FALSE"
+    assert expr.CurrentDate._create_query() == "CURRENT_DATE"
+    assert expr.CurrentTime._create_query() == "CURRENT_TIME"
+    assert expr.CurrentTimestamp._create_query() == "CURRENT_TIMESTAMP"
 
 
 def test_or_and_operator() -> None:
