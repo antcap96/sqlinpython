@@ -3,20 +3,20 @@ from sqlinpython.name import Name
 
 
 def test_literal() -> None:
-    assert expr.Literal(1.0)._create_query() == "1.0"
-    assert expr.Literal(1)._create_query() == "1"
-    assert expr.Literal("hello")._create_query() == '"hello"'
-    assert expr.Literal(None)._create_query() == "NULL"
-    assert expr.Literal(True)._create_query() == "TRUE"
-    assert expr.Literal(False)._create_query() == "FALSE"
+    assert expr.literal(1.0)._create_query() == "1.0"
+    assert expr.literal(1)._create_query() == "1"
+    assert expr.literal("hello")._create_query() == '"hello"'
+    assert expr.literal(None)._create_query() == "NULL"
+    assert expr.literal(True)._create_query() == "TRUE"
+    assert expr.literal(False)._create_query() == "FALSE"
     assert expr.CurrentDate._create_query() == "CURRENT_DATE"
     assert expr.CurrentTime._create_query() == "CURRENT_TIME"
     assert expr.CurrentTimestamp._create_query() == "CURRENT_TIMESTAMP"
 
 
 def test_or_and_operator() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert t.Or(f)._create_query() == "TRUE OR FALSE"
     assert t.Or(f).Or(t)._create_query() == "TRUE OR FALSE OR TRUE"
     assert t.Or(f).And(t)._create_query() == "(TRUE OR FALSE) AND TRUE"
@@ -27,16 +27,16 @@ def test_or_and_operator() -> None:
 
 
 def test_not() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert expr.Not(f)._create_query() == "NOT FALSE"
     assert t.Is(expr.Not(f))._create_query() == "TRUE IS (NOT FALSE)"
 
 
 def test_is_operator() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
-    n = expr.Literal(None)
+    t = expr.literal(True)
+    f = expr.literal(False)
+    n = expr.literal(None)
     assert t.Is(f)._create_query() == "TRUE IS FALSE"
     assert n.Is(n)._create_query() == "NULL IS NULL"
     assert t.Is.Not(f)._create_query() == "TRUE IS NOT FALSE"
@@ -45,8 +45,8 @@ def test_is_operator() -> None:
 
 
 def test_eq() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert t.eq(f, double_eq=False)._create_query() == "TRUE = FALSE"
     assert t.eq(f, double_eq=True)._create_query() == "TRUE == FALSE"
     assert t.ne(f, arrows=True)._create_query() == "TRUE <> FALSE"
@@ -54,15 +54,15 @@ def test_eq() -> None:
 
 
 def test_auto_parentheses() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert expr.Not(t.Or(f).And(t))._create_query() == "NOT ((TRUE OR FALSE) AND TRUE)"
     assert expr.Not(t).And(f).Or(t)._create_query() == "NOT TRUE AND FALSE OR TRUE"
 
 
 def test_in() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert t.In()._create_query() == "TRUE IN ()"
     assert t.In(t, f)._create_query() == "TRUE IN (TRUE, FALSE)"
     # TODO: SelectStatement
@@ -85,8 +85,8 @@ def test_in() -> None:
 
 
 def test_like_likes() -> None:
-    t = expr.Literal(True)
-    f = expr.Literal(False)
+    t = expr.literal(True)
+    f = expr.literal(False)
     assert t.Like(f)._create_query() == "TRUE LIKE FALSE"
     assert t.Not.Like(f)._create_query() == "TRUE NOT LIKE FALSE"
     assert t.Like(expr.Not(f))._create_query() == "TRUE LIKE (NOT FALSE)"
@@ -107,15 +107,15 @@ def test_like_likes() -> None:
 
 
 def test_null_compare() -> None:
-    t = expr.Literal(True)
+    t = expr.literal(True)
     assert t.IsNull._create_query() == "TRUE ISNULL"
     assert t.NotNull._create_query() == "TRUE NOTNULL"
     assert t.Not.Null._create_query() == "TRUE NOT NULL"
 
 
 def test_comparison() -> None:
-    a = expr.Literal(1)
-    b = expr.Literal(2)
+    a = expr.literal(1)
+    b = expr.literal(2)
     assert (a < b)._create_query() == "1 < 2"
     assert (a < b + a)._create_query() == "1 < 2 + 1"
     assert ((a < b) + a)._create_query() == "(1 < 2) + 1"
@@ -131,8 +131,8 @@ def test_comparison() -> None:
 
 
 def test_arithmetic() -> None:
-    a = expr.Literal(1)
-    b = expr.Literal(2)
+    a = expr.literal(1)
+    b = expr.literal(2)
     assert (a + b)._create_query() == "1 + 2"
     assert (a + b + a)._create_query() == "1 + 2 + 1"
     assert (a + (b + a))._create_query() == "1 + (2 + 1)"
@@ -155,8 +155,8 @@ def test_arithmetic() -> None:
 
 
 def test_concat_like() -> None:
-    a = expr.Literal("a")
-    b = expr.Literal("b")
+    a = expr.literal("a")
+    b = expr.literal("b")
     assert (a.Concat(b))._create_query() == '"a" || "b"'
     assert (a.Concat(b).Concat(a))._create_query() == '"a" || "b" || "a"'
     assert (a.Concat(b.Concat(a)))._create_query() == '"a" || ("b" || "a")'
@@ -169,8 +169,8 @@ def test_concat_like() -> None:
 
 
 def test_unary_operators() -> None:
-    a = expr.Literal(1)
-    b = expr.Literal(2)
+    a = expr.literal(1)
+    b = expr.literal(2)
     assert (-a)._create_query() == "-1"
     assert (+a)._create_query() == "+1"
     assert (~a)._create_query() == "~1"
