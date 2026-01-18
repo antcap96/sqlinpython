@@ -108,3 +108,69 @@ def test_null_compare() -> None:
     assert t.IsNull._create_query() == "TRUE ISNULL"
     assert t.NotNull._create_query() == "TRUE NOTNULL"
     assert t.Not.Null._create_query() == "TRUE NOT NULL"
+
+
+def test_comparison() -> None:
+    a = expr.Literal(1)
+    b = expr.Literal(2)
+    assert (a < b)._create_query() == "1 < 2"
+    assert (a < b + a)._create_query() == "1 < 2 + 1"
+    assert ((a < b) + a)._create_query() == "(1 < 2) + 1"
+    assert (a <= b)._create_query() == "1 <= 2"
+    assert (a - b <= a)._create_query() == "1 - 2 <= 1"
+    assert (a - (b <= a))._create_query() == "1 - (2 <= 1)"
+    assert (a > b)._create_query() == "1 > 2"
+    assert (a > b - a)._create_query() == "1 > 2 - 1"
+    assert ((a > b) - a)._create_query() == "(1 > 2) - 1"
+    assert (a >= b)._create_query() == "1 >= 2"
+    assert (a + b >= a)._create_query() == "1 + 2 >= 1"
+    assert (a + (b >= a))._create_query() == "1 + (2 >= 1)"
+
+
+def test_arithmetic() -> None:
+    a = expr.Literal(1)
+    b = expr.Literal(2)
+    assert (a + b)._create_query() == "1 + 2"
+    assert (a + b + a)._create_query() == "1 + 2 + 1"
+    assert (a + (b + a))._create_query() == "1 + (2 + 1)"
+    assert (a - b)._create_query() == "1 - 2"
+    assert (a - b - a)._create_query() == "1 - 2 - 1"
+    assert (a - (b - a))._create_query() == "1 - (2 - 1)"
+    assert (a * b)._create_query() == "1 * 2"
+    assert (a * b * a)._create_query() == "1 * 2 * 1"
+    assert (a * (b * a))._create_query() == "1 * (2 * 1)"
+    assert (a / b)._create_query() == "1 / 2"
+    assert (a / b / a)._create_query() == "1 / 2 / 1"
+    assert (a / (b / a))._create_query() == "1 / (2 / 1)"
+    assert (a % b)._create_query() == "1 % 2"
+    assert (a % b % a)._create_query() == "1 % 2 % 1"
+    assert (a % (b % a))._create_query() == "1 % (2 % 1)"
+    assert (a + b * a)._create_query() == "1 + 2 * 1"
+    assert ((a + b) * a)._create_query() == "(1 + 2) * 1"
+    assert (a + b / a + b)._create_query() == "1 + 2 / 1 + 2"
+    assert ((a + b) * (a - b))._create_query() == "(1 + 2) * (1 - 2)"
+
+
+def test_concat_like() -> None:
+    a = expr.Literal("a")
+    b = expr.Literal("b")
+    assert (a.Concat(b))._create_query() == '"a" || "b"'
+    assert (a.Concat(b).Concat(a))._create_query() == '"a" || "b" || "a"'
+    assert (a.Concat(b.Concat(a)))._create_query() == '"a" || ("b" || "a")'
+    assert (a.Extract(b))._create_query() == '"a" -> "b"'
+    assert (a.Extract(b).Extract(a))._create_query() == '"a" -> "b" -> "a"'
+    assert (a.Extract(b.Extract(a)))._create_query() == '"a" -> ("b" -> "a")'
+    assert (a.Extract2(b))._create_query() == '"a" ->> "b"'
+    assert (a.Extract2(b).Extract(a))._create_query() == '"a" ->> "b" -> "a"'
+    assert (a.Extract(b.Extract2(a)))._create_query() == '"a" -> ("b" ->> "a")'
+
+
+def test_unary_operators() -> None:
+    a = expr.Literal(1)
+    b = expr.Literal(2)
+    assert (-a)._create_query() == "-1"
+    assert (+a)._create_query() == "+1"
+    assert (~a)._create_query() == "~1"
+    assert (-b + a)._create_query() == "-2 + 1"
+    assert (a + (+b))._create_query() == "1 + +2"
+    assert (~b + a)._create_query() == "~2 + 1"
