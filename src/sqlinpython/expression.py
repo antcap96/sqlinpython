@@ -15,6 +15,7 @@ class TableFunction(NotImplementedSqlElement):
     pass
 
 
+# SPEC: https://sqlite.org/lang_expr.html
 class Expression(SqlElement):
     def Or(self, other: Expression) -> OrCondition:
         self_ = _parenthesize_if_necessary(self, Expression1)
@@ -133,6 +134,99 @@ class Expression(SqlElement):
     def Not(self) -> NegatedOperator:
         self_ = _parenthesize_if_necessary(self, Expression4)
         return NegatedOperator(self_)
+
+    def __lt__(self, other: Expression) -> Comparison:
+        self_ = _parenthesize_if_necessary(self, Expression5)
+        other_ = _parenthesize_if_necessary(other, Expression6)
+        return Comparison(self_, other_, "<")
+
+    def __le__(self, other: Expression) -> Comparison:
+        self_ = _parenthesize_if_necessary(self, Expression5)
+        other_ = _parenthesize_if_necessary(other, Expression6)
+        return Comparison(self_, other_, "<=")
+
+    def __gt__(self, other: Expression) -> Comparison:
+        self_ = _parenthesize_if_necessary(self, Expression5)
+        other_ = _parenthesize_if_necessary(other, Expression6)
+        return Comparison(self_, other_, ">")
+
+    def __ge__(self, other: Expression) -> Comparison:
+        self_ = _parenthesize_if_necessary(self, Expression5)
+        other_ = _parenthesize_if_necessary(other, Expression6)
+        return Comparison(self_, other_, ">=")
+
+    def __and__(self, other: Expression) -> BitOperation:
+        self_ = _parenthesize_if_necessary(self, Expression7)
+        other_ = _parenthesize_if_necessary(other, Expression8)
+        return BitOperation(self_, other_, "&")
+
+    def __or__(self, other: Expression) -> BitOperation:
+        self_ = _parenthesize_if_necessary(self, Expression7)
+        other_ = _parenthesize_if_necessary(other, Expression8)
+        return BitOperation(self_, other_, "|")
+
+    def __lshift__(self, other: Expression) -> BitOperation:
+        self_ = _parenthesize_if_necessary(self, Expression7)
+        other_ = _parenthesize_if_necessary(other, Expression8)
+        return BitOperation(self_, other_, "<<")
+
+    def __rshift__(self, other: Expression) -> BitOperation:
+        self_ = _parenthesize_if_necessary(self, Expression7)
+        other_ = _parenthesize_if_necessary(other, Expression8)
+        return BitOperation(self_, other_, ">>")
+
+    def __add__(self, other: Expression) -> Summand:
+        self_ = _parenthesize_if_necessary(self, Expression8)
+        other_ = _parenthesize_if_necessary(other, Expression9)
+        return Summand(self_, other_, "+")
+
+    def __sub__(self, other: Expression) -> Summand:
+        self_ = _parenthesize_if_necessary(self, Expression8)
+        other_ = _parenthesize_if_necessary(other, Expression9)
+        return Summand(self_, other_, "-")
+
+    def __mul__(self, other: Expression) -> Factor:
+        self_ = _parenthesize_if_necessary(self, Expression9)
+        other_ = _parenthesize_if_necessary(other, Expression10)
+        return Factor(self_, other_, "*")
+
+    def __truediv__(self, other: Expression) -> Factor:
+        self_ = _parenthesize_if_necessary(self, Expression9)
+        other_ = _parenthesize_if_necessary(other, Expression10)
+        return Factor(self_, other_, "/")
+
+    def __mod__(self, other: Expression) -> Factor:
+        self_ = _parenthesize_if_necessary(self, Expression9)
+        other_ = _parenthesize_if_necessary(other, Expression10)
+        return Factor(self_, other_, "%")
+
+    def Concat(self, other: Expression) -> ConcatLikeOperator:
+        self_ = _parenthesize_if_necessary(self, Expression10)
+        other_ = _parenthesize_if_necessary(other, Expression11)
+        return ConcatLikeOperator(self_, other_, "||")
+
+    def Extract(self, other: Expression) -> ConcatLikeOperator:
+        self_ = _parenthesize_if_necessary(self, Expression10)
+        other_ = _parenthesize_if_necessary(other, Expression11)
+        return ConcatLikeOperator(self_, other_, "->")
+
+    def Extract2(self, other: Expression) -> ConcatLikeOperator:
+        self_ = _parenthesize_if_necessary(self, Expression10)
+        other_ = _parenthesize_if_necessary(other, Expression11)
+        return ConcatLikeOperator(self_, other_, "->>")
+
+    def Collate(self, other: Name) -> CollateOperator:
+        self_ = _parenthesize_if_necessary(self, Expression11)
+        return CollateOperator(self_, other)
+
+    def __neg__(self) -> UnaryOperator:
+        return UnaryOperator(self, "-")
+
+    def __pos__(self) -> UnaryOperator:
+        return UnaryOperator(self, "+")
+
+    def __invert__(self) -> UnaryOperator:
+        return UnaryOperator(self, "~")
 
 
 class Expression1(Expression):
@@ -481,6 +575,21 @@ class Expression5(Expression4):
     pass
 
 
+class Comparison(Expression5):
+    def __init__(
+        self,
+        left: Expression,
+        right: Expression,
+        operator: typing.Literal["<", "<=", ">", ">="],
+    ):
+        self._left = left
+        self._right = right
+        self._operator = operator
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} {self._operator} {self._right._create_query()}"
+
+
 class Expression6(Expression5):
     pass
 
@@ -489,27 +598,110 @@ class Expression7(Expression6):
     pass
 
 
+class BitOperation(Expression7):
+    def __init__(
+        self,
+        left: Expression,
+        right: Expression,
+        operator: typing.Literal["&", "|", "<<", ">>"],
+    ):
+        self._left = left
+        self._right = right
+        self._operator = operator
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} {self._operator} {self._right._create_query()}"
+
+
 class Expression8(Expression7):
     pass
+
+
+class Summand(Expression8):
+    def __init__(
+        self, left: Expression, right: Expression, operator: typing.Literal["+", "-"]
+    ):
+        self._left = left
+        self._right = right
+        self._operator = operator
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} {self._operator} {self._right._create_query()}"
 
 
 class Expression9(Expression8):
     pass
 
 
+class Factor(Expression9):
+    def __init__(
+        self,
+        left: Expression,
+        right: Expression,
+        operator: typing.Literal["*", "/", "%"],
+    ):
+        self._left = left
+        self._right = right
+        self._operator = operator
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} {self._operator} {self._right._create_query()}"
+
+
 class Expression10(Expression9):
     pass
+
+
+class ConcatLikeOperator(Expression10):
+    def __init__(
+        self,
+        left: Expression,
+        right: Expression,
+        operator: typing.Literal["||", "->", "->>"],
+    ):
+        self._left = left
+        self._right = right
+        self._operator = operator
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} {self._operator} {self._right._create_query()}"
 
 
 class Expression11(Expression10):
     pass
 
 
+class CollateOperator(Expression11):
+    def __init__(
+        self,
+        left: Expression,
+        right: Name,
+    ):
+        self._left = left
+        self._right = right
+
+    def _create_query(self) -> str:
+        return f"{self._left._create_query()} COLLATE {self._right._create_query()}"
+
+
 class Expression12(Expression11):
     pass
 
 
-class ParenthesizedExpression(Expression12):
+class UnaryOperator(Expression12):
+    def __init__(self, left: Expression, op: typing.Literal["+", "-", "~"]):
+        self._left = left
+        self._op = op
+
+    def _create_query(self) -> str:
+        return f"{self._op}{self._left._create_query()}"
+
+
+class Expression13(Expression12):
+    pass
+
+
+class ParenthesizedExpression(Expression13):
     def __init__(self, prev: Expression) -> None:
         self._prev = prev
 
