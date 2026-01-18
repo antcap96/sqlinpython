@@ -91,4 +91,4 @@ TODO:
 - [ ] select-stmt
 - [ ] update-stmt
 - [ ] update-stmt-limited
-- [ ] vacuum-stmt
+- [X] vacuum-stmt
