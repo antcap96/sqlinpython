@@ -1,5 +1,5 @@
 import sqlinpython.expression as expr
-from sqlinpython import ColumnName, Create
+from sqlinpython import ColumnName, Create, TypeName
 from sqlinpython.create_table import SelectStatement, TableConstraint
 
 
@@ -164,4 +164,25 @@ def test_column_definition():
     assert (
         start(a.GeneratedAlways.As(expr.literal("a")).Virtual).get_query()
         == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") VIRTUAL)'
+    )
+
+
+def test_type_name():
+    start = Create.Table("table_name")
+    a = ColumnName("a")
+    assert (
+        start(a(TypeName("INTEGER"))).get_query()
+        == "CREATE TABLE table_name (a INTEGER)"
+    )
+    assert (
+        start(a(TypeName("DECIMAL")(1))).get_query()
+        == "CREATE TABLE table_name (a DECIMAL(1))"
+    )
+    assert (
+        start(a(TypeName("DECIMAL")(1, 2))).get_query()
+        == "CREATE TABLE table_name (a DECIMAL(1, 2))"
+    )
+    assert (
+        start(a(TypeName("INTEGER")).NotNull).get_query()
+        == "CREATE TABLE table_name (a INTEGER NOT NULL)"
     )
