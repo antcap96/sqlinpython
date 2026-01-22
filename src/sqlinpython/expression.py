@@ -4,6 +4,7 @@ import typing
 from typing import overload
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.indexed_column import IndexedColumnWithCollate
 from sqlinpython.name import Name
 
 
@@ -16,7 +17,7 @@ class TableFunction(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/lang_expr.html
-class Expression(SqlElement):
+class Expression(IndexedColumnWithCollate):
     def Or(self, other: Expression) -> OrCondition:
         self_ = _parenthesize_if_necessary(self, Expression1)
         other_ = _parenthesize_if_necessary(other, Expression2)
@@ -215,8 +216,10 @@ class Expression(SqlElement):
         other_ = _parenthesize_if_necessary(other, Expression11)
         return ConcatLikeOperator(self_, other_, "->>")
 
-    def Collate(self, other: Name) -> CollateOperator:
+    def Collate(self, other: Name | str) -> CollateOperator:
         self_ = _parenthesize_if_necessary(self, Expression11)
+        if isinstance(other, str):
+            other = Name(other)
         return CollateOperator(self_, other)
 
     def __neg__(self) -> UnaryOperator:

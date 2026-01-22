@@ -50,10 +50,10 @@ class ColumnConstraintWithName(WithGeneratedAlways):
     def Default(self, value: int | Literal | Expression) -> WithDefault:
         return WithDefault(self, value)
 
-    def Collate(self, collation_name: Name | str) -> WithCollation:
+    def Collate(self, collation_name: Name | str) -> WithCollate:
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
-        return WithCollation(self, collation_name)
+        return WithCollate(self, collation_name)
 
     # SPEC: https://sqlite.org/syntax/foreign-key-clause.html
     def References(self, foreign_table_name: Name | str) -> WithReferences:
@@ -109,7 +109,7 @@ class WithDefault(ColumnNameWithType):
         return f"{self._prev._create_query()} DEFAULT {self._default_value._create_query()}"
 
 
-class WithCollation(ColumnNameWithType):
+class WithCollate(ColumnNameWithType):
     def __init__(self, prev: SqlElement, collation_name: Name):
         self._prev = prev
         self._collation_name = collation_name
@@ -302,9 +302,3 @@ class GeneratedAlwaysAs(GeneratedAlwaysAsHow):
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()} AS ({self._expression._create_query()})"
-
-
-# TODO: Any better way to handle mypy error "incompatible with definition in base class"
-class ColumnName(Name, ColumnNameWithType):  # type: ignore [misc]
-    def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
-        return ColumnNameWithType(self, type_name)
