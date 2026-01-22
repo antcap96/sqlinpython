@@ -5,11 +5,7 @@ import typing
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.expression import Expression, Literal
 from sqlinpython.name import Name
-
-
-# SPEC: https://sqlite.org/syntax/type-name.html
-class TypeName(NotImplementedSqlElement):
-    pass
+from sqlinpython.type_name import CompleteTypeName
 
 
 # SPEC: https://sqlite.org/syntax/column-def.html
@@ -75,7 +71,7 @@ class ColumnConstraintWithName(WithGeneratedAlways):
 
 
 class ColumnNameWithType(ColumnDefinition, ColumnConstraintWithName):
-    def __init__(self, prev: SqlElement, type_name: TypeName):
+    def __init__(self, prev: SqlElement, type_name: CompleteTypeName):
         self._prev = prev
         self._type_name = type_name
 
@@ -310,5 +306,5 @@ class GeneratedAlwaysAs(GeneratedAlwaysAsHow):
 
 # TODO: Any better way to handle mypy error "incompatible with definition in base class"
 class ColumnName(Name, ColumnNameWithType):  # type: ignore [misc]
-    def __call__(self, type_name: TypeName) -> ColumnNameWithType:
+    def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
         return ColumnNameWithType(self, type_name)
