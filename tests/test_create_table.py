@@ -1,5 +1,13 @@
 import sqlinpython.expression as expr
-from sqlinpython import ColumnName, Create, TypeName
+from sqlinpython import (
+    Check,
+    ColumnName,
+    Constraint,
+    Create,
+    PrimaryKey,
+    TypeName,
+    Unique,
+)
 from sqlinpython.create_table import SelectStatement, TableConstraint
 
 
@@ -185,4 +193,58 @@ def test_type_name():
     assert (
         start(a(TypeName("INTEGER")).NotNull).get_query()
         == "CREATE TABLE table_name (a INTEGER NOT NULL)"
+    )
+
+
+def test_table_constraint():
+    start = Create.Table("table_name")
+    a = ColumnName("a")
+    b = ColumnName("b")
+    assert (
+        start(a, Constraint("pk").PrimaryKey(a)).get_query()
+        == "CREATE TABLE table_name (a, CONSTRAINT pk PRIMARY KEY (a))"
+    )
+    assert (
+        start(a, PrimaryKey(a)).get_query()
+        == "CREATE TABLE table_name (a, PRIMARY KEY (a))"
+    )
+    assert (
+        start(a, PrimaryKey(a, b)).get_query()
+        == "CREATE TABLE table_name (a, PRIMARY KEY (a, b))"
+    )
+    assert (
+        start(a, PrimaryKey(a, autoincrement=True)).get_query()
+        == "CREATE TABLE table_name (a, PRIMARY KEY (a AUTOINCREMENT))"
+    )
+    assert (
+        start(a, PrimaryKey(a).OnConflict().Fail).get_query()
+        == "CREATE TABLE table_name (a, PRIMARY KEY (a) ON CONFLICT FAIL)"
+    )
+    assert (
+        start(a, Constraint("uq").Unique(a)).get_query()
+        == "CREATE TABLE table_name (a, CONSTRAINT uq UNIQUE (a))"
+    )
+    assert start(a, Unique(a)).get_query() == "CREATE TABLE table_name (a, UNIQUE (a))"
+    assert (
+        start(a, Unique(a, b)).get_query()
+        == "CREATE TABLE table_name (a, UNIQUE (a, b))"
+    )
+    assert (
+        start(a, Unique(a.Asc, b.Desc)).get_query()
+        == "CREATE TABLE table_name (a, UNIQUE (a ASC, b DESC))"
+    )
+    assert (
+        start(a, Unique(a).OnConflict().Rollback).get_query()
+        == "CREATE TABLE table_name (a, UNIQUE (a) ON CONFLICT ROLLBACK)"
+    )
+    assert (
+        start(
+            a, Constraint("check").Check(expr.literal(1) > expr.literal(0))
+        ).get_query()
+        == "CREATE TABLE table_name (a, CONSTRAINT check CHECK (1 > 0))"
+    )
+
+    assert (
+        start(a, Check(expr.literal(1) > expr.literal(0))).get_query()
+        == "CREATE TABLE table_name (a, CHECK (1 > 0))"
     )
