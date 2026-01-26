@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-import typing
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression, Literal
 from sqlinpython.name import Name
 from sqlinpython.type_name import CompleteTypeName
@@ -126,64 +126,25 @@ class ConflictClauseAutoIncrement(ColumnNameWithType):
         return f"{self._prev._create_query()} AUTOINCREMENT"
 
 
-class OnConflictAction2(ColumnNameWithType):
-    def __init__(
-        self,
-        prev: SqlElement,
-        action: typing.Literal["ROLLBACK", "ABORT", "FAIL", "IGNORE", "REPLACE"],
-    ):
-        self._prev = prev
-        self._action = action
-
+class ConflictClauseMaybeAutoIncrement(OnConflictAction, ColumnNameWithType):
     @property
     def AutoIncrement(self) -> ConflictClauseAutoIncrement:
         return ConflictClauseAutoIncrement(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._action}"
 
-
-class OnConflict2(SqlElement):
+class OnConflictMaybeAutoIncrement(ConflictClauseMaybeAutoIncrement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
     @property
-    def Rollback(self) -> OnConflictAction2:
-        return OnConflictAction2(self, "ROLLBACK")
-
-    @property
-    def Abort(self) -> OnConflictAction2:
-        return OnConflictAction2(self, "ABORT")
-
-    @property
-    def Fail(self) -> OnConflictAction2:
-        return OnConflictAction2(self, "FAIL")
-
-    @property
-    def Ignore(self) -> OnConflictAction2:
-        return OnConflictAction2(self, "IGNORE")
-
-    @property
-    def Replace(self) -> OnConflictAction2:
-        return OnConflictAction2(self, "REPLACE")
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} ON CONFLICT"
-
-
-class ConflictClause2(OnConflictAction2):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
-    @property
-    def OnConflict(self) -> OnConflict2:
-        return OnConflict2(self)
+    def OnConflict(self) -> OnConflict_[ConflictClauseMaybeAutoIncrement]:
+        return OnConflict_(ConflictClauseMaybeAutoIncrement, self)
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()}"
 
 
-class ColumnConstraintPrimaryKeyOrdered(ConflictClause2):
+class ColumnConstraintPrimaryKeyOrdered(OnConflictMaybeAutoIncrement):
     def __init__(self, prev: SqlElement, ascending: bool):
         self._prev = prev
         self._ascending = ascending
@@ -209,54 +170,17 @@ class ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered):
         return f"{self._prev._create_query()} PRIMARY KEY"
 
 
-class OnConflictAction(ColumnNameWithType):
-    def __init__(
-        self,
-        prev: SqlElement,
-        action: typing.Literal["ROLLBACK", "ABORT", "FAIL", "IGNORE", "REPLACE"],
-    ):
-        self._prev = prev
-        self._action = action
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._action}"
+class ConstaintWithClause(OnConflictAction, ColumnNameWithType):
+    pass
 
 
-class WithOnConflict(SqlElement):
+class ConflictClause(ConstaintWithClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
     @property
-    def Rollback(self) -> OnConflictAction:
-        return OnConflictAction(self, "ROLLBACK")
-
-    @property
-    def Abort(self) -> OnConflictAction:
-        return OnConflictAction(self, "ABORT")
-
-    @property
-    def Fail(self) -> OnConflictAction:
-        return OnConflictAction(self, "FAIL")
-
-    @property
-    def Ignore(self) -> OnConflictAction:
-        return OnConflictAction(self, "IGNORE")
-
-    @property
-    def Replace(self) -> OnConflictAction:
-        return OnConflictAction(self, "REPLACE")
-
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} ON CONFLICT"
-
-
-class ConflictClause(OnConflictAction):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
-    @property
-    def OnConflict(self) -> WithOnConflict:
-        return WithOnConflict(self)
+    def OnConflict(self) -> OnConflict_[ConstaintWithClause]:
+        return OnConflict_(ConstaintWithClause, self)
 
     def _create_query(self) -> str:
         return f"{self._prev._create_query()}"
