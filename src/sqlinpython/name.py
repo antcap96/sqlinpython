@@ -22,5 +22,5 @@ class Name(SqlElement):
         name = quote_if_necessary(name, force_quote)
         self._name = name
 
-    def _create_query(self) -> str:
-        return self._name
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append(self._name)

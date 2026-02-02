@@ -8,8 +8,9 @@ class VacuumWithIntoFileName(CompleteSqlQuery):
         self._prev = prev
         self._file_name = file_name
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} INTO {self._file_name}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" INTO {self._file_name}")
 
 
 class VacuumWithSchema(VacuumWithIntoFileName):
@@ -20,8 +21,10 @@ class VacuumWithSchema(VacuumWithIntoFileName):
     def Into(self, file_name: str) -> VacuumWithIntoFileName:
         return VacuumWithIntoFileName(self, file_name)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._schema_name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._schema_name._create_query(buffer)
 
 
 class VacuumKeyword(VacuumWithSchema):
@@ -33,8 +36,8 @@ class VacuumKeyword(VacuumWithSchema):
             schema_name = Name(schema_name)
         return VacuumWithSchema(self, schema_name)
 
-    def _create_query(self) -> str:
-        return "VACUUM"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("VACUUM")
 
 
 Vacuum = VacuumKeyword()

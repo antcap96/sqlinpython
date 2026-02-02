@@ -9,8 +9,10 @@ class SavepointComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._savepoint._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._savepoint._create_query(buffer)
 
 
 class SavepointKeyword(SqlElement):
@@ -22,8 +24,8 @@ class SavepointKeyword(SqlElement):
             savepoint = Name(savepoint)
         return SavepointComplete(self, savepoint)
 
-    def _create_query(self) -> str:
-        return "SAVEPOINT"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("SAVEPOINT")
 
 
 Savepoint = SavepointKeyword()
@@ -34,8 +36,10 @@ class ReleaseComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._savepoint._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._savepoint._create_query(buffer)
 
 
 class ReleaseWithSavepoint(SqlElement):
@@ -47,8 +51,9 @@ class ReleaseWithSavepoint(SqlElement):
             savepoint = Name(savepoint)
         return ReleaseComplete(self, savepoint)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} SAVEPOINT"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" SAVEPOINT")
 
 
 class ReleaseKeyword(ReleaseWithSavepoint):
@@ -59,8 +64,8 @@ class ReleaseKeyword(ReleaseWithSavepoint):
     def Savepoint(self) -> ReleaseWithSavepoint:
         return ReleaseWithSavepoint(self)
 
-    def _create_query(self) -> str:
-        return "RELEASE"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("RELEASE")
 
 
 Release = ReleaseKeyword()
@@ -71,8 +76,10 @@ class RollbackComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._savepoint._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._savepoint._create_query(buffer)
 
 
 class RollbackWithToSavepoint(SqlElement):
@@ -84,8 +91,9 @@ class RollbackWithToSavepoint(SqlElement):
             savepoint = Name(savepoint)
         return RollbackComplete(self, savepoint)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} SAVEPOINT"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" SAVEPOINT")
 
 
 class RollbackWithTo(RollbackWithToSavepoint):
@@ -96,8 +104,9 @@ class RollbackWithTo(RollbackWithToSavepoint):
     def Savepoint(self) -> RollbackWithToSavepoint:
         return RollbackWithToSavepoint(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} TO"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" TO")
 
 
 class RollbackWithTransaction(RollbackComplete):
@@ -108,8 +117,9 @@ class RollbackWithTransaction(RollbackComplete):
     def To(self) -> RollbackWithTo:
         return RollbackWithTo(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} TRANSACTION"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" TRANSACTION")
 
 
 class RollbackKeyword(RollbackWithTransaction):
@@ -120,8 +130,8 @@ class RollbackKeyword(RollbackWithTransaction):
     def Transaction(self) -> RollbackWithTransaction:
         return RollbackWithTransaction(self)
 
-    def _create_query(self) -> str:
-        return "ROLLBACK"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("ROLLBACK")
 
 
 Rollback = RollbackKeyword()

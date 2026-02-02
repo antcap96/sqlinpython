@@ -7,9 +7,10 @@ class IndexedColumn(SqlElement):
         self._prev = prev
         self._asc = asc
 
-    def _create_query(self) -> str:
-        asc_desc = "ASC" if self._asc else "DESC"
-        return f"{self._prev._create_query()} {asc_desc}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        asc_desc = " ASC" if self._asc else " DESC"
+        buffer.append(asc_desc)
 
 
 class IndexedColumnWithCollate(IndexedColumn):
@@ -25,7 +26,7 @@ class IndexedColumnWithCollate(IndexedColumn):
     def Desc(self):
         return IndexedColumn(self, False)
 
-    def _create_query(self) -> str:
-        return (
-            f"{self._prev._create_query()} COLLATE {self._collate_name._create_query()}"
-        )
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" COLLATE ")
+        self._collate_name._create_query(buffer)
