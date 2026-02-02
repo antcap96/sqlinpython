@@ -15,8 +15,8 @@ class ConstraintKeyword(SqlElement):
             name = Name(name)
         return ConstraintWithName(self, name)
 
-    def _create_query(self):
-        return "CONSTRAINT"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("CONSTRAINT")
 
 
 Constraint = ConstraintKeyword()
@@ -43,8 +43,10 @@ class ConstraintWithName(SqlElement):
     # def ForeignKey(self) -> ForeignKeyConstraint:
     #     return ForeignKeyConstraint(self)
 
-    def _create_query(self):
-        return f"{self._prev._create_query()} {self._name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._name._create_query(buffer)
 
 
 class PrimaryKeyConstraint(SqlElement):
@@ -58,16 +60,18 @@ class PrimaryKeyConstraint(SqlElement):
 
     @overload
     def __call__(self, *columns: IndexedColumn) -> ConstraintBeforeConflictClause: ...
+
     def __call__(
         self, *columns: IndexedColumn, autoincrement: bool = False
     ) -> ConstraintBeforeConflictClause:
         return ConstraintBeforeConflictClause(self, columns, autoincrement)
 
-    def _create_query(self):
+    def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
-            return "PRIMARY KEY"
+            buffer.append("PRIMARY KEY")
         else:
-            return f"{self._prev._create_query()} PRIMARY KEY"
+            self._prev._create_query(buffer)
+            buffer.append(" PRIMARY KEY")
 
 
 PrimaryKey = PrimaryKeyConstraint(None)
@@ -80,11 +84,12 @@ class UniqueConstraint(SqlElement):
     def __call__(self, *columns: IndexedColumn) -> ConstraintBeforeConflictClause:
         return ConstraintBeforeConflictClause(self, columns)
 
-    def _create_query(self):
+    def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
-            return "UNIQUE"
+            buffer.append("UNIQUE")
         else:
-            return f"{self._prev._create_query()} UNIQUE"
+            self._prev._create_query(buffer)
+            buffer.append(" UNIQUE")
 
 
 Unique = UniqueConstraint(None)
@@ -112,10 +117,16 @@ class ConstraintBeforeConflictClause(TableConstraintWithConflictClause):
     def OnConflict(self) -> OnConflict_[TableConstraintWithConflictClause]:
         return OnConflict_(TableConstraintWithConflictClause, self)
 
-    def _create_query(self):
-        columns = ", ".join(column._create_query() for column in self._columns)
-        autoincrement = " AUTOINCREMENT" if self._autoincrement else ""
-        return f"{self._prev._create_query()} ({columns}{autoincrement})"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" (")
+        for i, column in enumerate(self._columns):
+            if i > 0:
+                buffer.append(", ")
+            column._create_query(buffer)
+        if self._autoincrement:
+            buffer.append(" AUTOINCREMENT")
+        buffer.append(")")
 
 
 class CheckConstraint(TableConstraint):
@@ -123,11 +134,16 @@ class CheckConstraint(TableConstraint):
         self._prev = prev
         self._expr = expr
 
-    def _create_query(self):
+    def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
-            return f"CHECK ({self._expr._create_query()})"
+            buffer.append("CHECK (")
+            self._expr._create_query(buffer)
+            buffer.append(")")
         else:
-            return f"{self._prev._create_query()} CHECK ({self._expr._create_query()})"
+            self._prev._create_query(buffer)
+            buffer.append(" CHECK (")
+            self._expr._create_query(buffer)
+            buffer.append(")")
 
 
 def Check(expr: Expression) -> CheckConstraint:

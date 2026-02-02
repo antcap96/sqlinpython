@@ -1,10 +1,12 @@
 import sqlinpython.expression as expr
 from sqlinpython import ColumnName
-from sqlinpython.indexed_column import IndexedColumn
+from sqlinpython.base import SqlElement
 
 
-def create_query(element: IndexedColumn):
-    return element._create_query()
+def create_query(element: SqlElement):
+    buffer: list[str] = []
+    element._create_query(buffer)
+    return "".join(buffer)
 
 
 def test_indexed_column():

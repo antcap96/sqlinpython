@@ -6,8 +6,9 @@ class OnConflict_[T: OnConflictAction](SqlElement):
         self._t = t
         self._prev = prev
 
-    def _create_query(self):
-        return f"{self._prev._create_query()} ON CONFLICT"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ON CONFLICT")
 
     @property
     def Rollback(self) -> T:
@@ -35,5 +36,6 @@ class OnConflictAction(SqlElement):
         self._prev = prev
         self._action = action
 
-    def _create_query(self):
-        return f"{self._prev._create_query()} {self._action}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" {self._action}")

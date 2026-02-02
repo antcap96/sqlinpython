@@ -10,11 +10,13 @@ class DropTableComplete(CompleteSqlQuery):
         self._schema = schema
         self._table = table
 
-    def _create_query(self) -> str:
-        if self._table is None:
-            return f"{self._prev._create_query()} {self._schema._create_query()}"
-        else:
-            return f"{self._prev._create_query()} {self._schema._create_query()}.{self._table._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._schema._create_query(buffer)
+        if self._table is not None:
+            buffer.append(".")
+            self._table._create_query(buffer)
 
 
 class DropTableWithIfExists(SqlElement):
@@ -34,8 +36,9 @@ class DropTableWithIfExists(SqlElement):
             table = Name(table)
         return DropTableComplete(self, schema, table)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} IF EXISTS"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" IF EXISTS")
 
 
 class DropTableKeyword(DropTableWithIfExists):
@@ -46,8 +49,8 @@ class DropTableKeyword(DropTableWithIfExists):
     def IfExists(self) -> DropTableWithIfExists:
         return DropTableWithIfExists(self)
 
-    def _create_query(self) -> str:
-        return "DROP TABLE"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("DROP TABLE")
 
 
 DropTable = DropTableKeyword()

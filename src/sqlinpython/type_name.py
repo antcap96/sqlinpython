@@ -9,11 +9,12 @@ class CompleteTypeName(SqlElement):
         self._num1 = num1
         self._num2 = num2
 
-    def _create_query(self) -> str:
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
         if self._num2 is None:
-            return f"{self._prev._create_query()}({self._num1})"
+            buffer.append(f"({self._num1})")
         else:
-            return f"{self._prev._create_query()}({self._num1}, {self._num2})"
+            buffer.append(f"({self._num1}, {self._num2})")
 
 
 class TypeName(Name, CompleteTypeName):

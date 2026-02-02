@@ -25,16 +25,19 @@ class CreateTableAs(CreateTableStatement):
         self._prev = prev
         self._select_stmt = select_stmt
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} AS {self._select_stmt._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" AS ")
+        self._select_stmt._create_query(buffer)
 
 
 class AddComma(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()},"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(",")
 
 
 class CreateTableWithOptions(CreateTableStatement):
@@ -52,8 +55,9 @@ class CreateTableWithOptions(CreateTableStatement):
     def Strict(self):
         return CreateTableWithOptions(AddComma(self), "STRICT")
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._option}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" {self._option}")
 
 
 class CreateTableWithDefinitions(CreateTableStatement):
@@ -71,9 +75,14 @@ class CreateTableWithDefinitions(CreateTableStatement):
     def Strict(self):
         return CreateTableWithOptions(self, "STRICT")
 
-    def _create_query(self) -> str:
-        text = ", ".join(col._create_query() for col in self._args)
-        return f"{self._prev._create_query()} ({text})"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" (")
+        for i, col in enumerate(self._args):
+            if i > 0:
+                buffer.append(", ")
+            col._create_query(buffer)
+        buffer.append(")")
 
 
 class CreateTableWithName(SqlElement):
@@ -91,11 +100,13 @@ class CreateTableWithName(SqlElement):
         # TODO: Validate that any table constraints are at the end
         return CreateTableWithDefinitions(self, (first_col, *rest))
 
-    def _create_query(self) -> str:
-        if self._table_name is None:
-            return f"{self._prev._create_query()} {self._schema_name._create_query()}"
-        else:
-            return f"{self._prev._create_query()} {self._schema_name._create_query()}.{self._table_name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._schema_name._create_query(buffer)
+        if self._table_name is not None:
+            buffer.append(".")
+            self._table_name._create_query(buffer)
 
 
 class CreateTableIfNotExists(SqlElement):
@@ -109,8 +120,9 @@ class CreateTableIfNotExists(SqlElement):
             table_name = Name(table_name)
         return CreateTableWithName(self, schema_name, table_name)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} IF NOT EXISTS"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" IF NOT EXISTS")
 
 
 class CreateTable(CreateTableIfNotExists):
@@ -121,8 +133,9 @@ class CreateTable(CreateTableIfNotExists):
     def IfNotExists(self):
         return CreateTableIfNotExists(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} TABLE"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" TABLE")
 
 
 class CreateTempTable(SqlElement):
@@ -134,8 +147,9 @@ class CreateTempTable(SqlElement):
     def Table(self):
         return CreateTable(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._how}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" {self._how}")
 
 
 class CreateKeyword(CreateTempTable):
@@ -150,8 +164,8 @@ class CreateKeyword(CreateTempTable):
     def Temporary(self):
         return CreateTempTable(self, "TEMPORARY")
 
-    def _create_query(self) -> str:
-        return "CREATE"
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("CREATE")
 
 
 Create = CreateKeyword()

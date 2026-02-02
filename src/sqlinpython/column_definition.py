@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression, Literal
@@ -22,8 +21,9 @@ class WithGeneratedAlways(SqlElement):
     def As(self, expression: Expression):
         return GeneratedAlwaysAs(self, expression)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} GENERATED ALWAYS"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" GENERATED ALWAYS")
 
 
 class ColumnConstraintWithName(WithGeneratedAlways):
@@ -66,8 +66,10 @@ class ColumnConstraintWithName(WithGeneratedAlways):
     def GeneratedAlways(self) -> WithGeneratedAlways:
         return WithGeneratedAlways(self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} CONSTRAINT {self._name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" CONSTRAINT ")
+        self._name._create_query(buffer)
 
 
 class ColumnNameWithType(ColumnDefinition, ColumnConstraintWithName):
@@ -80,8 +82,10 @@ class ColumnNameWithType(ColumnDefinition, ColumnConstraintWithName):
             name = Name(name)
         return ColumnConstraintWithName(self, name)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._type_name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._type_name._create_query(buffer)
 
 
 class WithReferences(NotImplementedSqlElement):
@@ -93,8 +97,10 @@ class WithCheck(ColumnNameWithType):
         self._prev = prev
         self._check_expression = check_expression
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} CHECK ({self._check_expression._create_query()})"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" CHECK ")
+        self._check_expression._create_query(buffer)
 
 
 class WithDefault(ColumnNameWithType):
@@ -103,10 +109,13 @@ class WithDefault(ColumnNameWithType):
         self._prev = prev
         self._default_value = default_value
 
-    def _create_query(self) -> str:
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" DEFAULT ")
         if isinstance(self._default_value, int):
-            return f"{self._prev._create_query()} DEFAULT {self._default_value}"
-        return f"{self._prev._create_query()} DEFAULT {self._default_value._create_query()}"
+            buffer.append(str(self._default_value))
+        else:
+            self._default_value._create_query(buffer)
 
 
 class WithCollate(ColumnNameWithType):
@@ -114,16 +123,19 @@ class WithCollate(ColumnNameWithType):
         self._prev = prev
         self._collation_name = collation_name
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} COLLATE {self._collation_name._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" COLLATE ")
+        self._collation_name._create_query(buffer)
 
 
 class ConflictClauseAutoIncrement(ColumnNameWithType):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} AUTOINCREMENT"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" AUTOINCREMENT")
 
 
 class ConflictClauseMaybeAutoIncrement(OnConflictAction, ColumnNameWithType):
@@ -140,8 +152,8 @@ class OnConflictMaybeAutoIncrement(ConflictClauseMaybeAutoIncrement):
     def OnConflict(self) -> OnConflict_[ConflictClauseMaybeAutoIncrement]:
         return OnConflict_(ConflictClauseMaybeAutoIncrement, self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
 
 
 class ColumnConstraintPrimaryKeyOrdered(OnConflictMaybeAutoIncrement):
@@ -149,9 +161,12 @@ class ColumnConstraintPrimaryKeyOrdered(OnConflictMaybeAutoIncrement):
         self._prev = prev
         self._ascending = ascending
 
-    def _create_query(self) -> str:
-        how = "ASC" if self._ascending else "DESC"
-        return f"{self._prev._create_query()} {how}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        if self._ascending:
+            buffer.append(" ASC")
+        else:
+            buffer.append(" DESC")
 
 
 class ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered):
@@ -166,8 +181,9 @@ class ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered):
     def Desc(self) -> ColumnConstraintPrimaryKeyOrdered:
         return ColumnConstraintPrimaryKeyOrdered(self, False)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} PRIMARY KEY"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" PRIMARY KEY")
 
 
 class ConstaintWithClause(OnConflictAction, ColumnNameWithType):
@@ -182,24 +198,26 @@ class ConflictClause(ConstaintWithClause):
     def OnConflict(self) -> OnConflict_[ConstaintWithClause]:
         return OnConflict_(ConstaintWithClause, self)
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
 
 
 class WithNotNull(ConflictClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} NOT NULL"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" NOT NULL")
 
 
 class WithUnique(ConflictClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} UNIQUE"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" UNIQUE")
 
 
 class GeneratedAlwaysAsHow(ColumnNameWithType):
@@ -207,8 +225,9 @@ class GeneratedAlwaysAsHow(ColumnNameWithType):
         self._prev = prev
         self._how = how
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} {self._how}"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" {self._how}")
 
 
 class GeneratedAlwaysAs(GeneratedAlwaysAsHow):
@@ -224,5 +243,8 @@ class GeneratedAlwaysAs(GeneratedAlwaysAsHow):
     def Virtual(self):
         return GeneratedAlwaysAsHow(self, "VIRTUAL")
 
-    def _create_query(self) -> str:
-        return f"{self._prev._create_query()} AS ({self._expression._create_query()})"
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" AS (")
+        self._expression._create_query(buffer)
+        buffer.append(")")
