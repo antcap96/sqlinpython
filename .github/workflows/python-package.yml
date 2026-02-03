@@ -30,7 +30,7 @@ jobs:
         # The version of uv to install e.g., `0.5.0` Defaults to the version in pyproject.toml or 'latest'.
         version: "0.9.28"
     - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync --all-extras --dev
     - name: Run mypy
       run: uv run mypy .
     - name: Run ty
