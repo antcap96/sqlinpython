@@ -15,7 +15,8 @@ dev = [
     "ruff",
     "ty",
     "pre-commit",
-    "ipykernel"
+    "ipykernel",
+    "pytest",
 ]
 
 [build-system]
