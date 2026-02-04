@@ -8,10 +8,11 @@ from sqlinpython import (
     TypeName,
     Unique,
 )
-from sqlinpython.create_table import SelectStatement, TableConstraint
+from sqlinpython.create_table import SelectStatement
+from sqlinpython.table_constraint import ForeignKey
 
 
-def test_create_table():
+def test_create_table() -> None:
     a = ColumnName("a")
     b = ColumnName("b")
     assert (
@@ -45,10 +46,6 @@ def test_create_table():
         Create.Table("table_name")(a, b).get_query() == "CREATE TABLE table_name (a, b)"
     )
     assert (
-        Create.Table("table_name")(a, TableConstraint("TODO2")).get_query()
-        == "CREATE TABLE table_name (a, TODO2)"
-    )
-    assert (
         Create.Table("table_name")(a).Strict.get_query()
         == "CREATE TABLE table_name (a) STRICT"
     )
@@ -66,7 +63,7 @@ def test_create_table():
     )
 
 
-def test_column_definition():
+def test_column_definition() -> None:
     start = Create.Table("table_name")
     a = ColumnName("a")
     assert start(a).get_query() == "CREATE TABLE table_name (a)"
@@ -175,7 +172,7 @@ def test_column_definition():
     )
 
 
-def test_type_name():
+def test_type_name() -> None:
     start = Create.Table("table_name")
     a = ColumnName("a")
     assert (
@@ -196,7 +193,7 @@ def test_type_name():
     )
 
 
-def test_table_constraint():
+def test_table_constraint() -> None:
     start = Create.Table("table_name")
     a = ColumnName("a")
     b = ColumnName("b")
@@ -243,8 +240,86 @@ def test_table_constraint():
         ).get_query()
         == "CREATE TABLE table_name (a, CONSTRAINT check CHECK (1 > 0))"
     )
-
     assert (
         start(a, Check(expr.literal(1) > expr.literal(0))).get_query()
         == "CREATE TABLE table_name (a, CHECK (1 > 0))"
+    )
+    assert (
+        start(a, Constraint("fk").ForeignKey("b").References("c")).get_query()
+        == "CREATE TABLE table_name (a, CONSTRAINT fk FOREIGN KEY(b) REFERENCES c)"
+    )
+    assert (
+        start(a, ForeignKey("b").References("c")).get_query()
+        == "CREATE TABLE table_name (a, FOREIGN KEY(b) REFERENCES c)"
+    )
+    assert (
+        start(a, ForeignKey("b").References("c").Not.Deferrable).get_query()
+        == "CREATE TABLE table_name (a, FOREIGN KEY(b) REFERENCES c NOT DEFERRABLE)"
+    )
+
+
+def test_foreign_key_clause() -> None:
+    start = Create.Table("table_name")
+    a = ColumnName("a")
+    assert (
+        start(a.Constraint("c").References("d")).get_query()
+        == "CREATE TABLE table_name (a CONSTRAINT c REFERENCES d)"
+    )
+    assert (
+        start(a.References("d")).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d)"
+    )
+    assert (
+        start(a.References("d")("x", "y")).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x, y))"
+    )
+    assert (
+        start(a.References("d")("x").On.Update.SetNull).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON UPDATE SET NULL)"
+    )
+    assert (
+        start(a.References("d")("x").On.Update.SetDefault).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON UPDATE SET DEFAULT)"
+    )
+    assert (
+        start(a.References("d")("x").On.Update.Cascade).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON UPDATE CASCADE)"
+    )
+    assert (
+        start(a.References("d")("x").On.Update.Restrict).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON UPDATE RESTRICT)"
+    )
+    assert (
+        start(a.References("d")("x").On.Update.NoAction).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON UPDATE NO ACTION)"
+    )
+    assert (
+        start(a.References("d")("x").Match("d")).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) MATCH d)"
+    )
+    assert (
+        start(a.References("d")("x").Match("d").On.Delete.Cascade).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) MATCH d ON DELETE CASCADE)"
+    )
+    assert (
+        start(a.References("d")("x").On.Delete.Cascade.Match("d")).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON DELETE CASCADE MATCH d)"
+    )
+    assert (
+        start(
+            a.References("d")("x").On.Delete.Cascade.Match("d").Deferrable
+        ).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d (x) ON DELETE CASCADE MATCH d DEFERRABLE)"
+    )
+    assert (
+        start(a.References("d").Not.Deferrable).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d NOT DEFERRABLE)"
+    )
+    assert (
+        start(a.References("d").Not.Deferrable.Initially.Deferred).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d NOT DEFERRABLE INITIALLY DEFERRED)"
+    )
+    assert (
+        start(a.References("d").Deferrable.Initially.Immediate).get_query()
+        == "CREATE TABLE table_name (a REFERENCES d DEFERRABLE INITIALLY IMMEDIATE)"
     )

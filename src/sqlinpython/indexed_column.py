@@ -19,11 +19,11 @@ class IndexedColumnWithCollate(IndexedColumn):
         self._collate_name = collate_name
 
     @property
-    def Asc(self):
+    def Asc(self) -> IndexedColumn:
         return IndexedColumn(self, True)
 
     @property
-    def Desc(self):
+    def Desc(self) -> IndexedColumn:
         return IndexedColumn(self, False)
 
     def _create_query(self, buffer: list[str]) -> None:

@@ -1,12 +1,15 @@
 from __future__ import annotations
 
-from typing import overload
+from typing import TYPE_CHECKING, overload
 
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
+
+if TYPE_CHECKING:
+    from sqlinpython.foreign_key_clause import References_
 
 
 class ConstraintKeyword(SqlElement):
@@ -38,15 +41,53 @@ class ConstraintWithName(SqlElement):
     def Check(self, expr: Expression) -> CheckConstraint:
         return CheckConstraint(self, expr)
 
-    # TODO
-    # @property
-    # def ForeignKey(self) -> ForeignKeyConstraint:
-    #     return ForeignKeyConstraint(self)
+    def ForeignKey(self, *column_names: str | Name) -> ForeignKeyConstraint:
+        names = tuple(
+            column_name if isinstance(column_name, Name) else Name(column_name)
+            for column_name in column_names
+        )
+        return ForeignKeyConstraint(self, names)
 
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
         self._name._create_query(buffer)
+
+
+class ForeignKeyConstraint(SqlElement):
+    def __init__(
+        self, prev: ConstraintWithName | None, column_names: tuple[Name, ...]
+    ) -> None:
+        self._prev = prev
+        self._column_names = column_names
+
+    def References(self, foreign_table_name: Name | str) -> References_:
+        from sqlinpython.foreign_key_clause import References_
+
+        if isinstance(foreign_table_name, str):
+            foreign_table_name = Name(foreign_table_name)
+
+        return References_(self, foreign_table_name)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        if self._prev is not None:
+            self._prev._create_query(buffer)
+            buffer.append(" FOREIGN KEY(")
+        else:
+            buffer.append("FOREIGN KEY(")
+        for i, column_name in enumerate(self._column_names):
+            if i > 0:
+                buffer.append(", ")
+            column_name._create_query(buffer)
+        buffer.append(")")
+
+
+def ForeignKey(*column_names: Name | str) -> ForeignKeyConstraint:
+    names = tuple(
+        Name(column_name) if isinstance(column_name, str) else column_name
+        for column_name in column_names
+    )
+    return ForeignKeyConstraint(None, names)
 
 
 class PrimaryKeyConstraint(SqlElement):

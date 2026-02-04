@@ -1,10 +1,15 @@
 from __future__ import annotations
 
+from uv_build import TYPE_CHECKING
+
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression, Literal
 from sqlinpython.name import Name
 from sqlinpython.type_name import CompleteTypeName
+
+if TYPE_CHECKING:
+    from sqlinpython.foreign_key_clause import References_
 
 
 # SPEC: https://sqlite.org/syntax/column-def.html
@@ -18,7 +23,7 @@ class WithGeneratedAlways(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def As(self, expression: Expression):
+    def As(self, expression: Expression) -> GeneratedAlwaysAs:
         return GeneratedAlwaysAs(self, expression)
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -56,11 +61,13 @@ class ColumnConstraintWithName(WithGeneratedAlways):
         return WithCollate(self, collation_name)
 
     # SPEC: https://sqlite.org/syntax/foreign-key-clause.html
-    def References(self, foreign_table_name: Name | str) -> WithReferences:
+    def References(self, foreign_table_name: Name | str) -> References_:
+        from sqlinpython.foreign_key_clause import References_
+
         if isinstance(foreign_table_name, str):
             foreign_table_name = Name(foreign_table_name)
-        # return WithReferences(self, foreign_table_name)
-        return WithReferences("TODO")
+
+        return References_(self, foreign_table_name)
 
     @property
     def GeneratedAlways(self) -> WithGeneratedAlways:
@@ -236,11 +243,11 @@ class GeneratedAlwaysAs(GeneratedAlwaysAsHow):
         self._expression = expression
 
     @property
-    def Stored(self):
+    def Stored(self) -> GeneratedAlwaysAsHow:
         return GeneratedAlwaysAsHow(self, "STORED")
 
     @property
-    def Virtual(self):
+    def Virtual(self) -> GeneratedAlwaysAsHow:
         return GeneratedAlwaysAsHow(self, "VIRTUAL")
 
     def _create_query(self, buffer: list[str]) -> None:

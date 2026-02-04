@@ -1,17 +1,16 @@
+from __future__ import annotations
+
 import typing
+
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
+from sqlinpython.table_constraint import TableConstraint
 
 
 # Spec https://sqlite.org/syntax/select-stmt.html
 class SelectStatement(NotImplementedSqlElement):
-    pass
-
-
-# SPEC: https://sqlite.org/syntax/table-constraint.html
-class TableConstraint(NotImplementedSqlElement):
     pass
 
 
@@ -48,11 +47,11 @@ class CreateTableWithOptions(CreateTableStatement):
         self._option = option
 
     @property
-    def WithoutRowId(self):
+    def WithoutRowId(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(AddComma(self), "WITHOUT ROWID")
 
     @property
-    def Strict(self):
+    def Strict(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(AddComma(self), "STRICT")
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -68,11 +67,11 @@ class CreateTableWithDefinitions(CreateTableStatement):
         self._args = args
 
     @property
-    def WithoutRowId(self):
+    def WithoutRowId(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(self, "WITHOUT ROWID")
 
     @property
-    def Strict(self):
+    def Strict(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(self, "STRICT")
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -91,12 +90,12 @@ class CreateTableWithName(SqlElement):
         self._schema_name = schema_name
         self._table_name = table_name
 
-    def As(self, select_stmt: SelectStatement):
+    def As(self, select_stmt: SelectStatement) -> CreateTableAs:
         return CreateTableAs(self, select_stmt)
 
     def __call__(
         self, first_col: ColumnDefinition, *rest: ColumnDefinition | TableConstraint
-    ):
+    ) -> CreateTableWithDefinitions:
         # TODO: Validate that any table constraints are at the end
         return CreateTableWithDefinitions(self, (first_col, *rest))
 
@@ -113,7 +112,9 @@ class CreateTableIfNotExists(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def __call__(self, schema_name: str | Name, table_name: str | Name | None = None):
+    def __call__(
+        self, schema_name: str | Name, table_name: str | Name | None = None
+    ) -> CreateTableWithName:
         if isinstance(schema_name, str):
             schema_name = Name(schema_name)
         if isinstance(table_name, str):
@@ -130,7 +131,7 @@ class CreateTable(CreateTableIfNotExists):
         self._prev = prev
 
     @property
-    def IfNotExists(self):
+    def IfNotExists(self) -> CreateTableIfNotExists:
         return CreateTableIfNotExists(self)
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -144,7 +145,7 @@ class CreateTempTable(SqlElement):
         self._how = how
 
     @property
-    def Table(self):
+    def Table(self) -> CreateTable:
         return CreateTable(self)
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -153,15 +154,15 @@ class CreateTempTable(SqlElement):
 
 
 class CreateKeyword(CreateTempTable):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
     @property
-    def Temp(self):
+    def Temp(self) -> CreateTempTable:
         return CreateTempTable(self, "TEMP")
 
     @property
-    def Temporary(self):
+    def Temporary(self) -> CreateTempTable:
         return CreateTempTable(self, "TEMPORARY")
 
     def _create_query(self, buffer: list[str]) -> None:

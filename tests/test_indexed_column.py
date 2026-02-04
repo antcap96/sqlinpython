@@ -3,13 +3,13 @@ from sqlinpython import ColumnName
 from sqlinpython.base import SqlElement
 
 
-def create_query(element: SqlElement):
+def create_query(element: SqlElement) -> str:
     buffer: list[str] = []
     element._create_query(buffer)
     return "".join(buffer)
 
 
-def test_indexed_column():
+def test_indexed_column() -> None:
     a = ColumnName("a")
     assert create_query(a) == "a"
     assert create_query(a.Collate("b")) == "a COLLATE b"
