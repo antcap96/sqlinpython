@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from uv_build import TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
