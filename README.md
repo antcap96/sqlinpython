@@ -70,11 +70,11 @@ TODO:
 - [ ] attach-stmt
 - [ ] begin-stmt
 - [ ] commit-stmt
-- [ ] create-index-stmt
+- [X] create-index-stmt
 - [ ] create-table-stmt
 - [ ] create-trigger-stmt
 - [ ] create-view-stmt
-- [ ] create-virtual-table-stmt
+- [X] create-virtual-table-stmt
 - [ ] delete-stmt
 - [ ] delete-stmt-limited
 - [ ] detach-stmt

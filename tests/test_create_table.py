@@ -4,12 +4,12 @@ from sqlinpython import (
     ColumnName,
     Constraint,
     Create,
+    ForeignKey,
     PrimaryKey,
     TypeName,
     Unique,
 )
 from sqlinpython.create_table import SelectStatement
-from sqlinpython.table_constraint import ForeignKey
 
 
 def test_create_table() -> None:
