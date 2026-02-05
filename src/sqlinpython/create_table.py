@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import typing
 
-
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
@@ -137,36 +136,3 @@ class CreateTable(CreateTableIfNotExists):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" TABLE")
-
-
-class CreateTempTable(SqlElement):
-    def __init__(self, prev: SqlElement, how: typing.Literal["TEMPORARY", "TEMP"]):
-        self._prev = prev
-        self._how = how
-
-    @property
-    def Table(self) -> CreateTable:
-        return CreateTable(self)
-
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(f" {self._how}")
-
-
-class CreateKeyword(CreateTempTable):
-    def __init__(self) -> None:
-        pass
-
-    @property
-    def Temp(self) -> CreateTempTable:
-        return CreateTempTable(self, "TEMP")
-
-    @property
-    def Temporary(self) -> CreateTempTable:
-        return CreateTempTable(self, "TEMPORARY")
-
-    def _create_query(self, buffer: list[str]) -> None:
-        buffer.append("CREATE")
-
-
-Create = CreateKeyword()
