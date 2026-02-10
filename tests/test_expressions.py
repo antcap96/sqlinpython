@@ -181,3 +181,12 @@ def test_unary_operators() -> None:
     assert to_str(-b + a) == "-2 + 1"
     assert to_str(a + (+b)) == "1 + +2"
     assert to_str(~b + a) == "~2 + 1"
+
+
+def test_bind_parameter() -> None:
+    assert to_str(expr.BindParameter()) == "?"
+    assert to_str(expr.BindParameter(2)) == "?2"
+    assert to_str(expr.BindParameter("id")) == ":id"
+    assert to_str(expr.BindParameter("id", ":")) == ":id"
+    assert to_str(expr.BindParameter("id", "@")) == "@id"
+    assert to_str(expr.BindParameter("id", "$")) == "$id"
