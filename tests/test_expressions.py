@@ -190,3 +190,56 @@ def test_bind_parameter() -> None:
     assert to_str(expr.BindParameter("id", ":")) == ":id"
     assert to_str(expr.BindParameter("id", "@")) == "@id"
     assert to_str(expr.BindParameter("id", "$")) == "$id"
+
+
+def test_case() -> None:
+    assert (
+        to_str(expr.Case.When(expr.literal(1)).Then(expr.literal(2)).End)
+        == "CASE WHEN 1 THEN 2 END"
+    )
+    assert (
+        to_str(
+            expr.Case.When(expr.literal(1))
+            .Then(expr.literal(2))
+            .Else(expr.literal(3))
+            .End
+        )
+        == "CASE WHEN 1 THEN 2 ELSE 3 END"
+    )
+    assert (
+        to_str(
+            expr.Case(expr.literal("a")).When(expr.literal(1)).Then(expr.literal(2)).End
+        )
+        == 'CASE "a" WHEN 1 THEN 2 END'
+    )
+    assert (
+        to_str(
+            expr.Case(expr.literal("a"))
+            .When(expr.literal(1))
+            .Then(expr.literal(2))
+            .Else(expr.literal(3))
+            .End
+        )
+        == 'CASE "a" WHEN 1 THEN 2 ELSE 3 END'
+    )
+    assert (
+        to_str(
+            expr.Case.When(expr.literal(1))
+            .Then(expr.literal(2))
+            .When(expr.literal(3))
+            .Then(expr.literal(4))
+            .End
+        )
+        == "CASE WHEN 1 THEN 2 WHEN 3 THEN 4 END"
+    )
+    assert (
+        to_str(
+            expr.Case.When(expr.literal(1))
+            .Then(expr.literal(2))
+            .When(expr.literal(3))
+            .Then(expr.literal(4))
+            .Else(expr.literal(5))
+            .End
+        )
+        == "CASE WHEN 1 THEN 2 WHEN 3 THEN 4 ELSE 5 END"
+    )

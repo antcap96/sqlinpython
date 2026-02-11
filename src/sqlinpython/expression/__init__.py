@@ -1,4 +1,5 @@
 from .bind_parameter import BindParameter as BindParameter
+from .case import Case as Case
 from .core import CurrentDate as CurrentDate
 from .core import CurrentTime as CurrentTime
 from .core import CurrentTimestamp as CurrentTimestamp
