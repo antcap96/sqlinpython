@@ -6,6 +6,7 @@ from typing import overload
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.indexed_column import IndexedColumnWithCollate
 from sqlinpython.name import Name
+from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
 
 
 class SelectStatement(NotImplementedSqlElement):
@@ -17,7 +18,15 @@ class TableFunction(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/lang_expr.html
-class Expression(IndexedColumnWithCollate):
+class Expression(IndexedColumnWithCollate, OrderingTerm):
+    @property
+    def NullsFirst(self) -> OrderingTermWithNulls:
+        return OrderingTermWithNulls(self, True)
+
+    @property
+    def NullsLast(self) -> OrderingTermWithNulls:
+        return OrderingTermWithNulls(self, False)
+
     def Or(self, other: Expression) -> OrCondition:
         self_ = _parenthesize_if_necessary(self, Expression1)
         other_ = _parenthesize_if_necessary(other, Expression2)
