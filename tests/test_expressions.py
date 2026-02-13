@@ -1,9 +1,8 @@
 from sqlinpython import expression as expr
-from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 
 
-def to_str(element: SqlElement) -> str:
+def to_str(element: expr.Expression) -> str:
     buffer: list[str] = []
     element._create_query(buffer)
     return "".join(buffer)
