@@ -68,7 +68,21 @@ class FunctionName(SqlElement):
         self._name._create_query(buffer)
 
 
-class FunctionCall(Expression13):
+class FunctionCallWithFilter(Expression13):
+    """A function call with a FILTER clause."""
+
+    def __init__(self, func_call: FunctionCall, filter_expr: Expression) -> None:
+        self._func_call = func_call
+        self._filter_expr = filter_expr
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._func_call._create_query(buffer)
+        buffer.append(" FILTER (WHERE ")
+        self._filter_expr._create_query(buffer)
+        buffer.append(")")
+
+
+class FunctionCall(FunctionCallWithFilter):
     """A complete function call with arguments."""
 
     def __init__(
@@ -104,3 +118,6 @@ class FunctionCall(Expression13):
                         buffer.append(", ")
                     term._create_query(buffer)
         buffer.append(")")
+
+    def FilterWhere(self, expr: Expression) -> FunctionCallWithFilter:
+        return FunctionCallWithFilter(self, expr)
