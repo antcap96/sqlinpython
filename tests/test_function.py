@@ -40,3 +40,21 @@ def test_function_calls() -> None:
 
     # In expressions
     assert to_str(MAX(a, b) + a) == "MAX(1, 2) + 1"
+
+
+def test_filter_clause() -> None:
+    COUNT = FunctionName("COUNT")
+    SUM = FunctionName("SUM")
+    a = expr.literal(1)
+    b = expr.literal(2)
+
+    # Basic filter
+    assert to_str(COUNT("*").FilterWhere(a > b)) == "COUNT(*) FILTER (WHERE 1 > 2)"
+
+    # Filter with aggregate
+    assert to_str(SUM(a).FilterWhere(b > a)) == "SUM(1) FILTER (WHERE 2 > 1)"
+
+    # Filter in expression
+    assert (
+        to_str(COUNT("*").FilterWhere(a > b) + a) == "COUNT(*) FILTER (WHERE 1 > 2) + 1"
+    )
