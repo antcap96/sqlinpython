@@ -1,5 +1,11 @@
 from sqlinpython import expression as expr
-from sqlinpython.expression.function import FunctionName, Star
+from sqlinpython.expression.function import (
+    FunctionName,
+    OrderBy,
+    PartitionBy,
+    Star,
+    WindowName,
+)
 
 
 def to_str(element: expr.Expression) -> str:
@@ -57,4 +63,55 @@ def test_filter_clause() -> None:
     # Filter in expression
     assert (
         to_str(COUNT("*").FilterWhere(a > b) + a) == "COUNT(*) FILTER (WHERE 1 > 2) + 1"
+    )
+
+
+def test_over_clause() -> None:
+    SUM = FunctionName("SUM")
+    ROW_NUMBER = FunctionName("ROW_NUMBER")
+    a = expr.literal(1)
+    b = expr.literal(2)
+
+    # Empty OVER ()
+    assert to_str(ROW_NUMBER().Over()) == "ROW_NUMBER() OVER ()"
+
+    # OVER with window name
+    assert to_str(SUM(a).Over(WindowName("w"))) == "SUM(1) OVER w"
+
+    # OVER with PARTITION BY
+    assert to_str(SUM(a).Over(PartitionBy(a))) == "SUM(1) OVER (PARTITION BY 1)"
+    assert to_str(SUM(a).Over(PartitionBy(a, b))) == "SUM(1) OVER (PARTITION BY 1, 2)"
+
+    # OVER with ORDER BY
+    assert to_str(SUM(a).Over(OrderBy(a))) == "SUM(1) OVER (ORDER BY 1)"
+    assert to_str(SUM(a).Over(OrderBy(a, b))) == "SUM(1) OVER (ORDER BY 1, 2)"
+    assert to_str(SUM(a).Over(OrderBy(a.Desc))) == "SUM(1) OVER (ORDER BY 1 DESC)"
+
+    # OVER with PARTITION BY and ORDER BY
+    assert (
+        to_str(SUM(a).Over(PartitionBy(b).OrderBy(a)))
+        == "SUM(1) OVER (PARTITION BY 2 ORDER BY 1)"
+    )
+    assert (
+        to_str(SUM(a).Over(PartitionBy(a, b).OrderBy(a.Desc, b.Asc)))
+        == "SUM(1) OVER (PARTITION BY 1, 2 ORDER BY 1 DESC, 2 ASC)"
+    )
+
+    # OVER in expression
+    assert to_str(SUM(a).Over(PartitionBy(b)) + a) == "SUM(1) OVER (PARTITION BY 2) + 1"
+
+    assert (
+        to_str(SUM(a).Over(WindowName("w").PartitionBy(b)))
+        == "SUM(1) OVER (w PARTITION BY 2)"
+    )
+    assert (
+        to_str(SUM(a).Over(WindowName("w").OrderBy(a))) == "SUM(1) OVER (w ORDER BY 1)"
+    )
+    assert (
+        to_str(SUM(a).Over(WindowName("w").PartitionBy(b).OrderBy(a.Desc)))
+        == "SUM(1) OVER (w PARTITION BY 2 ORDER BY 1 DESC)"
+    )
+    assert (
+        to_str(SUM(a).FilterWhere(a > b).Over(PartitionBy(b)))
+        == "SUM(1) FILTER (WHERE 1 > 2) OVER (PARTITION BY 2)"
     )

@@ -68,15 +68,106 @@ class FunctionName(SqlElement):
         self._name._create_query(buffer)
 
 
-class FunctionCallWithFilter(Expression13):
-    """A function call with a FILTER clause."""
+class WindowDefn(SqlElement):
+    pass
 
-    def __init__(self, func_call: FunctionCall, filter_expr: Expression) -> None:
-        self._func_call = func_call
-        self._filter_expr = filter_expr
+
+class OrderByKeyword:
+    def __init__(self, prev: SqlElement | None):
+        self._prev = prev
+
+    def __call__(self, first_term: OrderingTerm, *terms: OrderingTerm) -> OrderByClause:
+        return OrderByClause(self._prev, (first_term, *terms))
+
+
+OrderBy = OrderByKeyword(None)
+
+
+class OrderByClause(WindowDefn):
+    def __init__(self, prev: SqlElement | None, terms: tuple[OrderingTerm, ...]):
+        self._prev = prev
+        self._terms = terms
 
     def _create_query(self, buffer: list[str]) -> None:
-        self._func_call._create_query(buffer)
+        if self._prev is not None:
+            self._prev._create_query(buffer)
+            buffer.append(" ")
+        buffer.append("ORDER BY ")
+        for i, term in enumerate(self._terms):
+            if i > 0:
+                buffer.append(", ")
+            term._create_query(buffer)
+
+
+class PartitionByKeyword:
+    def __init__(self, prev: SqlElement | None):
+        self._prev = prev
+
+    def __call__(self, first_expr: Expression, *exprs: Expression) -> PartitionByClause:
+        return PartitionByClause(self._prev, (first_expr, *exprs))
+
+
+PartitionBy = PartitionByKeyword(None)
+
+
+class PartitionByClause(WindowDefn):
+    def __init__(self, prev: SqlElement | None, exprs: tuple[Expression, ...]):
+        self._prev = prev
+        self._exprs = exprs
+
+    @property
+    def OrderBy(self) -> OrderByKeyword:
+        return OrderByKeyword(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        if self._prev is not None:
+            self._prev._create_query(buffer)
+            buffer.append(" ")
+        buffer.append("PARTITION BY ")
+        for i, term in enumerate(self._exprs):
+            if i > 0:
+                buffer.append(", ")
+            term._create_query(buffer)
+
+
+class WindowName(Name, PartitionByClause):
+    @property
+    def PartitionBy(self) -> PartitionByKeyword:
+        return PartitionByKeyword(self)
+
+
+class FunctionCallWithOver(Expression13):
+    def __init__(
+        self, prev: SqlElement, arg: WindowName | WindowDefn | None = None, /
+    ) -> None:
+        self._prev = prev
+        self._arg = arg
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" OVER ")
+        if self._arg is None:
+            buffer.append("()")
+        elif type(self._arg) is WindowName:
+            self._arg._create_query(buffer)
+        else:
+            buffer.append("(")
+            self._arg._create_query(buffer)
+            buffer.append(")")
+
+
+class FunctionCallWithFilter(FunctionCallWithOver):
+    """A function call with a FILTER clause."""
+
+    def __init__(self, prev: FunctionCall, filter_expr: Expression) -> None:
+        self._prev = prev
+        self._filter_expr = filter_expr
+
+    def Over(self, arg: WindowName | WindowDefn | None = None) -> FunctionCallWithOver:
+        return FunctionCallWithOver(self, arg)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
         buffer.append(" FILTER (WHERE ")
         self._filter_expr._create_query(buffer)
         buffer.append(")")
