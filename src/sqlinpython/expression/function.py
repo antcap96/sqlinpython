@@ -68,6 +68,7 @@ class FunctionName(SqlElement):
         self._name._create_query(buffer)
 
 
+# SPEC: https://sqlite.org/syntax/window-defn.html
 class WindowDefn(SqlElement):
     pass
 
@@ -111,6 +112,7 @@ class OrderByClause(WindowDefn):
             term._create_query(buffer)
 
 
+# SPEC: https://sqlite.org/syntax/frame-spec.html
 class FrameSpecClause(SqlElement):
     def __init__(
         self, prev: SqlElement | None, kind: Literal["RANGE", "ROWS", "GROUPS"]
@@ -284,6 +286,8 @@ class FrameSpecBetweenExprEnd(FrameSpecBound):
 
 
 class FrameSpecExprBound(FrameSpecBound):
+    # Only PrecedingFrameBound is valid for single frame spec (not BETWEEN).
+    # Per SQLite syntax, frame-single only allows: UNBOUNDED PRECEDING | expr PRECEDING | CURRENT ROW
     def __init__(self, prev: FrameSpecClause, bound: PrecedingFrameBound) -> None:
         self._prev = prev
         self._bound = bound
@@ -351,6 +355,7 @@ class WindowName(Name, PartitionByClause):
         return PartitionByKeyword(self)
 
 
+# SPEC: https://sqlite.org/syntax/over-clause.html
 class FunctionCallWithOver(Expression13):
     def __init__(
         self, prev: SqlElement, arg: WindowName | WindowDefn | None = None, /
