@@ -6,7 +6,7 @@ from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 
-from .core import Expression, Expression13
+from .core import Expression, Expression13, FollowingFrameBound, PrecedingFrameBound
 
 
 class _Star(SqlElement):
@@ -88,6 +88,18 @@ class OrderByClause(WindowDefn):
         self._prev = prev
         self._terms = terms
 
+    @property
+    def Range(self) -> FrameSpecClause:
+        return FrameSpecClause(self, "RANGE")
+
+    @property
+    def Rows(self) -> FrameSpecClause:
+        return FrameSpecClause(self, "ROWS")
+
+    @property
+    def Groups(self) -> FrameSpecClause:
+        return FrameSpecClause(self, "GROUPS")
+
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is not None:
             self._prev._create_query(buffer)
@@ -97,6 +109,209 @@ class OrderByClause(WindowDefn):
             if i > 0:
                 buffer.append(", ")
             term._create_query(buffer)
+
+
+class FrameSpecClause(SqlElement):
+    def __init__(
+        self, prev: SqlElement | None, kind: Literal["RANGE", "ROWS", "GROUPS"]
+    ):
+        self._prev = prev
+        self._kind = kind
+
+    def __call__(self, bound: PrecedingFrameBound) -> FrameSpecExprBound:
+        return FrameSpecExprBound(self, bound)
+
+    @property
+    def CurrentRow(self) -> FrameSpecSingleBound:
+        return FrameSpecSingleBound(self, "CURRENT ROW")
+
+    @property
+    def UnboundedPreceding(self) -> FrameSpecSingleBound:
+        return FrameSpecSingleBound(self, "UNBOUNDED PRECEDING")
+
+    @property
+    def Between(self) -> FrameSpecBetween:
+        return FrameSpecBetween(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        if self._prev is not None:
+            self._prev._create_query(buffer)
+            buffer.append(" ")
+        buffer.append(self._kind)
+
+
+class FrameSpecBetween(SqlElement):
+    def __init__(self, prev: FrameSpecClause) -> None:
+        self._prev = prev
+
+    def __call__(
+        self, bound: PrecedingFrameBound | FollowingFrameBound
+    ) -> FrameSpecBetweenExprStart:
+        return FrameSpecBetweenExprStart(self, bound)
+
+    @property
+    def UnboundedPreceding(self) -> FrameSpecBetweenStart:
+        return FrameSpecBetweenStart(self, "UNBOUNDED PRECEDING")
+
+    @property
+    def CurrentRow(self) -> FrameSpecBetweenStart:
+        return FrameSpecBetweenStart(self, "CURRENT ROW")
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" BETWEEN")
+
+
+class FrameSpecBetweenExprStart(SqlElement):
+    def __init__(
+        self, prev: FrameSpecBetween, bound: PrecedingFrameBound | FollowingFrameBound
+    ) -> None:
+        self._prev = prev
+        self._bound = bound
+
+    @property
+    def And(self) -> FrameSpecBetweenAnd:
+        return FrameSpecBetweenAnd(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._bound._create_query(buffer)
+
+
+class FrameSpecBetweenStart(SqlElement):
+    def __init__(
+        self,
+        prev: FrameSpecBetween,
+        kind: Literal["UNBOUNDED PRECEDING", "CURRENT ROW"],
+    ) -> None:
+        self._prev = prev
+        self._kind = kind
+
+    @property
+    def And(self) -> FrameSpecBetweenAnd:
+        return FrameSpecBetweenAnd(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        buffer.append(self._kind)
+
+
+class FrameSpecBetweenAnd(SqlElement):
+    def __init__(self, prev: FrameSpecBetweenStart | FrameSpecBetweenExprStart) -> None:
+        self._prev = prev
+
+    def __call__(
+        self, bound: PrecedingFrameBound | FollowingFrameBound
+    ) -> FrameSpecBetweenExprEnd:
+        return FrameSpecBetweenExprEnd(self, bound)
+
+    @property
+    def UnboundedFollowing(self) -> FrameSpecBetweenEnd:
+        return FrameSpecBetweenEnd(self, "UNBOUNDED FOLLOWING")
+
+    @property
+    def CurrentRow(self) -> FrameSpecBetweenEnd:
+        return FrameSpecBetweenEnd(self, "CURRENT ROW")
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" AND")
+
+
+class FrameSpecWithExclude(WindowDefn):
+    def __init__(
+        self,
+        prev: SqlElement,
+        kind: Literal["NO OTHERS", "CURRENT ROW", "GROUP", "TIES"],
+    ) -> None:
+        self._prev = prev
+        self._kind = kind
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" EXCLUDE ")
+        buffer.append(self._kind)
+
+
+class FrameSpecBound(FrameSpecWithExclude):
+    @property
+    def ExcludeNoOthers(self) -> FrameSpecWithExclude:
+        return FrameSpecWithExclude(self, "NO OTHERS")
+
+    @property
+    def ExcludeCurrentRow(self) -> FrameSpecWithExclude:
+        return FrameSpecWithExclude(self, "CURRENT ROW")
+
+    @property
+    def ExcludeGroup(self) -> FrameSpecWithExclude:
+        return FrameSpecWithExclude(self, "GROUP")
+
+    @property
+    def ExcludeTies(self) -> FrameSpecWithExclude:
+        return FrameSpecWithExclude(self, "TIES")
+
+
+class FrameSpecBetweenEnd(FrameSpecBound):
+    def __init__(
+        self,
+        prev: FrameSpecBetweenAnd,
+        kind: Literal["UNBOUNDED FOLLOWING", "CURRENT ROW"],
+    ) -> None:
+        self._prev = prev
+        self._kind = kind  # type: ignore[assignment]
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        buffer.append(self._kind)
+
+
+class FrameSpecBetweenExprEnd(FrameSpecBound):
+    def __init__(
+        self,
+        prev: FrameSpecBetweenAnd,
+        bound: PrecedingFrameBound | FollowingFrameBound,
+    ) -> None:
+        self._prev = prev
+        self._bound = bound
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._bound._create_query(buffer)
+
+
+class FrameSpecExprBound(FrameSpecBound):
+    def __init__(self, prev: FrameSpecClause, bound: PrecedingFrameBound) -> None:
+        self._prev = prev
+        self._bound = bound
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._bound._create_query(buffer)
+
+
+class FrameSpecSingleBound(FrameSpecBound):
+    def __init__(
+        self,
+        prev: FrameSpecClause,
+        kind: Literal["CURRENT ROW", "UNBOUNDED PRECEDING"],
+    ) -> None:
+        self._prev = prev
+        self._kind = kind  # type: ignore[assignment]
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        buffer.append(self._kind)
+
+
+Range = FrameSpecClause(None, "RANGE")
+Rows = FrameSpecClause(None, "ROWS")
+Groups = FrameSpecClause(None, "GROUPS")
 
 
 class PartitionByKeyword:
@@ -110,7 +325,7 @@ class PartitionByKeyword:
 PartitionBy = PartitionByKeyword(None)
 
 
-class PartitionByClause(WindowDefn):
+class PartitionByClause(OrderByClause):
     def __init__(self, prev: SqlElement | None, exprs: tuple[Expression, ...]):
         self._prev = prev
         self._exprs = exprs

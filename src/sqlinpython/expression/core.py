@@ -240,6 +240,14 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
     def __invert__(self) -> UnaryOperator:
         return UnaryOperator(self, "~")
 
+    @property
+    def Preceding(self) -> PrecedingFrameBound:
+        return PrecedingFrameBound(self)
+
+    @property
+    def Following(self) -> FollowingFrameBound:
+        return FollowingFrameBound(self)
+
 
 class Expression1(Expression):
     pass
@@ -786,6 +794,34 @@ def _parenthesize_if_necessary[T](
         return ParenthesizedExpression(expression)
     else:
         return expression
+
+
+class FrameBound(SqlElement):
+    """Base class for frame boundary specifications."""
+
+    pass
+
+
+class PrecedingFrameBound(FrameBound):
+    """Represents 'expr PRECEDING' in a frame specification."""
+
+    def __init__(self, expr: Expression) -> None:
+        self._expr = expr
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._expr._create_query(buffer)
+        buffer.append(" PRECEDING")
+
+
+class FollowingFrameBound(FrameBound):
+    """Represents 'expr FOLLOWING' in a frame specification."""
+
+    def __init__(self, expr: Expression) -> None:
+        self._expr = expr
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._expr._create_query(buffer)
+        buffer.append(" FOLLOWING")
 
 
 # TODOs:
