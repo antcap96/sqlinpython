@@ -2,10 +2,12 @@ from sqlinpython.common_table_expression import (
     CommonTableExpression,
     SelectStatement,
     TableName,
+    With,
+    WithClause,
 )
 
 
-def to_str(element: CommonTableExpression) -> str:
+def to_str(element: CommonTableExpression | WithClause) -> str:
     buffer: list[str] = []
     element._create_query(buffer)
     return "".join(buffer)
@@ -69,4 +71,32 @@ def test_cte_quoted_names() -> None:
     assert (
         to_str(TableName("my table")("column 1").As(select_stmt))
         == '"my table"("column 1") AS (<select-stmt>)'
+    )
+
+
+def test_with_single_cte() -> None:
+    cte = TableName("t1").As(select_stmt)
+    assert to_str(With(cte)) == "WITH t1 AS (<select-stmt>)"
+
+
+def test_with_multiple_ctes() -> None:
+    cte1 = TableName("t1").As(select_stmt)
+    cte2 = TableName("t2")("a", "b").As(select_stmt)
+    assert (
+        to_str(With(cte1, cte2))
+        == "WITH t1 AS (<select-stmt>), t2(a, b) AS (<select-stmt>)"
+    )
+
+
+def test_with_recursive_single_cte() -> None:
+    cte = TableName("t1").As(select_stmt)
+    assert to_str(With.Recursive(cte)) == "WITH RECURSIVE t1 AS (<select-stmt>)"
+
+
+def test_with_recursive_multiple_ctes() -> None:
+    cte1 = TableName("t1").As(select_stmt)
+    cte2 = TableName("t2").As.Materialized(select_stmt)
+    assert (
+        to_str(With.Recursive(cte1, cte2))
+        == "WITH RECURSIVE t1 AS (<select-stmt>), t2 AS MATERIALIZED (<select-stmt>)"
     )

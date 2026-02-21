@@ -95,3 +95,49 @@ class TableName(Name, CteTableNameWithColumns):
         all_names = (column_name,) + more_column_names
         names = tuple(Name(n) if isinstance(n, str) else n for n in all_names)
         return CteTableNameWithColumns(self, names)
+
+
+# SPEC: https://sqlite.org/lang_insert.html (WITH clause portion)
+class WithClause(SqlElement):
+    def __init__(
+        self, prev: SqlElement, ctes: tuple[CommonTableExpression, ...]
+    ) -> None:
+        self._prev = prev
+        self._ctes = ctes
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        for i, cte in enumerate(self._ctes):
+            if i > 0:
+                buffer.append(", ")
+            cte._create_query(buffer)
+
+
+class WithRecursive(SqlElement):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    def __call__(
+        self, cte: CommonTableExpression, *more_ctes: CommonTableExpression
+    ) -> WithClause:
+        return WithClause(self, (cte,) + more_ctes)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" RECURSIVE")
+
+
+class WithKeyword(WithRecursive):
+    def __init__(self) -> None:
+        pass
+
+    @property
+    def Recursive(self) -> WithRecursive:
+        return WithRecursive(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("WITH")
+
+
+With = WithKeyword()
