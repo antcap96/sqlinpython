@@ -27,6 +27,11 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
     def NullsLast(self) -> OrderingTermWithNulls:
         return OrderingTermWithNulls(self, False)
 
+    def As(self, alias: str | Name, /) -> AliasedExpression:
+        if isinstance(alias, str):
+            alias = Name(alias)
+        return AliasedExpression(self, alias)
+
     def Or(self, other: Expression) -> OrCondition:
         self_ = _parenthesize_if_necessary(self, Expression1)
         other_ = _parenthesize_if_necessary(other, Expression2)
@@ -247,6 +252,23 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
     @property
     def Following(self) -> FollowingFrameBound:
         return FollowingFrameBound(self)
+
+
+class AliasedExpression(SqlElement):
+    def __init__(
+        self, expression: Expression, alias: Name, *, explicit_as: bool = True
+    ) -> None:
+        self._expression = expression
+        self._alias = alias
+        self._explicit_as = explicit_as
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._expression._create_query(buffer)
+        if self._explicit_as:
+            buffer.append(" AS ")
+        else:
+            buffer.append(" ")
+        self._alias._create_query(buffer)
 
 
 class Expression1(Expression):

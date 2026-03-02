@@ -430,24 +430,200 @@ def test_on_conflict_with_insert_select() -> None:
     )
 
 
-# TODO: Implement DO UPDATE SET according to spec:
-# ON CONFLICT (col) DO UPDATE SET col = expr [, ...]
-# ON CONFLICT (col) DO UPDATE SET col = excluded.col [, ...]
+# =============================================================================
+# ON CONFLICT DO UPDATE SET
+# SPEC: https://sqlite.org/lang_upsert.html
+# =============================================================================
+
+
+def test_on_conflict_do_update_set_single_column() -> None:
+    # ON CONFLICT (col) DO UPDATE SET col = expr
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .OnConflict(col)
+        .Do.UpdateSet((ColumnName("name"), expr.literal("Updated")))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
+    )
+
+
+def test_on_conflict_do_update_set_string_column() -> None:
+    # Using string for column name
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .OnConflict(col)
+        .Do.UpdateSet(("name", expr.literal("Updated")))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
+    )
+
+
+def test_on_conflict_do_update_set_multiple_assignments() -> None:
+    # ON CONFLICT (col) DO UPDATE SET col1 = expr1, col2 = expr2
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name", "email")
+        .Values((expr.literal(1), expr.literal("Alice"), expr.literal("a@b.com")))
+        .OnConflict(col)
+        .Do.UpdateSet(
+            ("name", expr.literal("Updated")),
+            ("email", expr.literal("new@email.com")),
+        )
+        .get_query()
+        == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET name = "Updated", email = "new@email.com"'
+    )
+
+
+def test_on_conflict_do_update_set_column_list() -> None:
+    # ON CONFLICT (col) DO UPDATE SET (col1, col2) = expr
+    # This is used for row value assignments
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name", "email")
+        .Values((expr.literal(1), expr.literal("Alice"), expr.literal("a@b.com")))
+        .OnConflict(col)
+        .Do.UpdateSet((("name", "email"), expr.literal("some_expr")))
+        .get_query()
+        == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET (name, email) = "some_expr"'
+    )
+
+
+def test_on_conflict_do_update_set_with_where() -> None:
+    # ON CONFLICT (col) DO UPDATE SET col = expr WHERE condition
+    col = ColumnName("id")
+    name_col = ColumnName("name")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .OnConflict(col)
+        .Do.UpdateSet(("name", expr.literal("Updated")))
+        .Where(name_col.ne(expr.literal("Admin")))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated" WHERE name != "Admin"'
+    )
+
+
+def test_on_conflict_do_update_set_with_conflict_where() -> None:
+    # ON CONFLICT (col) WHERE expr DO UPDATE SET col = expr
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .OnConflict(col)
+        .Where(col > expr.literal(0))
+        .Do.UpdateSet(("name", expr.literal("Updated")))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO UPDATE SET name = "Updated"'
+    )
 
 
 # =============================================================================
-# RETURNING clause - NOT IMPLEMENTED
+# RETURNING clause
+# SPEC: https://sqlite.org/lang_returning.html
 # =============================================================================
 
-# Returning is now a method (fixed from being an invalid @property with *args)
-# But ReturningClause._create_query is still just `...` (not implemented)
+
+def test_returning_star() -> None:
+    # RETURNING *
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning("*")
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING *'
+    )
 
 
-# =============================================================================
-# Summary of remaining work:
-# =============================================================================
-#
-# NOT IMPLEMENTED:
-# - ReturningClause._create_query is just `...`
-# - DO UPDATE SET ... for upsert-clause
-# - SelectStatement / AliasedExpression placeholders
+def test_returning_single_column() -> None:
+    # RETURNING expr
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning(col)
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id'
+    )
+
+
+def test_returning_expression() -> None:
+    # RETURNING with an expression
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning(col + expr.literal(1))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id + 1'
+    )
+
+
+def test_returning_with_alias() -> None:
+    # RETURNING expr AS alias
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning(col.As("user_id"))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id'
+    )
+
+
+def test_returning_multiple_columns() -> None:
+    # RETURNING col1, col2
+    id_col = ColumnName("id")
+    name_col = ColumnName("name")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning(id_col, name_col)
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id, name'
+    )
+
+
+def test_returning_multiple_with_aliases() -> None:
+    # RETURNING col1 AS alias1, col2 AS alias2
+    id_col = ColumnName("id")
+    name_col = ColumnName("name")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .Returning(id_col.As("user_id"), name_col.As("user_name"))
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id, name AS user_name'
+    )
+
+
+def test_returning_with_default_values() -> None:
+    # INSERT ... DEFAULT VALUES RETURNING *
+    assert (
+        Insert.Into("users").DefaultValues.Returning("*").get_query()
+        == "INSERT INTO users DEFAULT VALUES RETURNING *"
+    )
+
+
+def test_returning_with_on_conflict() -> None:
+    # INSERT ... ON CONFLICT DO NOTHING RETURNING *
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((expr.literal(1), expr.literal("Alice")))
+        .OnConflict(col)
+        .Do.Nothing.Returning("*")
+        .get_query()
+        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO NOTHING RETURNING *'
+    )
+
+
+def test_replace_returning() -> None:
+    # REPLACE ... RETURNING *
+    assert (
+        Replace.Into("users")("id").Values((expr.literal(1),)).Returning("*").get_query()
+        == "REPLACE INTO users (id) VALUES (1) RETURNING *"
+    )

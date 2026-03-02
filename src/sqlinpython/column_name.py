@@ -1,8 +1,16 @@
 from __future__ import annotations
 
-from sqlinpython.column_definition import ColumnNameWithType, WithCollate
+import typing
+
+from sqlinpython.column_definition import (
+    ColumnNameWithType,
+    GeneratedAlwaysAs,
+    WithCollate,
+)
 from sqlinpython.expression.core import (
+    AliasedExpression,
     CollateOperator,
+    Expression,
     Expression12,
 )
 from sqlinpython.name import Name
@@ -28,3 +36,18 @@ class ColumnName(Name, ColumnNameWithType, Expression12):  # type: ignore [misc]
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
         return ColumnNameWithCollate(self, collation_name)
+
+    @typing.overload
+    def As(self, alias: str | Name, /) -> AliasedExpression: ...
+
+    @typing.overload
+    def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
+
+    def As(
+        self, alias_or_expr: str | Name | Expression, /
+    ) -> AliasedExpression | GeneratedAlwaysAs:
+        if isinstance(alias_or_expr, (str, Name)):
+            if isinstance(alias_or_expr, str):
+                alias_or_expr = Name(alias_or_expr)
+            return AliasedExpression(self, alias_or_expr)
+        return GeneratedAlwaysAs(self, alias_or_expr)

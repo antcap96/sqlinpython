@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import typing
 
+from sqlinpython import ColumnName
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.expression import Expression, Star
+from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
@@ -14,34 +16,39 @@ class SelectStatement(NotImplementedSqlElement):
         super().__init__("<select-stmt>")
 
 
-class AliasedExpression(NotImplementedSqlElement):
-    def __init__(self) -> None:
-        super().__init__("<aliased-expression>")
-
-
 # SPEC: https://sqlite.org/lang_insert.html
 class InsertStatement(CompleteSqlQuery):
     pass
 
 
 class ReturningClause(InsertStatement):
-    def __init__(self, prev: SqlElement, values: tuple[Star_ | AliasedExpression, ...]):
+    def __init__(
+        self,
+        prev: SqlElement,
+        values: tuple[Star_ | Expression | AliasedExpression, ...],
+    ):
         self._prev = prev
         self._values = values
 
-    def _create_query(self, buffer: list[str]) -> None: ...
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" RETURNING ")
+        for i, val in enumerate(self._values):
+            if i > 0:
+                buffer.append(", ")
+            val._create_query(buffer)
 
 
 class BeforeReturningClause(InsertStatement):
     def Returning(
-        self, *args: typing.Literal["*"] | AliasedExpression | Star_
+        self, *args: typing.Literal["*"] | Expression | AliasedExpression | Star_
     ) -> ReturningClause:
         args = tuple(Star if arg == "*" else arg for arg in args)
         return ReturningClause(self, args)
 
 
 class OnConflictWhere(SqlElement):
-    def __init__(self, prev: OnConflictCall, expr: Expression):
+    def __init__(self, prev: SqlElement, expr: Expression):
         self._prev = prev
         self._expr = expr
 
@@ -56,7 +63,7 @@ class OnConflictWhere(SqlElement):
 
 
 class OnConflictCall(OnConflictWhere):
-    def __init__(self, prev: OnConflictClause, args: tuple[IndexedColumn, ...]):
+    def __init__(self, prev: SqlElement, args: tuple[IndexedColumn, ...]):
         self._prev = prev
         self._args = args
 
@@ -77,7 +84,7 @@ class OnConflictClause(OnConflictCall):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
-    def __call__(self, *args: IndexedColumn):
+    def __call__(self, *args: IndexedColumn) -> OnConflictCall:
         return OnConflictCall(self, args)
 
     def _create_query(self, buffer: list[str]) -> None:
@@ -91,6 +98,48 @@ class BeforeUpsertClause(BeforeReturningClause):
         return OnConflictClause(self)
 
 
+class OnConflictUpdateWhere(BeforeReturningClause):
+    def __init__(self, prev: SqlElement, condition: Expression):
+        self._prev = prev
+        self._condition = condition
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" WHERE ")
+        self._condition._create_query(buffer)
+
+
+class OnConflictDoUpdateSet(OnConflictUpdateWhere):
+    def __init__(
+        self,
+        prev: SqlElement,
+        args: list[tuple[tuple[ColumnName, ...] | ColumnName, Expression]],
+    ) -> None:
+        self._prev = prev
+        self._args = args
+
+    def Where(self, condition: Expression) -> OnConflictUpdateWhere:
+        return OnConflictUpdateWhere(self, condition)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" UPDATE SET ")
+        for i, (k, v) in enumerate(self._args):
+            if i > 0:
+                buffer.append(", ")
+            if isinstance(k, tuple):
+                buffer.append("(")
+                for j, x in enumerate(k):
+                    if j > 0:
+                        buffer.append(", ")
+                    x._create_query(buffer)
+                buffer.append(") = ")
+            else:
+                k._create_query(buffer)
+                buffer.append(" = ")
+            v._create_query(buffer)
+
+
 class OnConflictDo(SqlElement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
@@ -99,13 +148,30 @@ class OnConflictDo(SqlElement):
     def Nothing(self) -> OnConflictDoNothing:
         return OnConflictDoNothing(self)
 
+    def UpdateSet(
+        self, *args: tuple[tuple[ColumnName | str, ...] | ColumnName | str, Expression]
+    ) -> OnConflictDoUpdateSet:
+        arguments: list[tuple[tuple[ColumnName, ...] | ColumnName, Expression]] = []
+        for k, v in args:
+            match k:
+                case ColumnName():
+                    arguments.append((k, v))
+                case str():
+                    arguments.append((ColumnName(k), v))
+                case _:
+                    key = tuple(
+                        x if isinstance(x, ColumnName) else ColumnName(x) for x in k
+                    )
+                    arguments.append((key, v))
+        return OnConflictDoUpdateSet(self, arguments)
+
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" DO")
 
 
 class OnConflictDoNothing(BeforeUpsertClause):
-    def __init__(self, prev: OnConflictDo):
+    def __init__(self, prev: SqlElement):
         self._prev = prev
 
     def _create_query(self, buffer: list[str]) -> None:
