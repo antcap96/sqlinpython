@@ -136,7 +136,7 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
         return NullCompareExpression(self_, "ISNULL")
 
     @property
-    def NotNull(self) -> NullCompareExpression:
+    def Notnull(self) -> NullCompareExpression:
         self_ = _parenthesize_if_necessary(self, Expression4)
         return NullCompareExpression(self_, "NOTNULL")
 
