@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.insert import Insert_, Replace_
 from sqlinpython.name import Name
 
 
@@ -112,6 +113,14 @@ class WithClause(SqlElement):
             if i > 0:
                 buffer.append(", ")
             cte._create_query(buffer)
+
+    @property
+    def Replace(self) -> Replace_:
+        return Replace_(self)
+
+    @property
+    def Insert(self) -> Insert_:
+        return Insert_(self)
 
 
 class WithRecursive(SqlElement):

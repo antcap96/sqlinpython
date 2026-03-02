@@ -9,7 +9,7 @@ from sqlinpython.ordering_term import OrderingTerm
 from .core import Expression, Expression13, FollowingFrameBound, PrecedingFrameBound
 
 
-class _Star(SqlElement):
+class Star_(SqlElement):
     """Represents * in function arguments like COUNT(*)."""
 
     def __init__(self) -> None:
@@ -19,7 +19,7 @@ class _Star(SqlElement):
         buffer.append("*")
 
 
-Star = _Star()
+Star = Star_()
 
 
 class FunctionName(SqlElement):
@@ -32,7 +32,7 @@ class FunctionName(SqlElement):
     def __call__(self) -> FunctionCall: ...
 
     @overload
-    def __call__(self, __star: Literal["*"] | _Star) -> FunctionCall: ...
+    def __call__(self, __star: Literal["*"] | Star_) -> FunctionCall: ...
 
     @overload
     def __call__(
@@ -45,14 +45,14 @@ class FunctionName(SqlElement):
 
     def __call__(
         self,
-        *args: Literal["*"] | _Star | Expression,
+        *args: Literal["*"] | Star_ | Expression,
         distinct: bool = False,
         order_by: tuple[OrderingTerm, ...] | None = None,
     ) -> FunctionCall:
         match args:
             case ():
                 return FunctionCall(self, (), distinct=distinct, order_by=order_by)
-            case ("*",) | (_Star(),):
+            case ("*",) | (Star_(),):
                 return FunctionCall(self, (), star=True)
             case _:
                 # Cast is safe here: the previous cases handle "*" and _Star,
