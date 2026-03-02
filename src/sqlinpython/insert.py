@@ -5,6 +5,7 @@ import typing
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.function import Star_
+from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
 
@@ -39,19 +40,77 @@ class BeforeReturningClause(InsertStatement):
         return ReturningClause(self, args)
 
 
-class OnConflictClause(SqlElement):
+class OnConflictWhere(SqlElement):
+    def __init__(self, prev: OnConflictCall, expr: Expression):
+        self._prev = prev
+        self._expr = expr
+
+    @property
+    def Do(self) -> OnConflictDo:
+        return OnConflictDo(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" WHERE ")
+        self._expr._create_query(buffer)
+
+
+class OnConflictCall(OnConflictWhere):
+    def __init__(self, prev: OnConflictClause, args: tuple[IndexedColumn, ...]):
+        self._prev = prev
+        self._args = args
+
+    def Where(self, expr: Expression) -> OnConflictWhere:
+        return OnConflictWhere(self, expr)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append("(")
+        for i, arg in enumerate(self._args):
+            if i > 0:
+                buffer.append(", ")
+            arg._create_query(buffer)
+        buffer.append(")")
+
+
+class OnConflictClause(OnConflictCall):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
-        raise NotImplementedError("OnConflictClause is not implemented yet")
+
+    def __call__(self, *args: IndexedColumn):
+        return OnConflictCall(self, args)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ON CONFLICT")
 
 
 class BeforeUpsertClause(BeforeReturningClause):
+    @property
+    def OnConflict(self) -> OnConflictClause:
+        return OnConflictClause(self)
+
+
+class OnConflictDo(SqlElement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
     @property
-    def OnConflict(self) -> OnConflictClause:
-        return OnConflictClause(self)
+    def Nothing(self) -> OnConflictDoNothing:
+        return OnConflictDoNothing(self)
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" DO")
+
+
+class OnConflictDoNothing(BeforeUpsertClause):
+    def __init__(self, prev: OnConflictDo):
+        self._prev = prev
+
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" NOTHING")
 
 
 class InsertValues(BeforeUpsertClause):
