@@ -12,6 +12,7 @@ dependencies = []
 [project.optional-dependencies]
 dev = [
     "mypy",
+    "basedpyright",
     "ruff",
     "ty",
     "pre-commit",

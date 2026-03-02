@@ -23,7 +23,7 @@ class WithGeneratedAlways(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def As(self, expression: Expression) -> GeneratedAlwaysAs:
+    def As(self, expression: Expression, /) -> GeneratedAlwaysAs:
         return GeneratedAlwaysAs(self, expression)
 
     def _create_query(self, buffer: list[str]) -> None:
