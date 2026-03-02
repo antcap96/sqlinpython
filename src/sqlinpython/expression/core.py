@@ -225,7 +225,7 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
         other_ = _parenthesize_if_necessary(other, Expression11)
         return ConcatLikeOperator(self_, other_, "->>")
 
-    def Collate(self, other: Name | str) -> CollateOperator:
+    def Collate(self, other: Name | str, /) -> CollateOperator:
         self_ = _parenthesize_if_necessary(self, Expression11)
         if isinstance(other, str):
             other = Name(other)

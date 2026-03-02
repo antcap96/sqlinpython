@@ -55,7 +55,7 @@ class ColumnConstraintWithName(WithGeneratedAlways):
     def Default(self, value: int | Literal | Expression) -> WithDefault:
         return WithDefault(self, value)
 
-    def Collate(self, collation_name: Name | str) -> WithCollate:
+    def Collate(self, collation_name: Name | str, /) -> WithCollate:
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
         return WithCollate(self, collation_name)
