@@ -112,7 +112,7 @@ def test_like_likes() -> None:
 def test_null_compare() -> None:
     t = expr.literal(True)
     assert to_str(t.IsNull) == "TRUE ISNULL"
-    assert to_str(t.NotNull) == "TRUE NOTNULL"
+    assert to_str(t.Notnull) == "TRUE NOTNULL"
     assert to_str(t.Not.Null) == "TRUE NOT NULL"
 
 
