@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
-from sqlinpython.insert import Insert_, Replace_
+from sqlinpython.insert import InsertKeyword, ReplaceKeyword
 from sqlinpython.name import Name
 
 
@@ -115,12 +115,12 @@ class WithClause(SqlElement):
             cte._create_query(buffer)
 
     @property
-    def Replace(self) -> Replace_:
-        return Replace_(self)
+    def Replace(self) -> ReplaceKeyword:
+        return ReplaceKeyword(self)
 
     @property
-    def Insert(self) -> Insert_:
-        return Insert_(self)
+    def Insert(self) -> InsertKeyword:
+        return InsertKeyword(self)
 
 
 class WithRecursive(SqlElement):
