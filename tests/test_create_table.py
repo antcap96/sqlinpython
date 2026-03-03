@@ -159,6 +159,10 @@ def test_column_definition() -> None:
         == 'CREATE TABLE table_name (a AS ("a"))'
     )
     assert (
+        start(a.Collate("utf8").As(expr.literal("a"))).get_query()
+        == 'CREATE TABLE table_name (a COLLATE utf8 AS ("a"))'
+    )
+    assert (
         start(a.GeneratedAlways.As(expr.literal("a"))).get_query()
         == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a"))'
     )
