@@ -1,8 +1,12 @@
 __version__ = "0.1.0"
 
 from sqlinpython.column_name import ColumnName as ColumnName
+from sqlinpython.common_table_expression import TableName as TableName
+from sqlinpython.common_table_expression import With as With
 from sqlinpython.create import Create as Create
 from sqlinpython.drop_table import DropTable as DropTable
+from sqlinpython.insert import Insert as Insert
+from sqlinpython.insert import Replace as Replace
 from sqlinpython.savepoint import Release as Release
 from sqlinpython.savepoint import Rollback as Rollback
 from sqlinpython.savepoint import Savepoint as Savepoint

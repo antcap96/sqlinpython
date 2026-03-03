@@ -1,8 +1,7 @@
+from sqlinpython import TableName, With
 from sqlinpython.common_table_expression import (
     CommonTableExpression,
     SelectStatement,
-    TableName,
-    With,
     WithClause,
 )
 

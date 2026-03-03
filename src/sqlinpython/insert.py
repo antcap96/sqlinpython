@@ -397,3 +397,8 @@ class Replace_(SqlElement):
         else:
             self._prev._create_query(buffer)
             buffer.append(" REPLACE")
+
+
+# Entry point singletons
+Insert = Insert_(None)
+Replace = Replace_(None)
