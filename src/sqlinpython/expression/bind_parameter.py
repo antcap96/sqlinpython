@@ -1,4 +1,4 @@
-from typing import Literal, overload
+from typing import override, Literal, overload
 
 from sqlinpython.expression.core import Expression12
 
@@ -23,6 +23,7 @@ class BindParameter(Expression12):
             assert value.isalpha()
             self._bind_symbol = bind_symbol
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(self._bind_symbol)
         if self._value is not None:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Literal, cast, overload
+from abc import ABC
+from typing import override, Literal, cast, overload
 
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
@@ -15,6 +16,7 @@ class Star_(SqlElement):
     def __init__(self) -> None:
         pass
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("*")
 
@@ -64,12 +66,13 @@ class FunctionName(SqlElement):
                     order_by=order_by,
                 )
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._name._create_query(buffer)
 
 
 # SPEC: https://sqlite.org/syntax/window-defn.html
-class WindowDefn(SqlElement):
+class WindowDefn(SqlElement, ABC):
     pass
 
 
@@ -101,6 +104,7 @@ class OrderByClause(WindowDefn):
     def Groups(self) -> FrameSpecClause:
         return FrameSpecClause(self, "GROUPS")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is not None:
             self._prev._create_query(buffer)
@@ -135,6 +139,7 @@ class FrameSpecClause(SqlElement):
     def Between(self) -> FrameSpecBetween:
         return FrameSpecBetween(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is not None:
             self._prev._create_query(buffer)
@@ -159,6 +164,7 @@ class FrameSpecBetween(SqlElement):
     def CurrentRow(self) -> FrameSpecBetweenStart:
         return FrameSpecBetweenStart(self, "CURRENT ROW")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" BETWEEN")
@@ -175,6 +181,7 @@ class FrameSpecBetweenExprStart(SqlElement):
     def And(self) -> FrameSpecBetweenAnd:
         return FrameSpecBetweenAnd(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -194,6 +201,7 @@ class FrameSpecBetweenStart(SqlElement):
     def And(self) -> FrameSpecBetweenAnd:
         return FrameSpecBetweenAnd(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -217,6 +225,7 @@ class FrameSpecBetweenAnd(SqlElement):
     def CurrentRow(self) -> FrameSpecBetweenEnd:
         return FrameSpecBetweenEnd(self, "CURRENT ROW")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" AND")
@@ -231,6 +240,7 @@ class FrameSpecWithExclude(WindowDefn):
         self._prev = prev
         self._kind = kind
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" EXCLUDE ")
@@ -264,6 +274,7 @@ class FrameSpecBetweenEnd(FrameSpecBound):
         self._prev = prev
         self._kind = kind  # type: ignore[assignment]
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -279,6 +290,7 @@ class FrameSpecBetweenExprEnd(FrameSpecBound):
         self._prev = prev
         self._bound = bound
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -292,6 +304,7 @@ class FrameSpecExprBound(FrameSpecBound):
         self._prev = prev
         self._bound = bound
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -307,6 +320,7 @@ class FrameSpecSingleBound(FrameSpecBound):
         self._prev = prev
         self._kind = kind  # type: ignore[assignment]
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -338,6 +352,7 @@ class PartitionByClause(OrderByClause):
     def OrderBy(self) -> OrderByKeyword:
         return OrderByKeyword(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is not None:
             self._prev._create_query(buffer)
@@ -363,6 +378,7 @@ class FunctionCallWithOver(Expression13):
         self._prev = prev
         self._arg = arg
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" OVER ")
@@ -386,6 +402,7 @@ class FunctionCallWithFilter(FunctionCallWithOver):
     def Over(self, arg: WindowName | WindowDefn | None = None) -> FunctionCallWithOver:
         return FunctionCallWithOver(self, arg)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" FILTER (WHERE ")
@@ -410,6 +427,7 @@ class FunctionCall(FunctionCallWithFilter):
         self._distinct = distinct
         self._order_by = order_by
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._func._create_query(buffer)
         buffer.append("(")

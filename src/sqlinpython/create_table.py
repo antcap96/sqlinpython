@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import typing
+from typing import override
+from abc import ABC
 
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
@@ -14,7 +16,7 @@ class SelectStatement(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/syntax/create-table-stmt.html
-class CreateTableStatement(CompleteSqlQuery):
+class CreateTableStatement(CompleteSqlQuery, ABC):
     pass
 
 
@@ -23,6 +25,7 @@ class CreateTableAs(CreateTableStatement):
         self._prev = prev
         self._select_stmt = select_stmt
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" AS ")
@@ -33,6 +36,7 @@ class AddComma(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(",")
@@ -53,6 +57,7 @@ class CreateTableWithOptions(CreateTableStatement):
     def Strict(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(AddComma(self), "STRICT")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._option}")
@@ -73,6 +78,7 @@ class CreateTableWithDefinitions(CreateTableStatement):
     def Strict(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(self, "STRICT")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
@@ -98,6 +104,7 @@ class CreateTableWithName(SqlElement):
         # TODO: Validate that any table constraints are at the end
         return CreateTableWithDefinitions(self, (first_col, *rest))
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -120,6 +127,7 @@ class CreateTableIfNotExists(SqlElement):
             table_name = Name(table_name)
         return CreateTableWithName(self, schema_name, table_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF NOT EXISTS")
@@ -133,6 +141,7 @@ class CreateTable(CreateTableIfNotExists):
     def IfNotExists(self) -> CreateTableIfNotExists:
         return CreateTableIfNotExists(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" TABLE")

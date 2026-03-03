@@ -1,5 +1,9 @@
 from __future__ import annotations
 
+from typing import override
+
+from abc import ABC
+
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.insert import InsertKeyword, ReplaceKeyword
 from sqlinpython.name import Name
@@ -11,7 +15,7 @@ class SelectStatement(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/syntax/common-table-expression.html
-class CommonTableExpression(SqlElement):
+class CommonTableExpression(SqlElement, ABC):
     pass
 
 
@@ -20,6 +24,7 @@ class CteWithSelectStmt(CommonTableExpression):
         self._prev = prev
         self._select_stmt = select_stmt
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
@@ -34,6 +39,7 @@ class Materialized_(SqlElement):
     def __call__(self, select_stmt: SelectStatement) -> CteWithSelectStmt:
         return CteWithSelectStmt(self, select_stmt)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" MATERIALIZED")
@@ -47,6 +53,7 @@ class CteNot_(SqlElement):
     def Materialized(self) -> Materialized_:
         return Materialized_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" NOT")
@@ -64,6 +71,7 @@ class As_(Materialized_):
     def Materialized(self) -> Materialized_:
         return Materialized_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" AS")
@@ -78,6 +86,7 @@ class CteTableNameWithColumns(SqlElement):
     def As(self) -> As_:
         return As_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
@@ -106,6 +115,7 @@ class WithClause(SqlElement):
         self._prev = prev
         self._ctes = ctes
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -132,6 +142,7 @@ class WithRecursive(SqlElement):
     ) -> WithClause:
         return WithClause(self, (cte,) + more_ctes)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" RECURSIVE")
@@ -145,6 +156,7 @@ class WithKeyword(WithRecursive):
     def Recursive(self) -> WithRecursive:
         return WithRecursive(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("WITH")
 

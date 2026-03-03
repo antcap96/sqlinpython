@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Literal
+from typing import override, Literal
 
 from sqlinpython.base import SqlElement
 from sqlinpython.column_definition import ColumnNameWithType
@@ -17,6 +17,7 @@ class InitiallyHow(ForeignKeyClause):
         self._prev = prev
         self._how = how
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._how}")
@@ -34,6 +35,7 @@ class Initially_(SqlElement):
     def Immediate(self) -> InitiallyHow:
         return InitiallyHow(self, "IMMEDIATE")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" INITIALLY")
@@ -47,6 +49,7 @@ class Deferrable_(ForeignKeyClause):
     def Initially(self) -> Initially_:
         return Initially_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" DEFERRABLE")
@@ -60,6 +63,7 @@ class Not_(SqlElement):
     def Deferrable(self) -> Deferrable_:
         return Deferrable_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" NOT")
@@ -89,6 +93,7 @@ class Match_(BeforeDeferrable):
         self._prev = prev
         self._name = name
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" MATCH ")
@@ -104,6 +109,7 @@ class OnActionDo(BeforeDeferrable):
         self._prev = prev
         self._action = action
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._action}")
@@ -134,6 +140,7 @@ class OnAction(SqlElement):
     def NoAction(self) -> OnActionDo:
         return OnActionDo(self, "NO ACTION")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._action}")
@@ -151,6 +158,7 @@ class On_(SqlElement):
     def Update(self) -> OnAction:
         return OnAction(self, "UPDATE")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ON")
@@ -161,6 +169,7 @@ class ReferenceWithColumns(BeforeDeferrable):
         self._prev = prev
         self._column_names = column_names
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
@@ -185,6 +194,7 @@ class References_(ReferenceWithColumns):
         )
         return ReferenceWithColumns(self, names)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" REFERENCES ")

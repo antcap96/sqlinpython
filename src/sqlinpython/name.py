@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import override
+
 import re
 
 from sqlinpython.base import SqlElement
@@ -22,5 +24,6 @@ class Name(SqlElement):
         name = quote_if_necessary(name, force_quote)
         self._name = name
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(self._name)

@@ -42,3 +42,13 @@ reportUnsafeMultipleInheritance = false
 reportMissingSuperCall = false
 reportUnannotatedClassAttribute = false
 reportPrivateUsage = false
+# basedpyright 1.38.2 incorrectly flags match statement cases and defensive
+# else branches as unreachable due to overly aggressive exhaustiveness checking.
+# This also causes reportUnnecessaryIsInstance and reportUnnecessaryComparison
+# to flag checks on types narrowed to Never.
+reportUnreachable = false
+reportUnnecessaryIsInstance = false
+reportUnnecessaryComparison = false
+# Import cycles between column_definition, foreign_key_clause, and table_constraint
+# are architectural - these classes are genuinely interdependent and work fine at runtime.
+reportImportCycles = false

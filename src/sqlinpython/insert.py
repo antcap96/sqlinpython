@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 import typing
+from typing import override
+from abc import ABC
 
-from sqlinpython import ColumnName
+from sqlinpython.column_name import ColumnName
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
@@ -17,7 +19,7 @@ class SelectStatement(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/lang_insert.html
-class InsertStatement(CompleteSqlQuery):
+class InsertStatement(CompleteSqlQuery, ABC):
     pass
 
 
@@ -30,6 +32,7 @@ class ReturningClause(InsertStatement):
         self._prev = prev
         self._values = values
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" RETURNING ")
@@ -39,7 +42,7 @@ class ReturningClause(InsertStatement):
             val._create_query(buffer)
 
 
-class BeforeReturningClause(InsertStatement):
+class BeforeReturningClause(InsertStatement, ABC):
     def Returning(
         self, *args: typing.Literal["*"] | Expression | AliasedExpression | Star_
     ) -> ReturningClause:
@@ -56,6 +59,7 @@ class OnConflictWhere(SqlElement):
     def Do(self) -> OnConflictDo:
         return OnConflictDo(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" WHERE ")
@@ -70,6 +74,7 @@ class OnConflictCall(OnConflictWhere):
     def Where(self, expr: Expression) -> OnConflictWhere:
         return OnConflictWhere(self, expr)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
@@ -87,12 +92,13 @@ class OnConflictClause(OnConflictCall):
     def __call__(self, *args: IndexedColumn) -> OnConflictCall:
         return OnConflictCall(self, args)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ON CONFLICT")
 
 
-class BeforeUpsertClause(BeforeReturningClause):
+class BeforeUpsertClause(BeforeReturningClause, ABC):
     @property
     def OnConflict(self) -> OnConflictClause:
         return OnConflictClause(self)
@@ -103,6 +109,7 @@ class OnConflictUpdateWhere(BeforeReturningClause):
         self._prev = prev
         self._condition = condition
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" WHERE ")
@@ -121,6 +128,7 @@ class OnConflictDoUpdateSet(OnConflictUpdateWhere):
     def Where(self, condition: Expression) -> OnConflictUpdateWhere:
         return OnConflictUpdateWhere(self, condition)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" UPDATE SET ")
@@ -165,6 +173,7 @@ class OnConflictDo(SqlElement):
                     arguments.append((key, v))
         return OnConflictDoUpdateSet(self, arguments)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" DO")
@@ -174,6 +183,7 @@ class OnConflictDoNothing(BeforeUpsertClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" NOTHING")
@@ -186,6 +196,7 @@ class InsertValues(BeforeUpsertClause):
         self._prev = prev
         self._values = values
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" VALUES ")
@@ -205,6 +216,7 @@ class InsertSelect(BeforeUpsertClause):
         self._prev = prev
         self._select_stm = select_stm
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -215,6 +227,7 @@ class InsertDefaultValues(BeforeReturningClause):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" DEFAULT VALUES")
@@ -235,6 +248,7 @@ class InsertColumnNames(SqlElement):
     def DefaultValues(self) -> InsertDefaultValues:
         return InsertDefaultValues(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
@@ -258,6 +272,7 @@ class InsertNameAs(InsertColumnNames):
         self, first_column_name: Name | str, /, *column_names: Name | str
     ) -> InsertColumnNames: ...
 
+    @override
     def __call__(
         self,
         first_column_name: Name | str | SelectStatement,
@@ -273,6 +288,7 @@ class InsertNameAs(InsertColumnNames):
         )
         return InsertColumnNames(self, (first_column_name, *column_names))
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" AS ")
@@ -291,6 +307,7 @@ class IntoName(InsertNameAs):
             alias = Name(alias)
         return InsertNameAs(self, alias)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -311,6 +328,7 @@ class Into_(SqlElement):
             name2 = Name(name2)
         return IntoName(self, name, name2)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" INTO")
@@ -329,6 +347,7 @@ class InsertAfterOr(SqlElement):
     def Into(self) -> Into_:
         return Into_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._value}")
@@ -358,6 +377,7 @@ class InsertOr(SqlElement):
     def Rollback(self) -> InsertAfterOr:
         return InsertAfterOr(self, "ROLLBACK")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" OR")
@@ -375,6 +395,7 @@ class InsertKeyword(SqlElement):
     def Or(self) -> InsertOr:
         return InsertOr(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
             buffer.append("INSERT")
@@ -391,6 +412,7 @@ class ReplaceKeyword(SqlElement):
     def Into(self) -> Into_:
         return Into_(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
             buffer.append("REPLACE")

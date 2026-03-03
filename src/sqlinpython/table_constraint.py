@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, overload
+from abc import ABC
+from typing import override, TYPE_CHECKING, overload
 
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
@@ -18,6 +19,7 @@ class ConstraintKeyword(SqlElement):
             name = Name(name)
         return ConstraintWithName(self, name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("CONSTRAINT")
 
@@ -48,6 +50,7 @@ class ConstraintWithName(SqlElement):
         )
         return ForeignKeyConstraint(self, names)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -69,6 +72,7 @@ class ForeignKeyConstraint(SqlElement):
 
         return References_(self, foreign_table_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is not None:
             self._prev._create_query(buffer)
@@ -107,6 +111,7 @@ class PrimaryKeyConstraint(SqlElement):
     ) -> ConstraintBeforeConflictClause:
         return ConstraintBeforeConflictClause(self, columns, autoincrement)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
             buffer.append("PRIMARY KEY")
@@ -125,6 +130,7 @@ class UniqueConstraint(SqlElement):
     def __call__(self, *columns: IndexedColumn) -> ConstraintBeforeConflictClause:
         return ConstraintBeforeConflictClause(self, columns)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
             buffer.append("UNIQUE")
@@ -136,7 +142,7 @@ class UniqueConstraint(SqlElement):
 Unique = UniqueConstraint(None)
 
 
-class TableConstraint(SqlElement):
+class TableConstraint(SqlElement, ABC):
     pass
 
 
@@ -158,6 +164,7 @@ class ConstraintBeforeConflictClause(TableConstraintWithConflictClause):
     def OnConflict(self) -> OnConflict_[TableConstraintWithConflictClause]:
         return OnConflict_(TableConstraintWithConflictClause, self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
@@ -175,6 +182,7 @@ class CheckConstraint(TableConstraint):
         self._prev = prev
         self._expr = expr
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         if self._prev is None:
             buffer.append("CHECK (")

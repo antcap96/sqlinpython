@@ -1,3 +1,5 @@
+from typing import override
+
 from .core import Expression13
 
 
@@ -9,6 +11,7 @@ class CurrentTimeKeyword(Literal):
     def __init__(self) -> None:
         pass
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("CURRENT_TIME")
 
@@ -20,6 +23,7 @@ class CurrentDateKeyword(Literal):
     def __init__(self) -> None:
         pass
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("CURRENT_DATE")
 
@@ -31,6 +35,7 @@ class CurrentTimestampKeyword(Literal):
     def __init__(self) -> None:
         pass
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("CURRENT_TIMESTAMP")
 
@@ -43,6 +48,7 @@ class FloatLiteral(Literal):
         self._value = value
 
     # TODO: All this
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(str(self._value))
 
@@ -51,6 +57,7 @@ class IntLiteral(Literal):
     def __init__(self, value: int) -> None:
         self._value = value
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(str(self._value))
 
@@ -59,6 +66,7 @@ class StringLiteral(Literal):
     def __init__(self, value: str) -> None:
         self._value = value
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(f'"{self._value}"')
 
@@ -67,6 +75,7 @@ class BooleanLiteral(Literal):
     def __init__(self, value: bool) -> None:
         self._value = value
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(str(self._value).upper())
 
@@ -75,6 +84,7 @@ class NullLiteral(Literal):
     def __init__(self) -> None:
         pass
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("NULL")
 

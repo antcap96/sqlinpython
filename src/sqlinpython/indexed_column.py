@@ -1,3 +1,5 @@
+from typing import override
+
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
@@ -8,6 +10,7 @@ class IndexedColumn(SqlElement):
         self._prev = prev
         self._asc = asc
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         asc_desc = " ASC" if self._asc else " DESC"
@@ -29,6 +32,7 @@ class ColumnNameWithOrdering(IndexedColumn, OrderingTerm):
     def NullsLast(self) -> OrderingTermWithNulls:
         return OrderingTermWithNulls(self, False)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         asc_desc = " ASC" if self._asc else " DESC"
@@ -48,6 +52,7 @@ class IndexedColumnWithCollate(IndexedColumn):
     def Desc(self) -> ColumnNameWithOrdering:
         return ColumnNameWithOrdering(self, False)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" COLLATE ")
