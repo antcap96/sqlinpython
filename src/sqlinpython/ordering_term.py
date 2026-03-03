@@ -1,7 +1,11 @@
+from typing import override
+
+from abc import ABC
+
 from sqlinpython.base import SqlElement
 
 
-class OrderingTerm(SqlElement):
+class OrderingTerm(SqlElement, ABC):
     """Base class for ordering terms."""
 
     pass
@@ -14,6 +18,7 @@ class OrderingTermWithNulls(OrderingTerm):
         self._prev = prev
         self._nulls_first = nulls_first
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         if self._nulls_first:

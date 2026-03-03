@@ -1,4 +1,5 @@
 from abc import ABCMeta, abstractmethod
+from typing import override
 
 
 class SqlElement(metaclass=ABCMeta):
@@ -18,5 +19,6 @@ class NotImplementedSqlElement(SqlElement):
     def __init__(self, placeholder: str) -> None:
         self._placeholder = placeholder
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(self._placeholder)

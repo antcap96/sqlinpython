@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+from typing import override
+
+from abc import ABC
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.expression import Expression
@@ -7,7 +10,7 @@ from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
 
-class CreateIndexStatement(CompleteSqlQuery):
+class CreateIndexStatement(CompleteSqlQuery, ABC):
     pass
 
 
@@ -16,6 +19,7 @@ class CreateIndexWithWhere(CreateIndexStatement):
         self._prev = prev
         self._expr = expr
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" WHERE ")
@@ -36,6 +40,7 @@ class CreateIndexOnTable(CreateIndexStatement):
     def Where(self, expr: Expression) -> CreateIndexWithWhere:
         return CreateIndexWithWhere(self, expr)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ON ")
@@ -64,6 +69,7 @@ class CreateIndexWithName(SqlElement):
             table_name = Name(table_name)
         return CreateIndexOnTable(self, table_name, (first_col, *rest_cols))
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -86,6 +92,7 @@ class CreateIndexIfNotExists(CreateIndexWithName):
             index_name = Name(index_name)
         return CreateIndexWithName(self, schema_name, index_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF NOT EXISTS")
@@ -99,6 +106,7 @@ class CreateIndex(CreateIndexIfNotExists):
     def IfNotExists(self) -> CreateIndexIfNotExists:
         return CreateIndexIfNotExists(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" INDEX")

@@ -1,3 +1,5 @@
+from typing import override
+
 from sqlinpython.base import SqlElement
 
 
@@ -6,6 +8,7 @@ class OnConflict_[T: OnConflictAction](SqlElement):
         self._t = t
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ON CONFLICT")
@@ -36,6 +39,7 @@ class OnConflictAction(SqlElement):
         self._prev = prev
         self._action = action
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._action}")

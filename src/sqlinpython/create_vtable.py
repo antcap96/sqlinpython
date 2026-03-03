@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+from typing import override
+
+from abc import ABC
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 
 # Spec: https://sqlite.org/lang_createvtab.html
-class CreateVirtualTableStatement(CompleteSqlQuery):
+class CreateVirtualTableStatement(CompleteSqlQuery, ABC):
     pass
 
 
@@ -15,6 +18,7 @@ class CreateVirtualTableWithArgs(CreateVirtualTableStatement):
         self._prev = prev
         self._args = args
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
@@ -33,6 +37,7 @@ class CreateVirtualTableUsing(CreateVirtualTableStatement):
     def __call__(self, *args: str) -> CreateVirtualTableWithArgs:
         return CreateVirtualTableWithArgs(self, args)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" USING ")
@@ -50,6 +55,7 @@ class CreateVirtualTableWithName(SqlElement):
             module_name = Name(module_name)
         return CreateVirtualTableUsing(self, module_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -72,6 +78,7 @@ class CreateVirtualTableIfNotExists(SqlElement):
             table_name = Name(table_name)
         return CreateVirtualTableWithName(self, schema_name, table_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF NOT EXISTS")
@@ -85,6 +92,7 @@ class CreateVirtualTable(CreateVirtualTableIfNotExists):
     def IfNotExists(self) -> CreateVirtualTableIfNotExists:
         return CreateVirtualTableIfNotExists(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" VIRTUAL TABLE")

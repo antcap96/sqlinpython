@@ -1,4 +1,5 @@
 import typing
+from typing import override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.create_index import CreateIndex
@@ -14,6 +15,7 @@ class CreateUnique(SqlElement):
     def Index(self) -> CreateIndex:
         return CreateIndex(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" UNIQUE")
@@ -28,6 +30,7 @@ class CreateTempTable(SqlElement):
     def Table(self) -> CreateTable:
         return CreateTable(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._how}")
@@ -53,6 +56,7 @@ class CreateKeyword(CreateTempTable, CreateUnique):
     def VirtualTable(self) -> CreateVirtualTable:
         return CreateVirtualTable(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("CREATE")
 

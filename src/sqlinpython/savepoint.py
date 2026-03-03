@@ -1,3 +1,5 @@
+from typing import override
+
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
@@ -9,6 +11,7 @@ class SavepointComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -24,6 +27,7 @@ class SavepointKeyword(SqlElement):
             savepoint = Name(savepoint)
         return SavepointComplete(self, savepoint)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("SAVEPOINT")
 
@@ -36,6 +40,7 @@ class ReleaseComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -51,6 +56,7 @@ class ReleaseWithSavepoint(SqlElement):
             savepoint = Name(savepoint)
         return ReleaseComplete(self, savepoint)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" SAVEPOINT")
@@ -64,6 +70,7 @@ class ReleaseKeyword(ReleaseWithSavepoint):
     def Savepoint(self) -> ReleaseWithSavepoint:
         return ReleaseWithSavepoint(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("RELEASE")
 
@@ -76,6 +83,7 @@ class RollbackComplete(CompleteSqlQuery):
         self._prev = prev
         self._savepoint = savepoint
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -91,6 +99,7 @@ class RollbackWithToSavepoint(SqlElement):
             savepoint = Name(savepoint)
         return RollbackComplete(self, savepoint)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" SAVEPOINT")
@@ -104,6 +113,7 @@ class RollbackWithTo(RollbackWithToSavepoint):
     def Savepoint(self) -> RollbackWithToSavepoint:
         return RollbackWithToSavepoint(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" TO")
@@ -117,6 +127,7 @@ class RollbackWithTransaction(RollbackComplete):
     def To(self) -> RollbackWithTo:
         return RollbackWithTo(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" TRANSACTION")
@@ -130,6 +141,7 @@ class RollbackKeyword(RollbackWithTransaction):
     def Transaction(self) -> RollbackWithTransaction:
         return RollbackWithTransaction(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("ROLLBACK")
 

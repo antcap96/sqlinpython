@@ -1,3 +1,5 @@
+from typing import override
+
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
@@ -8,6 +10,7 @@ class VacuumWithIntoFileName(CompleteSqlQuery):
         self._prev = prev
         self._file_name = file_name
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" INTO {self._file_name}")
@@ -21,6 +24,7 @@ class VacuumWithSchema(VacuumWithIntoFileName):
     def Into(self, file_name: str) -> VacuumWithIntoFileName:
         return VacuumWithIntoFileName(self, file_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -36,6 +40,7 @@ class VacuumKeyword(VacuumWithSchema):
             schema_name = Name(schema_name)
         return VacuumWithSchema(self, schema_name)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("VACUUM")
 

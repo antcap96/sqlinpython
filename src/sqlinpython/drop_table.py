@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import override
+
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
@@ -10,6 +12,7 @@ class DropTableComplete(CompleteSqlQuery):
         self._schema = schema
         self._table = table
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -36,6 +39,7 @@ class DropTableWithIfExists(SqlElement):
             table = Name(table)
         return DropTableComplete(self, schema, table)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF EXISTS")
@@ -49,6 +53,7 @@ class DropTableKeyword(DropTableWithIfExists):
     def IfExists(self) -> DropTableWithIfExists:
         return DropTableWithIfExists(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("DROP TABLE")
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from typing import override
 
 from sqlinpython.column_definition import (
     ColumnNameWithType,
@@ -21,6 +22,7 @@ from sqlinpython.type_name import CompleteTypeName
 # column-def (https://sqlite.org/syntax/column-def.html + https://sqlite.org/syntax/column-constraint.html)
 # allow ColumnName.Collate
 class ColumnNameWithCollate(CollateOperator, WithCollate):
+    @override
     def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
@@ -35,6 +37,7 @@ class ColumnNameWithCollate(CollateOperator, WithCollate):
     @typing.overload
     def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
 
+    @override
     def As(
         self, alias_or_expr: str | Name | Expression, /
     ) -> AliasedExpression | GeneratedAlwaysAs:
@@ -50,6 +53,7 @@ class ColumnName(Name, ColumnNameWithType, Expression12):  # type: ignore [misc]
     def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
         return ColumnNameWithType(self, type_name)
 
+    @override
     def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
@@ -61,6 +65,7 @@ class ColumnName(Name, ColumnNameWithType, Expression12):  # type: ignore [misc]
     @typing.overload
     def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
 
+    @override
     def As(
         self, alias_or_expr: str | Name | Expression, /
     ) -> AliasedExpression | GeneratedAlwaysAs:

@@ -1,3 +1,5 @@
+from typing import override
+
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
 
@@ -9,6 +11,7 @@ class CompleteTypeName(SqlElement):
         self._num1 = num1
         self._num2 = num2
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         if self._num2 is None:

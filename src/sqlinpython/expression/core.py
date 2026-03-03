@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 import typing
-from typing import overload
+from abc import ABC
+from typing import override, overload
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.indexed_column import IndexedColumnWithCollate
@@ -262,6 +263,7 @@ class AliasedExpression(SqlElement):
         self._alias = alias
         self._explicit_as = explicit_as
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._expression._create_query(buffer)
         if self._explicit_as:
@@ -280,6 +282,7 @@ class OrCondition(Expression1):
         self._left = left
         self._right = right
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(" OR ")
@@ -295,6 +298,7 @@ class AndCondition(Expression2):
         self._left = left
         self._right = right
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(" AND ")
@@ -318,6 +322,7 @@ class NotExpression(Expression3):
     def __init__(self, after: Expression3) -> None:
         self._after = after
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("NOT ")
         self._after._create_query(buffer)
@@ -333,6 +338,7 @@ class EqExpression(Expression4):
         self._right = right
         self._double_eq = double_eq
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         if self._double_eq:
@@ -349,6 +355,7 @@ class NeExpression(Expression4):
         self._right = right
         self._arrows = arrows
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         if self._arrows:
@@ -364,6 +371,7 @@ class IsExpressionComplete(Expression4):
         self._prev = prev
         self._other = other
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
@@ -378,6 +386,7 @@ class IsDistinctFromExpression(SqlElement):
         _other = _parenthesize_if_necessary(other, Expression4)
         return IsExpressionComplete(self, _other)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" DISTINCT FROM")
@@ -391,6 +400,7 @@ class IsNotExpression(IsDistinctFromExpression):
     def DistinctFrom(self) -> IsDistinctFromExpression:
         return IsDistinctFromExpression(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" NOT")
@@ -404,6 +414,7 @@ class IsExpression(IsNotExpression):
     def Not(self) -> IsNotExpression:
         return IsNotExpression(self)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IS")
@@ -415,6 +426,7 @@ class BetweenExpression(SqlElement):
         self._lower = lower
         self._upper = upper
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" BETWEEN ")
@@ -427,6 +439,7 @@ class EmptyInExpression(Expression4):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ()")
@@ -437,6 +450,7 @@ class InExpressionWithSelect(Expression4):
         self._prev = prev
         self._select_stmt = select_stmt
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN (")
@@ -449,6 +463,7 @@ class InExpressionWithExpressions(Expression4):
         self._prev = prev
         self._exprs = exprs
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN (")
@@ -467,6 +482,7 @@ class InExpressionWithTableName(Expression4):
         self._name1 = name1
         self._name2 = name2
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ")
@@ -490,6 +506,7 @@ class InExpressionWithTableFunction(SqlElement):
     def __call__(self, *args: Expression) -> InExpressionWithTableFunctionArgs:
         return InExpressionWithTableFunctionArgs(self, args)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ")
@@ -504,6 +521,7 @@ class InExpressionWithTableFunctionArgs(Expression4):
         self._prev = prev
         self._exprs = exprs
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
@@ -525,6 +543,7 @@ class MatchLikeExpression(Expression4):
         self._pattern = pattern
         self._op = op
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._op} ")
@@ -538,6 +557,7 @@ class LikeExpressionWithEscape(Expression4):
         self._prev = prev
         self._escape = escape
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ESCAPE ")
@@ -552,6 +572,7 @@ class LikeExpression(LikeExpressionWithEscape):
     def Escape(self, escape: Expression) -> LikeExpressionWithEscape:
         return LikeExpressionWithEscape(self, escape)
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" LIKE ")
@@ -565,6 +586,7 @@ class NullCompareExpression(Expression4):
         self._prev = prev
         self._op = op
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(f" {self._op}")
@@ -650,6 +672,7 @@ class NegatedOperator(SqlElement):
     def Null(self) -> NullCompareExpression:
         return NullCompareExpression(self, "NULL")
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" NOT")
@@ -670,6 +693,7 @@ class Comparison(Expression5):
         self._right = right
         self._operator = operator
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(f" {self._operator} ")
@@ -695,6 +719,7 @@ class BitOperation(Expression7):
         self._right = right
         self._operator = operator
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(f" {self._operator} ")
@@ -713,6 +738,7 @@ class Summand(Expression8):
         self._right = right
         self._operator = operator
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(f" {self._operator} ")
@@ -734,6 +760,7 @@ class Factor(Expression9):
         self._right = right
         self._operator = operator
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(f" {self._operator} ")
@@ -755,6 +782,7 @@ class ConcatLikeOperator(Expression10):
         self._right = right
         self._operator = operator
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(f" {self._operator} ")
@@ -774,6 +802,7 @@ class CollateOperator(Expression11):
         self._left = left
         self._right = right
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._left._create_query(buffer)
         buffer.append(" COLLATE ")
@@ -789,6 +818,7 @@ class UnaryOperator(Expression12):
         self._left = left
         self._op = op
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(self._op)
         self._left._create_query(buffer)
@@ -802,6 +832,7 @@ class ParenthesizedExpression(Expression13):
     def __init__(self, prev: Expression) -> None:
         self._prev = prev
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("(")
         self._prev._create_query(buffer)
@@ -818,7 +849,7 @@ def _parenthesize_if_necessary[T](
         return expression
 
 
-class FrameBound(SqlElement):
+class FrameBound(SqlElement, ABC):
     """Base class for frame boundary specifications."""
 
     pass
@@ -830,6 +861,7 @@ class PrecedingFrameBound(FrameBound):
     def __init__(self, expr: Expression) -> None:
         self._expr = expr
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._expr._create_query(buffer)
         buffer.append(" PRECEDING")
@@ -841,6 +873,7 @@ class FollowingFrameBound(FrameBound):
     def __init__(self, expr: Expression) -> None:
         self._expr = expr
 
+    @override
     def _create_query(self, buffer: list[str]) -> None:
         self._expr._create_query(buffer)
         buffer.append(" FOLLOWING")
