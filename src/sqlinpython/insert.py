@@ -363,8 +363,8 @@ class InsertOr(SqlElement):
         buffer.append(" OR")
 
 
-class Insert_(SqlElement):
-    def __init__(self, prev: SqlElement | None) -> None:
+class InsertKeyword(SqlElement):
+    def __init__(self, prev: SqlElement | None = None) -> None:
         self._prev = prev
 
     @property
@@ -383,8 +383,8 @@ class Insert_(SqlElement):
             buffer.append(" INSERT")
 
 
-class Replace_(SqlElement):
-    def __init__(self, prev: SqlElement | None) -> None:
+class ReplaceKeyword(SqlElement):
+    def __init__(self, prev: SqlElement | None = None) -> None:
         self._prev = prev
 
     @property
@@ -400,5 +400,5 @@ class Replace_(SqlElement):
 
 
 # Entry point singletons
-Insert = Insert_(None)
-Replace = Replace_(None)
+Insert = InsertKeyword()
+Replace = ReplaceKeyword()
