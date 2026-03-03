@@ -32,3 +32,7 @@ fix = true
 [tool.mypy]
 disable_error_code = "type-abstract"
 allow_redefinition = true
+
+[tool.ty.analysis]
+# Disable support for `type: ignore` comments
+respect-type-ignore-comments = false
