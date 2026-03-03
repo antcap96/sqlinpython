@@ -19,24 +19,10 @@
 
 
 import sqlinpython.expression as expr
-from sqlinpython import ColumnName
-from sqlinpython.common_table_expression import (
-    SelectStatement as CteSelectStatement,
-)
-from sqlinpython.common_table_expression import (
-    TableName,
-    With,
-)
-from sqlinpython.insert import (
-    Insert_,
-    Replace_,
-    SelectStatement,
-)
+from sqlinpython import ColumnName, Insert, Replace, TableName, With
+from sqlinpython.common_table_expression import SelectStatement as CteSelectStatement
+from sqlinpython.insert import SelectStatement
 from sqlinpython.name import Name
-
-# Entry point singletons (matching the pattern used elsewhere)
-Insert = Insert_(None)
-Replace = Replace_(None)
 
 
 # =============================================================================
@@ -624,6 +610,9 @@ def test_returning_with_on_conflict() -> None:
 def test_replace_returning() -> None:
     # REPLACE ... RETURNING *
     assert (
-        Replace.Into("users")("id").Values((expr.literal(1),)).Returning("*").get_query()
+        Replace.Into("users")("id")
+        .Values((expr.literal(1),))
+        .Returning("*")
+        .get_query()
         == "REPLACE INTO users (id) VALUES (1) RETURNING *"
     )
