@@ -26,6 +26,24 @@ class ColumnNameWithCollate(CollateOperator, WithCollate):
             collation_name = Name(collation_name)
         return ColumnNameWithCollate(self, collation_name)
 
+    # Override to handle both contexts:
+    # - Expression context: col.Collate("NOCASE").As("alias") -> AliasedExpression
+    # - Column definition context: col.Collate("utf8").As(expr) -> GeneratedAlwaysAs
+    @typing.overload
+    def As(self, alias: str | Name, /) -> AliasedExpression: ...
+
+    @typing.overload
+    def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
+
+    def As(
+        self, alias_or_expr: str | Name | Expression, /
+    ) -> AliasedExpression | GeneratedAlwaysAs:
+        if isinstance(alias_or_expr, (str, Name)):
+            if isinstance(alias_or_expr, str):
+                alias_or_expr = Name(alias_or_expr)
+            return AliasedExpression(self, alias_or_expr)
+        return GeneratedAlwaysAs(self, alias_or_expr)
+
 
 # TODO: Any better way to handle mypy error "incompatible with definition in base class"
 class ColumnName(Name, ColumnNameWithType, Expression12):  # type: ignore [misc]
