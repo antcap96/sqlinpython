@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 import typing
-from typing import override
 from abc import ABC
+from typing import Unpack, override
 
-from sqlinpython.column_name import ColumnName
+from typing_extensions import TypeIs
+
 from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
+from sqlinpython.column_name import ColumnName
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
@@ -16,6 +18,12 @@ from sqlinpython.name import Name
 class SelectStatement(NotImplementedSqlElement):
     def __init__(self) -> None:
         super().__init__("<select-stmt>")
+
+
+def _is_column_names(
+    args: tuple[Name | str | SelectStatement, *tuple[Name | str, ...]],
+) -> TypeIs[tuple[Name | str, *tuple[Name | str, ...]]]:
+    return not isinstance(args[0], SelectStatement)
 
 
 # SPEC: https://sqlite.org/lang_insert.html
@@ -269,24 +277,24 @@ class InsertNameAs(InsertColumnNames):
 
     @typing.overload
     def __call__(
-        self, first_column_name: Name | str, /, *column_names: Name | str
+        self, *column_names: Unpack[tuple[Name | str, *tuple[Name | str, ...]]]
     ) -> InsertColumnNames: ...
 
     @override
     def __call__(
         self,
-        first_column_name: Name | str | SelectStatement,
-        /,
-        *column_names: Name | str,
+        *column_names: Unpack[
+            tuple[Name | str | SelectStatement, *tuple[Name | str, ...]]
+        ],
     ) -> InsertColumnNames | InsertSelect:
-        if isinstance(first_column_name, SelectStatement):
-            return InsertSelect(self, first_column_name)
-        if isinstance(first_column_name, str):
-            first_column_name = Name(first_column_name)
-        column_names = tuple(
-            Name(name) if isinstance(name, str) else name for name in column_names
-        )
-        return InsertColumnNames(self, (first_column_name, *column_names))
+        if _is_column_names(column_names):
+            names = tuple(
+                Name(name) if isinstance(name, str) else name for name in column_names
+            )
+            return InsertColumnNames(self, names)
+        first = column_names[0]
+        assert isinstance(first, SelectStatement)
+        return InsertSelect(self, first)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import override, Literal, cast, overload
+from typing import override, Literal, cast, overload, Unpack
 
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
@@ -80,8 +80,10 @@ class OrderByKeyword:
     def __init__(self, prev: SqlElement | None):
         self._prev = prev
 
-    def __call__(self, first_term: OrderingTerm, *terms: OrderingTerm) -> OrderByClause:
-        return OrderByClause(self._prev, (first_term, *terms))
+    def __call__(
+        self, *terms: Unpack[tuple[OrderingTerm, *tuple[OrderingTerm, ...]]]
+    ) -> OrderByClause:
+        return OrderByClause(self._prev, terms)
 
 
 OrderBy = OrderByKeyword(None)
@@ -336,8 +338,10 @@ class PartitionByKeyword:
     def __init__(self, prev: SqlElement | None):
         self._prev = prev
 
-    def __call__(self, first_expr: Expression, *exprs: Expression) -> PartitionByClause:
-        return PartitionByClause(self._prev, (first_expr, *exprs))
+    def __call__(
+        self, *exprs: Unpack[tuple[Expression, *tuple[Expression, ...]]]
+    ) -> PartitionByClause:
+        return PartitionByClause(self._prev, exprs)
 
 
 PartitionBy = PartitionByKeyword(None)

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import override
+from typing import override, Unpack
 
 from abc import ABC
 
@@ -62,12 +62,11 @@ class CreateIndexWithName(SqlElement):
     def On(
         self,
         table_name: str | Name,
-        first_col: IndexedColumn,
-        *rest_cols: IndexedColumn,
+        *cols: Unpack[tuple[IndexedColumn, *tuple[IndexedColumn, ...]]],
     ) -> CreateIndexOnTable:
         if isinstance(table_name, str):
             table_name = Name(table_name)
-        return CreateIndexOnTable(self, table_name, (first_col, *rest_cols))
+        return CreateIndexOnTable(self, table_name, cols)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

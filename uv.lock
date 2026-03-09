@@ -754,6 +754,9 @@ wheels = [
 name = "sqlinpython"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "typing-extensions" },
+]
 
 [package.optional-dependencies]
 dev = [
@@ -775,6 +778,7 @@ requires-dist = [
     { name = "pytest", marker = "extra == 'dev'" },
     { name = "ruff", marker = "extra == 'dev'" },
     { name = "ty", marker = "extra == 'dev'" },
+    { name = "typing-extensions" },
 ]
 provides-extras = ["dev"]
 
