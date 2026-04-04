@@ -9,35 +9,48 @@ from sqlinpython import (
     TypeName,
     Unique,
 )
-from sqlinpython.create_table import SelectStatement
+from typing import override
+
+from sqlinpython.select_base import SelectStatement
+
+
+class _PlaceholderSelect(SelectStatement):
+    def __init__(self, text: str) -> None:
+        self._text = text
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append(self._text)
 
 
 def test_create_table() -> None:
     a = ColumnName("a")
     b = ColumnName("b")
     assert (
-        Create.Table("table_name").As(SelectStatement("TODO")).get_query()
+        Create.Table("table_name").As(_PlaceholderSelect("TODO")).get_query()
         == "CREATE TABLE table_name AS TODO"
     )
     assert (
         Create.Temp.Table("schema_name", "table_name")
-        .As(SelectStatement("TODO"))
+        .As(_PlaceholderSelect("TODO"))
         .get_query()
         == "CREATE TEMP TABLE schema_name.table_name AS TODO"
     )
     assert (
         Create.Temporary.Table("schema_name", "table_name")
-        .As(SelectStatement("TODO"))
+        .As(_PlaceholderSelect("TODO"))
         .get_query()
         == "CREATE TEMPORARY TABLE schema_name.table_name AS TODO"
     )
     assert (
-        Create.Table.IfNotExists("table_name").As(SelectStatement("TODO")).get_query()
+        Create.Table.IfNotExists("table_name")
+        .As(_PlaceholderSelect("TODO"))
+        .get_query()
         == "CREATE TABLE IF NOT EXISTS table_name AS TODO"
     )
     assert (
         Create.Table("schema_name", "table_name")
-        .As(SelectStatement("TODO"))
+        .As(_PlaceholderSelect("TODO"))
         .get_query()
         == "CREATE TABLE schema_name.table_name AS TODO"
     )

@@ -4,15 +4,11 @@ import typing
 from typing import override, Unpack
 from abc import ABC
 
-from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
+from sqlinpython.select_base import SelectStatement as SelectStatement
 from sqlinpython.table_constraint import TableConstraint
-
-
-# Spec https://sqlite.org/syntax/select-stmt.html
-class SelectStatement(NotImplementedSqlElement):
-    pass
 
 
 # SPEC: https://sqlite.org/syntax/create-table-stmt.html

@@ -6,18 +6,14 @@ from typing import Unpack, override
 
 from typing_extensions import TypeIs
 
-from sqlinpython.base import CompleteSqlQuery, NotImplementedSqlElement, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.column_name import ColumnName
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
-
-
-class SelectStatement(NotImplementedSqlElement):
-    def __init__(self) -> None:
-        super().__init__("<select-stmt>")
+from sqlinpython.select_base import SelectStatement as SelectStatement
 
 
 def _is_column_names(

@@ -1,17 +1,15 @@
 from __future__ import annotations
 
-from typing import override
-
 from abc import ABC
+from typing import TYPE_CHECKING, override
 
-from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.base import SqlElement
 from sqlinpython.insert import InsertKeyword, ReplaceKeyword
 from sqlinpython.name import Name
+from sqlinpython.select_base import SelectStatement as SelectStatement
 
-
-class SelectStatement(NotImplementedSqlElement):
-    def __init__(self) -> None:
-        super().__init__("<select-stmt>")
+if TYPE_CHECKING:
+    from sqlinpython.select import SelectKeyword, ValuesKeyword
 
 
 # SPEC: https://sqlite.org/syntax/common-table-expression.html
@@ -131,6 +129,18 @@ class WithClause(SqlElement):
     @property
     def Insert(self) -> InsertKeyword:
         return InsertKeyword(self)
+
+    @property
+    def Select(self) -> SelectKeyword:
+        from sqlinpython.select import SelectKeyword
+
+        return SelectKeyword(self)
+
+    @property
+    def Values(self) -> ValuesKeyword:
+        from sqlinpython.select import ValuesKeyword
+
+        return ValuesKeyword(self)
 
 
 class WithRecursive(SqlElement):
