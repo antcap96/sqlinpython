@@ -1,5 +1,17 @@
 from abc import ABCMeta, abstractmethod
-from typing import override
+from collections.abc import Iterable
+from typing import override, Protocol
+
+
+class ISqlElement(Protocol):
+    def _create_query(self, buffer: list[str]) -> None: ...
+
+
+def comma_separated(buffer: list[str], elements: Iterable[ISqlElement]) -> None:
+    for i, element in enumerate(elements):
+        if i > 0:
+            buffer.append(", ")
+        element._create_query(buffer)
 
 
 class SqlElement(metaclass=ABCMeta):

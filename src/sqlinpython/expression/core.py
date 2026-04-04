@@ -8,10 +8,7 @@ from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.indexed_column import IndexedColumnWithCollate
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
-
-
-class SelectStatement(NotImplementedSqlElement):
-    pass
+from sqlinpython.select_base import SelectStatement as SelectStatement
 
 
 class TableFunction(NotImplementedSqlElement):

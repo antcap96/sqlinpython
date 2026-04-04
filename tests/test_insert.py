@@ -18,11 +18,24 @@
 # - AliasedExpression placeholder for RETURNING clause
 
 
+from typing import override
+
 import sqlinpython.expression as expr
 from sqlinpython import ColumnName, Insert, Replace, TableName, With
-from sqlinpython.common_table_expression import SelectStatement as CteSelectStatement
-from sqlinpython.insert import SelectStatement
 from sqlinpython.name import Name
+from sqlinpython.select_base import SelectStatement
+
+
+class _PlaceholderSelect(SelectStatement):
+    """Concrete placeholder used in tests to stand in for a real SELECT statement."""
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("<select-stmt>")
+
+
+# Aliases for backward compatibility with existing test code
+CteSelectStatement = _PlaceholderSelect
 
 
 # =============================================================================
@@ -129,7 +142,7 @@ def test_insert_default_values_with_alias() -> None:
 
 
 def test_insert_select_simple() -> None:
-    select_stmt = SelectStatement()
+    select_stmt = _PlaceholderSelect()
     assert (
         Insert.Into("users")(select_stmt).get_query()
         == "INSERT INTO users <select-stmt>"
@@ -137,7 +150,7 @@ def test_insert_select_simple() -> None:
 
 
 def test_insert_select_with_columns() -> None:
-    select_stmt = SelectStatement()
+    select_stmt = _PlaceholderSelect()
     assert (
         Insert.Into("users")("id", "name")(select_stmt).get_query()
         == "INSERT INTO users (id, name) <select-stmt>"
@@ -255,7 +268,7 @@ def test_replace_default_values() -> None:
 
 
 def test_with_cte_insert_values() -> None:
-    cte = TableName("temp").As(CteSelectStatement())
+    cte = TableName("temp").As(_PlaceholderSelect())
     assert (
         With(cte).Insert.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "WITH temp AS (<select-stmt>) INSERT INTO users (id) VALUES (1)"
@@ -263,7 +276,7 @@ def test_with_cte_insert_values() -> None:
 
 
 def test_with_cte_insert_default_values() -> None:
-    cte = TableName("temp").As(CteSelectStatement())
+    cte = TableName("temp").As(_PlaceholderSelect())
     assert (
         With(cte).Insert.Into("users").DefaultValues.get_query()
         == "WITH temp AS (<select-stmt>) INSERT INTO users DEFAULT VALUES"
@@ -271,7 +284,7 @@ def test_with_cte_insert_default_values() -> None:
 
 
 def test_with_cte_replace_values() -> None:
-    cte = TableName("temp").As(CteSelectStatement())
+    cte = TableName("temp").As(_PlaceholderSelect())
     assert (
         With(cte).Replace.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "WITH temp AS (<select-stmt>) REPLACE INTO users (id) VALUES (1)"
@@ -279,7 +292,7 @@ def test_with_cte_replace_values() -> None:
 
 
 def test_with_recursive_cte_insert() -> None:
-    cte = TableName("recursive_t").As(CteSelectStatement())
+    cte = TableName("recursive_t").As(_PlaceholderSelect())
     assert (
         With.Recursive(cte).Insert.Into("users").DefaultValues.get_query()
         == "WITH RECURSIVE recursive_t AS (<select-stmt>) INSERT INTO users DEFAULT VALUES"
@@ -287,8 +300,8 @@ def test_with_recursive_cte_insert() -> None:
 
 
 def test_with_multiple_ctes_insert() -> None:
-    cte1 = TableName("t1").As(CteSelectStatement())
-    cte2 = TableName("t2")("a", "b").As(CteSelectStatement())
+    cte1 = TableName("t1").As(_PlaceholderSelect())
+    cte2 = TableName("t2")("a", "b").As(_PlaceholderSelect())
     assert (
         With(cte1, cte2)
         .Insert.Into("target")("x")
@@ -299,8 +312,8 @@ def test_with_multiple_ctes_insert() -> None:
 
 
 def test_with_cte_insert_select() -> None:
-    cte = TableName("source").As(CteSelectStatement())
-    select_stmt = SelectStatement()
+    cte = TableName("source").As(_PlaceholderSelect())
+    select_stmt = _PlaceholderSelect()
     assert (
         With(cte).Insert.Into("target")(select_stmt).get_query()
         == "WITH source AS (<select-stmt>) INSERT INTO target <select-stmt>"
@@ -409,7 +422,7 @@ def test_on_conflict_column_with_collate_and_asc() -> None:
 def test_on_conflict_with_insert_select() -> None:
     # INSERT ... SELECT ... ON CONFLICT DO NOTHING
     col = ColumnName("id")
-    select_stmt = SelectStatement()
+    select_stmt = _PlaceholderSelect()
     assert (
         Insert.Into("users")(select_stmt).OnConflict(col).Do.Nothing.get_query()
         == "INSERT INTO users <select-stmt> ON CONFLICT(id) DO NOTHING"
