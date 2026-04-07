@@ -30,6 +30,7 @@ target-version = "py312"
 fix = true
 
 [tool.mypy]
+strict = true
 disable_error_code = "type-abstract"
 allow_redefinition = true
 
@@ -52,3 +53,4 @@ reportUnnecessaryComparison = false
 # Import cycles between column_definition, foreign_key_clause, and table_constraint
 # are architectural - these classes are genuinely interdependent and work fine at runtime.
 reportImportCycles = false
+reportUnnecessaryTypeIgnoreComment = true
