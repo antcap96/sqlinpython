@@ -27,7 +27,7 @@ def test_table_ref_simple() -> None:
 
 
 def test_table_ref_schema() -> None:
-    assert to_str(TableRef("users", "main")) == "main.users"
+    assert to_str(TableRef("main", "users")) == "main.users"
 
 
 def test_table_ref_aliased() -> None:
@@ -332,8 +332,8 @@ def test_select_limit_offset() -> None:
 
 
 def test_select_limit_comma_offset() -> None:
-    q = Select("*").From(TableRef("t")).Limit(literal(10))(literal(5))
-    assert q.get_query() == "SELECT * FROM t LIMIT 10 OFFSET 5"
+    q = Select("*").From(TableRef("t")).Limit(literal(10), literal(5))
+    assert q.get_query() == "SELECT * FROM t LIMIT 10, 5"
 
 
 # ---------------------------------------------------------------------------
@@ -344,6 +344,11 @@ def test_select_limit_comma_offset() -> None:
 def test_union() -> None:
     q = Select("*").From(TableRef("a")).Union(Select("*").From(TableRef("b")))
     assert q.get_query() == "SELECT * FROM a UNION SELECT * FROM b"
+
+
+def test_values_union() -> None:
+    q = Values((literal(1),)).Union(Select("*").From(TableRef("b")))
+    assert q.get_query() == "VALUES (1) UNION SELECT * FROM b"
 
 
 def test_union_all() -> None:

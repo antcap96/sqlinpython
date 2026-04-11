@@ -134,13 +134,18 @@ class TableRefNotIndexed(TableOrSubquery):
 class TableRef(TableOrSubquery):
     """Represents [schema.]table-name in a FROM clause."""
 
-    def __init__(self, name: Name | str, schema: Name | str | None = None) -> None:
+    def __init__(self, schema: Name | str, name: Name | str | None = None, /) -> None:
         if isinstance(name, str):
             name = Name(name)
         if isinstance(schema, str):
             schema = Name(schema)
-        self._name = name
-        self._schema = schema
+
+        if name is None:
+            self._name = schema
+            self._schema = None
+        else:
+            self._name = name
+            self._schema = schema
 
     def As(self, alias: Name | str) -> TableRefAliased:
         if isinstance(alias, str):
