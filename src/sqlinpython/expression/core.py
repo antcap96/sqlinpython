@@ -8,7 +8,7 @@ from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.indexed_column import IndexedColumnWithCollate
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
-from sqlinpython.select_base import SelectStatement as SelectStatement
+from sqlinpython.select_base import SelectStatement, SelectStatement_
 
 
 class TableFunction(NotImplementedSqlElement):
@@ -94,7 +94,7 @@ class Expression(IndexedColumnWithCollate, OrderingTerm):
         match exprs:
             case []:
                 return EmptyInExpression(self_)
-            case [select_stmt] if isinstance(select_stmt, SelectStatement):
+            case [select_stmt] if isinstance(select_stmt, SelectStatement_):
                 return InExpressionWithSelect(self_, select_stmt)
             case [table_name] if isinstance(table_name, Name):
                 return InExpressionWithTableName(self_, table_name)
@@ -630,7 +630,7 @@ class NegatedOperator(SqlElement):
         match exprs:
             case []:
                 return EmptyInExpression(self)
-            case [select_stmt] if isinstance(select_stmt, SelectStatement):
+            case [select_stmt] if isinstance(select_stmt, SelectStatement_):
                 return InExpressionWithSelect(self, select_stmt)
             case [table_name] if isinstance(table_name, Name):
                 return InExpressionWithTableName(self, table_name)

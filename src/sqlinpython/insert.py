@@ -13,13 +13,13 @@ from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
-from sqlinpython.select_base import SelectStatement as SelectStatement
+from sqlinpython.select_base import SelectStatement, SelectStatement_
 
 
 def _is_column_names(
     args: tuple[Name | str | SelectStatement, *tuple[Name | str, ...]],
 ) -> TypeIs[tuple[Name | str, *tuple[Name | str, ...]]]:
-    return not isinstance(args[0], SelectStatement)
+    return not isinstance(args[0], SelectStatement_)
 
 
 # SPEC: https://sqlite.org/lang_insert.html
@@ -289,7 +289,7 @@ class InsertNameAs(InsertColumnNames):
             )
             return InsertColumnNames(self, names)
         first = column_names[0]
-        assert isinstance(first, SelectStatement)
+        assert isinstance(first, SelectStatement_)
         return InsertSelect(self, first)
 
     @override

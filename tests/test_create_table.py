@@ -7,14 +7,15 @@ from sqlinpython import (
     ForeignKey,
     PrimaryKey,
     TypeName,
-    Unique,
+    Unique, Select,
 )
 from typing import override
 
-from sqlinpython.select_base import SelectStatement
+from sqlinpython.select_base import SelectStatement_, Complete
 
 
-class _PlaceholderSelect(SelectStatement):
+
+class _PlaceholderSelect(SelectStatement_[Complete]):
     def __init__(self, text: str) -> None:
         self._text = text
 
@@ -27,8 +28,8 @@ def test_create_table() -> None:
     a = ColumnName("a")
     b = ColumnName("b")
     assert (
-        Create.Table("table_name").As(_PlaceholderSelect("TODO")).get_query()
-        == "CREATE TABLE table_name AS TODO"
+        Create.Table("table_name").As(Select(expr.literal(1))).get_query()
+        == "CREATE TABLE table_name AS SELECT 1"
     )
     assert (
         Create.Temp.Table("schema_name", "table_name")

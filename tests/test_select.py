@@ -361,6 +361,32 @@ def test_except() -> None:
     assert q.get_query() == "SELECT * FROM a EXCEPT SELECT * FROM b"
 
 
+def test_union_values_rhs() -> None:
+    q = Select("*").From(TableRef("a")).Union(Values((literal(1), literal(2))))
+    assert q.get_query() == "SELECT * FROM a UNION VALUES (1, 2)"
+
+
+def test_multiple_unions_chained() -> None:
+    q = (
+        Select("*")
+        .From(TableRef("a"))
+        .Union(Select("*").From(TableRef("b")))
+        .Union(Select("*").From(TableRef("c")))
+    )
+    assert (
+        q.get_query() == "SELECT * FROM a UNION SELECT * FROM b UNION SELECT * FROM c"
+    )
+
+
+def test_multiple_unions_inner() -> None:
+    q = (Select("*").From(TableRef("a")).Union(Select("*").From(TableRef("b")))).Union(
+        Select("*").From(TableRef("c"))
+    )
+    assert (
+        q.get_query() == "SELECT * FROM a UNION SELECT * FROM b UNION SELECT * FROM c"
+    )
+
+
 def test_compound_with_order_by() -> None:
     q = (
         Select("*")
@@ -428,4 +454,31 @@ def test_full_select() -> None:
     assert (
         q.get_query()
         == "SELECT * FROM users AS u WHERE 1 GROUP BY 2 HAVING 3 ORDER BY 4 ASC LIMIT 10 OFFSET 5"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Type-level tests (verify type checkers reject invalid compound operands)
+# ---------------------------------------------------------------------------
+
+
+def test_union_rejects_ordered_subselect() -> None:
+    _ = (
+        Select("*")
+        .From(TableRef("a"))
+        .Union(
+            Select("*").From(TableRef("b")).OrderBy(literal(1).Asc)  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
+            # ty doesn't currently identify this error -ty: ignore[invalid-argument-type]
+        )
+    )
+
+
+def test_union_rejects_limited_subselect() -> None:
+    _ = (
+        Select("*")
+        .From(TableRef("a"))
+        .Union(
+            Select("*").From(TableRef("b")).Limit(literal(10))  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
+            # ty doesn't currently identify this error -ty: ignore[invalid-argument-type]
+        )
     )
