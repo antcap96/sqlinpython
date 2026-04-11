@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, override
 from sqlinpython.base import SqlElement
 from sqlinpython.insert import InsertKeyword, ReplaceKeyword
 from sqlinpython.name import Name
-from sqlinpython.select_base import SelectStatement as SelectStatement
+from sqlinpython.select_base import SelectStatement, Complete
 
 if TYPE_CHECKING:
     from sqlinpython.select import SelectKeyword, ValuesKeyword
@@ -131,13 +131,13 @@ class WithClause(SqlElement):
         return InsertKeyword(self)
 
     @property
-    def Select(self) -> SelectKeyword:
+    def Select(self) -> SelectKeyword[Complete]:
         from sqlinpython.select import SelectKeyword
 
         return SelectKeyword(self)
 
     @property
-    def Values(self) -> ValuesKeyword:
+    def Values(self) -> ValuesKeyword[Complete]:
         from sqlinpython.select import ValuesKeyword
 
         return ValuesKeyword(self)

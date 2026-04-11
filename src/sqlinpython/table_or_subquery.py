@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING, override
 
 from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.name import Name
+from sqlinpython.select_base import Complete
 
 if TYPE_CHECKING:
-    from sqlinpython.select_base import SelectStatement
+    from sqlinpython.select_base import SelectStatement_
 
 
 # SPEC: https://sqlite.org/syntax/table-or-subquery.html
@@ -233,7 +234,7 @@ class SubqueryAliased(TableOrSubquery):
 class Subquery(TableOrSubquery):
     """A SELECT statement wrapped in parentheses as a table source."""
 
-    def __init__(self, select_stmt: SelectStatement) -> None:
+    def __init__(self, select_stmt: SelectStatement_[Complete]) -> None:
         self._select_stmt = select_stmt
 
     def As(self, alias: Name | str) -> SubqueryAliased:

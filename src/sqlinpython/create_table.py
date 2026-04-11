@@ -7,7 +7,7 @@ from abc import ABC
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
-from sqlinpython.select_base import SelectStatement as SelectStatement
+from sqlinpython.select_base import SelectStatement
 from sqlinpython.table_constraint import TableConstraint
 
 
