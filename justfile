@@ -24,8 +24,9 @@ types: ty pyright mypy
 # Linting / formatting
 lint:
     {{run}}ruff check
+    {{run}}ruff format --check
 
-fmt:
+format:
     {{run}}ruff format
 
 fix:

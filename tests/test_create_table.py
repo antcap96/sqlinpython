@@ -7,12 +7,12 @@ from sqlinpython import (
     ForeignKey,
     PrimaryKey,
     TypeName,
-    Unique, Select,
+    Unique,
+    Select,
 )
 from typing import override
 
 from sqlinpython.select_base import SelectStatement_, Complete
-
 
 
 class _PlaceholderSelect(SelectStatement_[Complete]):

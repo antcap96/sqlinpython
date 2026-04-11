@@ -46,16 +46,27 @@ class SelectLimitOffset(SelectStatement_[Complete]):
         self._offset._create_query(buffer)
 
 
+class SelectLimitComma(SelectStatement_[Complete]):
+    def __init__(self, prev: SqlElement, limit: Expression, offset: Expression) -> None:
+        self._prev = prev
+        self._limit = limit
+        self._offset = offset
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" LIMIT ")
+        self._limit._create_query(buffer)
+        buffer.append(", ")
+        self._offset._create_query(buffer)
+
+
 class SelectLimit(SelectStatement_[Complete]):
     def __init__(self, prev: SqlElement, limit: Expression) -> None:
         self._prev = prev
         self._limit = limit
 
     def Offset(self, offset: Expression) -> SelectLimitOffset:
-        return SelectLimitOffset(self, offset)
-
-    def __call__(self, offset: Expression) -> SelectLimitOffset:
-        """Comma syntax: LIMIT x, y (equivalent to LIMIT y OFFSET x)."""
         return SelectLimitOffset(self, offset)
 
     @override
@@ -71,8 +82,17 @@ class SelectLimit(SelectStatement_[Complete]):
 
 
 class ISelectLimit(SqlElement, ABC):
-    def Limit(self, expr: Expression) -> SelectLimit:
-        return SelectLimit(self, expr)
+    @typing.overload
+    def Limit(self, expr: Expression) -> SelectLimit: ...
+    @typing.overload
+    def Limit(self, expr: Expression, offset: Expression) -> SelectLimitComma: ...
+    def Limit(
+        self, expr: Expression, offset: Expression | None = None
+    ) -> SelectLimit | SelectLimitComma:
+        if offset is None:
+            return SelectLimit(self, expr)
+        else:
+            return SelectLimitComma(self, expr, offset)
 
 
 class ISelectOrderBy(ISelectLimit, ABC):
@@ -96,6 +116,9 @@ class ISelectCompound[T: Core | Complete](ISelectOrderBy, SelectStatement_[T], A
 
 class ISelectWindowClause[T: Core | Complete](ISelectCompound[T], ABC):
     def Window(self, *defs: tuple[Name | str, WindowDefn]) -> SelectWindowClause[T]:
+        defs = tuple(
+            (Name(name) if isinstance(name, str) else name, defn) for name, defn in defs
+        )
         return SelectWindowClause(self, defs)
 
 
@@ -137,10 +160,7 @@ class SelectColumns[T: Core | Complete](ISelectFromClause[T], SelectStatement_[T
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        for i, col in enumerate(self._cols):
-            if i > 0:
-                buffer.append(", ")
-            col._create_query(buffer)
+        comma_separated(buffer, self._cols)
 
 
 class SelectFromClause[T: Core | Complete](ISelectWhereClause[T], SelectStatement_[T]):
@@ -162,7 +182,9 @@ class SelectFromClause[T: Core | Complete](ISelectWhereClause[T], SelectStatemen
             comma_separated(buffer, self._source)
 
 
-class SelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], SelectStatement_[T]):
+class SelectWhereClause[T: Core | Complete](
+    ISelectGroupByClause[T], SelectStatement_[T]
+):
     """... WHERE expr"""
 
     def __init__(self, prev: SqlElement, expr: Expression) -> None:
@@ -176,7 +198,9 @@ class SelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], SelectState
         self._expr._create_query(buffer)
 
 
-class SelectGroupByClause[T: Core | Complete](ISelectHavingClause[T], SelectStatement_[T]):
+class SelectGroupByClause[T: Core | Complete](
+    ISelectHavingClause[T], SelectStatement_[T]
+):
     """... GROUP BY expr, ..."""
 
     def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
@@ -193,7 +217,9 @@ class SelectGroupByClause[T: Core | Complete](ISelectHavingClause[T], SelectStat
             expr._create_query(buffer)
 
 
-class SelectHavingClause[T: Core | Complete](ISelectWindowClause[T], SelectStatement_[T]):
+class SelectHavingClause[T: Core | Complete](
+    ISelectWindowClause[T], SelectStatement_[T]
+):
     """... HAVING expr"""
 
     def __init__(self, prev: SqlElement, expr: Expression) -> None:
@@ -211,7 +237,7 @@ class SelectWindowClause[T: Core | Complete](ISelectCompound[T], SelectStatement
     """... WINDOW name AS (window-defn), ..."""
 
     def __init__(
-        self, prev: SqlElement, defs: tuple[tuple[Name | str, WindowDefn], ...]
+        self, prev: SqlElement, defs: tuple[tuple[Name, WindowDefn], ...]
     ) -> None:
         self._prev = prev
         self._defs = defs
@@ -223,10 +249,7 @@ class SelectWindowClause[T: Core | Complete](ISelectCompound[T], SelectStatement
         for i, (name, defn) in enumerate(self._defs):
             if i > 0:
                 buffer.append(", ")
-            if isinstance(name, str):
-                Name(name)._create_query(buffer)
-            else:
-                name._create_query(buffer)
+            name._create_query(buffer)
             buffer.append(" AS (")
             defn._create_query(buffer)
             buffer.append(")")
@@ -263,13 +286,10 @@ class SelectOrderBy(ISelectLimit, SelectStatement_[Complete]):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ORDER BY ")
-        for i, term in enumerate(self._terms):
-            if i > 0:
-                buffer.append(", ")
-            term._create_query(buffer)
+        comma_separated(buffer, self._terms)
 
 
-class SelectValues[T: Core | Complete](ISelectOrderBy, SelectStatement_[T]):
+class SelectValues[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
     """VALUES (expr, ...), ..."""
 
     def __init__(
@@ -286,10 +306,7 @@ class SelectValues[T: Core | Complete](ISelectOrderBy, SelectStatement_[T]):
             if i > 0:
                 buffer.append(", ")
             buffer.append("(")
-            for j, expr in enumerate(row):
-                if j > 0:
-                    buffer.append(", ")
-                expr._create_query(buffer)
+            comma_separated(buffer, row)
             buffer.append(")")
 
 

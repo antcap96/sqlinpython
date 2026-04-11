@@ -16,4 +16,5 @@ class SelectStatement_[T: Core | Complete](CompleteSqlQuery, ABC):
 
     pass
 
+
 SelectStatement = SelectStatement_[Complete]
