@@ -1,13 +1,11 @@
+from sqlinpython import col, With, TableRef, TableName, Select, Values
 from sqlinpython.base import SqlElement
-from sqlinpython.common_table_expression import TableName, With
-from sqlinpython.expression import literal
-from sqlinpython.expression.function import WindowName
-from sqlinpython.select import Select, Values
+from sqlinpython.expression import literal, FunctionName
+from sqlinpython.expression.function import WindowName, PartitionBy
 from sqlinpython.table_or_subquery import (
     NestedFromClause,
     Subquery,
     TableFunctionRef,
-    TableRef,
 )
 
 
@@ -59,8 +57,8 @@ def test_table_function_ref() -> None:
 
 
 def test_table_function_ref_aliased() -> None:
-    f = TableFunctionRef("json_each")(literal("[]")).As("j")
-    assert to_str(f) == 'json_each("[]") AS j'
+    f = TableFunctionRef("schema", "json_each")(literal("[]")).As("j")
+    assert to_str(f) == 'schema.json_each("[]") AS j'
 
 
 # ---------------------------------------------------------------------------
@@ -460,6 +458,273 @@ def test_full_select() -> None:
         q.get_query()
         == "SELECT * FROM users AS u WHERE 1 GROUP BY 2 HAVING 3 ORDER BY 4 ASC LIMIT 10 OFFSET 5"
     )
+
+
+def test_complete_1() -> None:
+    assert Select("*").From(TableRef("users")).get_query() == "SELECT * FROM users"
+
+
+#   1. Simple select all
+#   SELECT * FROM users;
+
+
+def test_complete_2() -> None:
+    q = Select(col("id"), col("name"), col("email")).From(TableRef("users"))
+    assert q.get_query() == "SELECT id, name, email FROM users"
+
+
+#   2. Select specific columns
+#   SELECT id, name, email FROM users;
+
+
+def test_complete_3() -> None:
+    q = Select("*").From(TableRef("users")).Where(col("age") > literal(18))
+    assert q.get_query() == "SELECT * FROM users WHERE age > 18"
+
+
+#   3. Filter with WHERE
+#   SELECT * FROM users WHERE age > 18;
+
+
+def test_complete_4() -> None:
+    q = Select(
+        col("first_name").As("name"),
+        (col("salary") * literal(12)).As("annual_salary"),
+    ).From(TableRef("employees"))
+    assert q.get_query() == (
+        "SELECT first_name AS name, salary * 12 AS annual_salary FROM employees"
+    )
+
+
+#   4. Alias columns
+#   SELECT first_name AS name, salary * 12 AS annual_salary FROM employees;
+
+
+def test_complete_5() -> None:
+    q = Select(col("orders", "id"), col("users", "name")).From(
+        TableRef("orders")
+        .Join(TableRef("users"))
+        .On(col("orders", "user_id").eq(col("users", "id")))
+    )
+    assert q.get_query() == (
+        "SELECT orders.id, users.name FROM orders JOIN users ON orders.user_id = users.id"
+    )
+
+
+#   5. JOIN two tables
+#   SELECT orders.id, users.name FROM orders JOIN users ON orders.user_id = users.id;
+
+
+def test_complete_6() -> None:
+    q = (
+        Select(col("department"), FunctionName("COUNT")("*").As("headcount"))
+        .From(TableRef("employees"))
+        .GroupBy(col("department"))
+    )
+    assert q.get_query() == (
+        "SELECT department, COUNT(*) AS headcount FROM employees GROUP BY department"
+    )
+
+
+#   6. GROUP BY with aggregate
+#   SELECT department, COUNT(*) AS headcount FROM employees GROUP BY department;
+
+
+def test_complete_7() -> None:
+    q = (
+        Select(
+            col("department"),
+            FunctionName("AVG")(col("salary")).As("avg_salary"),
+        )
+        .From(TableRef("employees"))
+        .GroupBy(col("department"))
+        .Having(FunctionName("AVG")(col("salary")) > literal(50000))
+    )
+    assert q.get_query() == (
+        "SELECT department, AVG(salary) AS avg_salary "
+        "FROM employees "
+        "GROUP BY department "
+        "HAVING AVG(salary) > 50000"
+    )
+
+
+#   7. GROUP BY with HAVING
+#   SELECT department, AVG(salary) AS avg_salary
+#   FROM employees
+#   GROUP BY department
+#   HAVING AVG(salary) > 50000;
+
+
+def test_complete_8() -> None:
+    q = (
+        Select(col("name"))
+        .From(TableRef("employees"))
+        .Where(
+            col("department_id").In(
+                Select(col("id"))
+                .From(TableRef("departments"))
+                .Where(col("location").eq(literal("NYC")))
+            )
+        )
+    )
+    assert q.get_query() == (
+        "SELECT name FROM employees "
+        'WHERE department_id IN (SELECT id FROM departments WHERE location = "NYC")'
+    )
+
+
+#   8. Subquery in WHERE
+#   SELECT name FROM employees
+#   WHERE department_id IN (SELECT id FROM departments WHERE location = 'NYC');
+
+
+def test_complete_9() -> None:
+    q = (
+        Select(col("u", "name"), col("o", "id").As("order_id"))
+        .From(
+            TableRef("users")
+            .As("u", explicit_as=False)
+            .LeftJoin(TableRef("orders").As("o", explicit_as=False))
+            .On(col("u", "id").eq(col("o", "user_id")))
+        )
+        .Where(col("o", "id").IsNull)
+    )
+    assert q.get_query() == (
+        "SELECT u.name, o.id AS order_id "
+        "FROM users u "
+        "LEFT JOIN orders o ON u.id = o.user_id "
+        "WHERE o.id ISNULL"
+    )
+
+
+#   9. LEFT JOIN with NULL check
+#   SELECT u.name, o.id AS order_id
+#   FROM users u
+#   LEFT JOIN orders o ON u.id = o.user_id
+#   WHERE o.id IS NULL;
+
+
+def test_complete_10() -> None:
+    q = Select(
+        col("name"),
+        col("salary"),
+        FunctionName("RANK")()
+        .Over(PartitionBy(col("department")).OrderBy(col("salary").Desc))
+        .As("rank"),
+    ).From(TableRef("employees"))
+
+    assert q.get_query() == (
+        "SELECT name, salary, "
+        "RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank "
+        "FROM employees"
+    )
+
+
+#   10. Window function
+#   SELECT name, salary,
+#          RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank
+#   FROM employees;
+
+
+def test_complete_11() -> None:
+    avg = FunctionName("AVG")
+    q = (
+        With(
+            TableName("dept_avg").As(
+                Select(
+                    col("department_id"),
+                    avg(col("salary")).As("avg_salary"),
+                )
+                .From(TableRef("employees"))
+                .GroupBy(col("department_id"))
+            )
+        )
+        .Select(
+            col("e", "name"),
+            col("e", "salary"),
+            col("d", "avg_salary"),
+        )
+        .From(
+            TableRef("employees")
+            .As("e", explicit_as=False)
+            .Join(TableRef("dept_avg").As("d", explicit_as=False))
+            .On(col("e", "department_id").eq(col("d", "department_id")))
+        )
+        .Where(col("e", "salary") > col("d", "avg_salary"))
+    )
+
+    assert q.get_query() == (
+        "WITH dept_avg AS ("
+        "SELECT department_id, AVG(salary) AS avg_salary "
+        "FROM employees "
+        "GROUP BY department_id"
+        ") "
+        "SELECT e.name, e.salary, d.avg_salary "
+        "FROM employees e "
+        "JOIN dept_avg d ON e.department_id = d.department_id "
+        "WHERE e.salary > d.avg_salary"
+    )
+
+
+#   11. CTE (Common Table Expression)
+#   WITH dept_avg AS (
+#       SELECT department_id, AVG(salary) AS avg_salary
+#       FROM employees
+#       GROUP BY department_id
+#   )
+#   SELECT e.name, e.salary, d.avg_salary
+#   FROM employees e
+#   JOIN dept_avg d ON e.department_id = d.department_id
+#   WHERE e.salary > d.avg_salary;
+
+
+def test_complete_12() -> None:
+    q = (
+        With.Recursive(
+            TableName("org_chart")("id", "name", "level").As(
+                Select(col("id"), col("name"), literal(0))
+                .From(TableRef("employees"))
+                .Where(col("manager_id").IsNull)
+                .UnionAll(
+                    Select(
+                        col("e", "id"),
+                        col("e", "name"),
+                        col("o", "level") + literal(1),
+                    ).From(
+                        TableRef("employees")
+                        .As("e", explicit_as=False)
+                        .Join(TableRef("org_chart").As("o", explicit_as=False))
+                        .On(col("e", "manager_id").eq(col("o", "id")))
+                    )
+                )
+            )
+        )
+        .Select(col("id"), col("name"), col("level"))
+        .From(TableRef("org_chart"))
+        .OrderBy(col("level"), col("name"))
+    )
+
+    assert q.get_query() == (
+        "WITH RECURSIVE org_chart(id, name, level) AS ("
+        "SELECT id, name, 0 FROM employees WHERE manager_id ISNULL "
+        "UNION ALL "
+        "SELECT e.id, e.name, o.level + 1 "
+        "FROM employees e "
+        "JOIN org_chart o ON e.manager_id = o.id"
+        ") "
+        "SELECT id, name, level FROM org_chart ORDER BY level, name"
+    )
+
+
+#   12. Recursive CTE
+#   WITH RECURSIVE org_chart(id, name, level) AS (
+#       SELECT id, name, 0 FROM employees WHERE manager_id IS NULL
+#       UNION ALL
+#       SELECT e.id, e.name, o.level + 1
+#       FROM employees e
+#       JOIN org_chart o ON e.manager_id = o.id
+#   )
+#   SELECT id, name, level FROM org_chart ORDER BY level, name;
 
 
 # ---------------------------------------------------------------------------

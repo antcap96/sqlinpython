@@ -83,14 +83,18 @@ class TableStarResultColumn(SqlElement):
 
 
 class TableRefAliased(TableOrSubquery):
-    def __init__(self, prev: SqlElement, alias: Name) -> None:
+    def __init__(self, prev: SqlElement, alias: Name, explicit_as: bool) -> None:
         self._prev = prev
         self._alias = alias
+        self._explicit_as = explicit_as
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" AS ")
+        if self._explicit_as:
+            buffer.append(" AS ")
+        else:
+            buffer.append(" ")
         self._alias._create_query(buffer)
 
 
@@ -147,10 +151,10 @@ class TableRef(TableOrSubquery):
             self._name = name
             self._schema = schema
 
-    def As(self, alias: Name | str) -> TableRefAliased:
+    def As(self, alias: Name | str, *, explicit_as: bool = True) -> TableRefAliased:
         if isinstance(alias, str):
             alias = Name(alias)
-        return TableRefAliased(self, alias)
+        return TableRefAliased(self, alias, explicit_as)
 
     @property
     def IndexedBy(self) -> TableRefIndexedByKeyword:
@@ -205,13 +209,18 @@ class TableFunctionRefCall(TableOrSubquery):
 class TableFunctionRef(SqlElement):
     """Table function name — call it to produce a table-function-ref."""
 
-    def __init__(self, name: Name | str, schema: Name | str | None = None) -> None:
+    def __init__(self, schema: Name | str, name: Name | str | None = None, /) -> None:
         if isinstance(name, str):
             name = Name(name)
         if isinstance(schema, str):
             schema = Name(schema)
-        self._name = name
-        self._schema = schema
+
+        if name is None:
+            self._name = schema
+            self._schema = None
+        else:
+            self._name = name
+            self._schema = schema
 
     def __call__(self, *args: SqlElement) -> TableFunctionRefCall:
         return TableFunctionRefCall(self, args)
