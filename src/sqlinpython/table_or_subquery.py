@@ -45,29 +45,29 @@ class TableOrSubquery(SqlElement, ABC):
     def CrossJoin(self, rhs: TableOrSubquery) -> JoinRhs:
         return JoinRhs(self, " CROSS JOIN", rhs)
 
-    def NaturalJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL JOIN", rhs))
+    def NaturalJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL JOIN", rhs)
 
-    def NaturalLeftJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL LEFT JOIN", rhs))
+    def NaturalLeftJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL LEFT JOIN", rhs)
 
-    def NaturalLeftOuterJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL LEFT OUTER JOIN", rhs))
+    def NaturalLeftOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL LEFT OUTER JOIN", rhs)
 
-    def NaturalRightJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL RIGHT JOIN", rhs))
+    def NaturalRightJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL RIGHT JOIN", rhs)
 
-    def NaturalRightOuterJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL RIGHT OUTER JOIN", rhs))
+    def NaturalRightOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL RIGHT OUTER JOIN", rhs)
 
-    def NaturalFullJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL FULL JOIN", rhs))
+    def NaturalFullJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL FULL JOIN", rhs)
 
-    def NaturalFullOuterJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL FULL OUTER JOIN", rhs))
+    def NaturalFullOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL FULL OUTER JOIN", rhs)
 
-    def NaturalInnerJoin(self, rhs: TableOrSubquery) -> JoinClause:
-        return JoinClause(JoinRhsNoConstraint(self, " NATURAL INNER JOIN", rhs))
+    def NaturalInnerJoin(self, rhs: TableOrSubquery) -> JoinRhs:
+        return JoinRhs(self, " NATURAL INNER JOIN", rhs)
 
 
 class TableStarResultColumn(SqlElement):
@@ -283,24 +283,6 @@ class NestedFromClause(TableOrSubquery):
         buffer.append(")")
 
 
-class JoinRhsNoConstraint(SqlElement):
-    """Internal: join-op + rhs for NATURAL joins (no constraint needed)."""
-
-    def __init__(
-        self, lhs: TableOrSubquery, keyword: str, rhs: TableOrSubquery
-    ) -> None:
-        self._lhs = lhs
-        self._keyword = keyword
-        self._rhs = rhs
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._lhs._create_query(buffer)
-        buffer.append(self._keyword)
-        buffer.append(" ")
-        self._rhs._create_query(buffer)
-
-
 class JoinClause(TableOrSubquery):
     """A complete join clause — can be extended with more joins."""
 
@@ -341,8 +323,8 @@ class JoinUsing(SqlElement):
         buffer.append(")")
 
 
-class JoinRhs(SqlElement):
-    """Intermediate: lhs + join-op + rhs, awaiting ON/USING constraint."""
+class JoinRhs(TableOrSubquery):
+    """join-op + rhs, optionally followed by ON/USING constraint."""
 
     def __init__(
         self, lhs: TableOrSubquery, keyword: str, rhs: TableOrSubquery
