@@ -88,6 +88,10 @@ class TableRefAliased(TableOrSubquery):
         self._alias = alias
         self._explicit_as = explicit_as
 
+    @property
+    def Star(self) -> TableStarResultColumn:
+        return TableStarResultColumn(self._alias)
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
