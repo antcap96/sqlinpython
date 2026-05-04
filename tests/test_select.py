@@ -679,6 +679,19 @@ def test_complete_12() -> None:
     )
 
 
+def test_complete_13() -> None:
+    avg = FunctionName("AVG")
+    count = FunctionName("COUNT")
+    q = Select(avg(col("count"))).From(
+        Select(col("id"), count("*")).From(TableRef("t")).GroupBy(col("id"))
+    )
+
+    assert (
+        q.get_query()
+        == "SELECT AVG(count) FROM (SELECT id, COUNT(*) FROM t GROUP BY id)"
+    )
+
+
 # ---------------------------------------------------------------------------
 # Type-level tests (verify type checkers reject invalid compound operands)
 # ---------------------------------------------------------------------------
