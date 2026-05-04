@@ -10,13 +10,18 @@ from sqlinpython.expression.function import Star_, WindowDefn
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.select_base import Complete, Core, SelectStatement_
-from sqlinpython.table_or_subquery import JoinClause, TableOrSubquery
+from sqlinpython.table_or_subquery import (
+    JoinClause,
+    TableOrSubquery,
+    TableStarResultColumn,
+)
 
 
 # Result column types
 # "* " is handled by the literal string "*"
 # table-name.* is handled by TableStarResultColumn from table_or_subquery
-ResultColumn = Expression | AliasedExpression | Star_
+# TODO: Should TableStarResultColumn be an expression?
+ResultColumn = Expression | AliasedExpression | Star_ | TableStarResultColumn
 
 _ResultColumnArg = Literal["*"] | ResultColumn
 

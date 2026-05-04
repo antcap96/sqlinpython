@@ -46,6 +46,25 @@ def test_table_star_result_column() -> None:
     assert to_str(TableRef("users").Star) == "users.*"
 
 
+def test_select_alias_star() -> None:
+    # SELECT t.* FROM users t  — requires .Star on TableRefAliased (not yet implemented)
+    aliased = TableRef("users").As("t", explicit_as=False)
+    q = Select(aliased.Star).From(aliased)
+    assert q.get_query() == "SELECT t.* FROM users t"
+
+
+# def test_table_star_result_column2() -> None:
+#     assert to_str(TableRef("users")["*"]) == "users.*"
+
+
+# def test_table_star_result_column3() -> None:
+#     assert to_str(TableRef("users").As("u")["*"]) == "u.*"
+
+
+# def test_table_column() -> None:
+#     assert to_str(TableRef("users").As("u")["id"]) == "u.id"
+
+
 # ---------------------------------------------------------------------------
 # TableFunctionRef
 # ---------------------------------------------------------------------------
@@ -460,12 +479,13 @@ def test_full_select() -> None:
     )
 
 
+# ---------------------------------------------------------------------------
+# Full query examples with more complex expressions
+# ---------------------------------------------------------------------------
+
+
 def test_complete_1() -> None:
     assert Select("*").From(TableRef("users")).get_query() == "SELECT * FROM users"
-
-
-#   1. Simple select all
-#   SELECT * FROM users;
 
 
 def test_complete_2() -> None:
@@ -473,17 +493,9 @@ def test_complete_2() -> None:
     assert q.get_query() == "SELECT id, name, email FROM users"
 
 
-#   2. Select specific columns
-#   SELECT id, name, email FROM users;
-
-
 def test_complete_3() -> None:
     q = Select("*").From(TableRef("users")).Where(col("age") > literal(18))
     assert q.get_query() == "SELECT * FROM users WHERE age > 18"
-
-
-#   3. Filter with WHERE
-#   SELECT * FROM users WHERE age > 18;
 
 
 def test_complete_4() -> None:
@@ -494,10 +506,6 @@ def test_complete_4() -> None:
     assert q.get_query() == (
         "SELECT first_name AS name, salary * 12 AS annual_salary FROM employees"
     )
-
-
-#   4. Alias columns
-#   SELECT first_name AS name, salary * 12 AS annual_salary FROM employees;
 
 
 def test_complete_5() -> None:
@@ -511,10 +519,6 @@ def test_complete_5() -> None:
     )
 
 
-#   5. JOIN two tables
-#   SELECT orders.id, users.name FROM orders JOIN users ON orders.user_id = users.id;
-
-
 def test_complete_6() -> None:
     q = (
         Select(col("department"), FunctionName("COUNT")("*").As("headcount"))
@@ -524,10 +528,6 @@ def test_complete_6() -> None:
     assert q.get_query() == (
         "SELECT department, COUNT(*) AS headcount FROM employees GROUP BY department"
     )
-
-
-#   6. GROUP BY with aggregate
-#   SELECT department, COUNT(*) AS headcount FROM employees GROUP BY department;
 
 
 def test_complete_7() -> None:
@@ -548,13 +548,6 @@ def test_complete_7() -> None:
     )
 
 
-#   7. GROUP BY with HAVING
-#   SELECT department, AVG(salary) AS avg_salary
-#   FROM employees
-#   GROUP BY department
-#   HAVING AVG(salary) > 50000;
-
-
 def test_complete_8() -> None:
     q = (
         Select(col("name"))
@@ -571,11 +564,6 @@ def test_complete_8() -> None:
         "SELECT name FROM employees "
         'WHERE department_id IN (SELECT id FROM departments WHERE location = "NYC")'
     )
-
-
-#   8. Subquery in WHERE
-#   SELECT name FROM employees
-#   WHERE department_id IN (SELECT id FROM departments WHERE location = 'NYC');
 
 
 def test_complete_9() -> None:
@@ -597,13 +585,6 @@ def test_complete_9() -> None:
     )
 
 
-#   9. LEFT JOIN with NULL check
-#   SELECT u.name, o.id AS order_id
-#   FROM users u
-#   LEFT JOIN orders o ON u.id = o.user_id
-#   WHERE o.id IS NULL;
-
-
 def test_complete_10() -> None:
     q = Select(
         col("name"),
@@ -618,12 +599,6 @@ def test_complete_10() -> None:
         "RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank "
         "FROM employees"
     )
-
-
-#   10. Window function
-#   SELECT name, salary,
-#          RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS rank
-#   FROM employees;
 
 
 def test_complete_11() -> None:
@@ -666,18 +641,6 @@ def test_complete_11() -> None:
     )
 
 
-#   11. CTE (Common Table Expression)
-#   WITH dept_avg AS (
-#       SELECT department_id, AVG(salary) AS avg_salary
-#       FROM employees
-#       GROUP BY department_id
-#   )
-#   SELECT e.name, e.salary, d.avg_salary
-#   FROM employees e
-#   JOIN dept_avg d ON e.department_id = d.department_id
-#   WHERE e.salary > d.avg_salary;
-
-
 def test_complete_12() -> None:
     q = (
         With.Recursive(
@@ -714,17 +677,6 @@ def test_complete_12() -> None:
         ") "
         "SELECT id, name, level FROM org_chart ORDER BY level, name"
     )
-
-
-#   12. Recursive CTE
-#   WITH RECURSIVE org_chart(id, name, level) AS (
-#       SELECT id, name, 0 FROM employees WHERE manager_id IS NULL
-#       UNION ALL
-#       SELECT e.id, e.name, o.level + 1
-#       FROM employees e
-#       JOIN org_chart o ON e.manager_id = o.id
-#   )
-#   SELECT id, name, level FROM org_chart ORDER BY level, name;
 
 
 # ---------------------------------------------------------------------------
