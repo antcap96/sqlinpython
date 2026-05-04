@@ -12,6 +12,7 @@ from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.select_base import Complete, Core, SelectStatement_
 from sqlinpython.table_or_subquery import (
     JoinClause,
+    Subquery,
     TableOrSubquery,
     TableStarResultColumn,
 )
@@ -143,10 +144,15 @@ class ISelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], ABC):
 
 
 class ISelectFromClause[T: Core | Complete](ISelectWhereClause[T], ABC):
-    def From(self, *sources: TableOrSubquery | JoinClause) -> SelectFromClause[T]:
-        if len(sources) == 1 and isinstance(sources[0], JoinClause):
-            return SelectFromClause(self, sources[0])
-        return SelectFromClause(self, sources)
+    def From(
+        self, *sources: TableOrSubquery | JoinClause | SelectStatement_[Complete]
+    ) -> SelectFromClause[T]:
+        resolved = tuple(
+            Subquery(s) if isinstance(s, SelectStatement_) else s for s in sources
+        )
+        if len(resolved) == 1 and isinstance(resolved[0], JoinClause):
+            return SelectFromClause(self, resolved[0])
+        return SelectFromClause(self, resolved)
 
 
 # ---------------------------------------------------------------------------
