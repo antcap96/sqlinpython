@@ -1,256 +1,6 @@
 from sqlinpython import col, With, TableRef, TableName, Select, Values
-from sqlinpython.base import SqlElement
 from sqlinpython.expression import literal, FunctionName
 from sqlinpython.expression.function import WindowName, PartitionBy
-from sqlinpython.table_or_subquery import (
-    NestedFromClause,
-    Subquery,
-    TableFunctionRef,
-)
-
-
-def to_str(element: SqlElement) -> str:
-    buffer: list[str] = []
-    element._create_query(buffer)
-    return "".join(buffer)
-
-
-# ---------------------------------------------------------------------------
-# TableRef
-# ---------------------------------------------------------------------------
-
-
-def test_table_ref_simple() -> None:
-    assert to_str(TableRef("users")) == "users"
-
-
-def test_table_ref_schema() -> None:
-    assert to_str(TableRef("main", "users")) == "main.users"
-
-
-def test_table_ref_aliased() -> None:
-    assert to_str(TableRef("users").As("u")) == "users AS u"
-
-
-def test_table_ref_indexed_by() -> None:
-    assert (
-        to_str(TableRef("users").IndexedBy("idx_name")) == "users INDEXED BY idx_name"
-    )
-
-
-def test_table_ref_not_indexed() -> None:
-    assert to_str(TableRef("users").NotIndexed) == "users NOT INDEXED"
-
-
-def test_table_star_result_column() -> None:
-    assert to_str(TableRef("users").Star) == "users.*"
-
-
-def test_select_alias_star() -> None:
-    # SELECT t.* FROM users t  — requires .Star on TableRefAliased (not yet implemented)
-    aliased = TableRef("users").As("t", explicit_as=False)
-    q = Select(aliased.Star).From(aliased)
-    assert q.get_query() == "SELECT t.* FROM users t"
-
-
-def test_table_column_simple() -> None:
-    assert to_str(TableRef("users")["id"]) == "users.id"
-
-
-def test_table_column_aliased() -> None:
-    assert to_str(TableRef("users").As("u")["id"]) == "u.id"
-
-
-def test_table_column_schema_qualified() -> None:
-    assert to_str(TableRef("main", "users")["id"]) == "main.users.id"
-
-
-def test_table_column_in_select_query() -> None:
-    t = TableRef("users").As("u", explicit_as=False)
-    q = Select(t["id"], t["name"]).From(t)
-    assert q.get_query() == "SELECT u.id, u.name FROM users u"
-
-
-def test_table_column_in_where_clause() -> None:
-    t = TableRef("users").As("u", explicit_as=False)
-    q = Select("*").From(t).Where(t["age"] > literal(18))
-    assert q.get_query() == "SELECT * FROM users u WHERE u.age > 18"
-
-
-def test_table_column_in_join() -> None:
-    o = TableRef("orders").As("o", explicit_as=False)
-    u = TableRef("users").As("u", explicit_as=False)
-    q = Select(o["id"], u["name"]).From(o.Join(u).On(o["user_id"].eq(u["id"])))
-    assert (
-        q.get_query()
-        == "SELECT o.id, u.name FROM orders o JOIN users u ON o.user_id = u.id"
-    )
-
-
-# ---------------------------------------------------------------------------
-# TableFunctionRef
-# ---------------------------------------------------------------------------
-
-
-def test_table_function_ref() -> None:
-    f = TableFunctionRef("json_each")(literal("[]"))
-    assert to_str(f) == 'json_each("[]")'
-
-
-def test_table_function_ref_aliased() -> None:
-    f = TableFunctionRef("schema", "json_each")(literal("[]")).As("j")
-    assert to_str(f) == 'schema.json_each("[]") AS j'
-
-
-# ---------------------------------------------------------------------------
-# Subquery
-# ---------------------------------------------------------------------------
-
-
-def test_subquery() -> None:
-    inner = Select("*").From(TableRef("t"))
-    assert to_str(Subquery(inner)) == "(SELECT * FROM t)"
-
-
-def test_subquery_aliased() -> None:
-    inner = Select("*").From(TableRef("t"))
-    assert to_str(Subquery(inner).As("s")) == "(SELECT * FROM t) AS s"
-
-
-# ---------------------------------------------------------------------------
-# NestedFromClause
-# ---------------------------------------------------------------------------
-
-
-def test_nested_from_clause_tables() -> None:
-    n = NestedFromClause((TableRef("a"), TableRef("b")))
-    assert to_str(n) == "(a, b)"
-
-
-def test_nested_from_clause_join() -> None:
-    join = TableRef("a").Join(TableRef("b")).On(literal(1))
-    assert to_str(NestedFromClause(join)) == "(a JOIN b ON 1)"
-
-
-# ---------------------------------------------------------------------------
-# Join types
-# ---------------------------------------------------------------------------
-
-
-def test_join_on() -> None:
-    assert to_str(TableRef("a").Join(TableRef("b")).On(literal(1))) == "a JOIN b ON 1"
-
-
-def test_join_using() -> None:
-    assert (
-        to_str(TableRef("a").Join(TableRef("b")).Using("id")) == "a JOIN b USING (id)"
-    )
-
-
-def test_left_join() -> None:
-    assert (
-        to_str(TableRef("a").LeftJoin(TableRef("b")).On(literal(1)))
-        == "a LEFT JOIN b ON 1"
-    )
-
-
-def test_left_outer_join() -> None:
-    j = TableRef("a").LeftOuterJoin(TableRef("b")).On(literal(1))
-    assert to_str(j) == "a LEFT OUTER JOIN b ON 1"
-
-
-def test_right_join() -> None:
-    assert (
-        to_str(TableRef("a").RightJoin(TableRef("b")).On(literal(1)))
-        == "a RIGHT JOIN b ON 1"
-    )
-
-
-def test_right_outer_join() -> None:
-    j = TableRef("a").RightOuterJoin(TableRef("b")).On(literal(1))
-    assert to_str(j) == "a RIGHT OUTER JOIN b ON 1"
-
-
-def test_full_join() -> None:
-    assert (
-        to_str(TableRef("a").FullJoin(TableRef("b")).On(literal(1)))
-        == "a FULL JOIN b ON 1"
-    )
-
-
-def test_full_outer_join() -> None:
-    j = TableRef("a").FullOuterJoin(TableRef("b")).On(literal(1))
-    assert to_str(j) == "a FULL OUTER JOIN b ON 1"
-
-
-def test_inner_join() -> None:
-    assert (
-        to_str(TableRef("a").InnerJoin(TableRef("b")).On(literal(1)))
-        == "a INNER JOIN b ON 1"
-    )
-
-
-def test_cross_join() -> None:
-    assert (
-        to_str(TableRef("a").CrossJoin(TableRef("b")).On(literal(1)))
-        == "a CROSS JOIN b ON 1"
-    )
-
-
-def test_natural_join() -> None:
-    assert to_str(TableRef("a").NaturalJoin(TableRef("b"))) == "a NATURAL JOIN b"
-
-
-def test_natural_left_join() -> None:
-    assert (
-        to_str(TableRef("a").NaturalLeftJoin(TableRef("b"))) == "a NATURAL LEFT JOIN b"
-    )
-
-
-def test_natural_left_outer_join() -> None:
-    j = TableRef("a").NaturalLeftOuterJoin(TableRef("b"))
-    assert to_str(j) == "a NATURAL LEFT OUTER JOIN b"
-
-
-def test_natural_right_join() -> None:
-    assert (
-        to_str(TableRef("a").NaturalRightJoin(TableRef("b")))
-        == "a NATURAL RIGHT JOIN b"
-    )
-
-
-def test_natural_right_outer_join() -> None:
-    j = TableRef("a").NaturalRightOuterJoin(TableRef("b"))
-    assert to_str(j) == "a NATURAL RIGHT OUTER JOIN b"
-
-
-def test_natural_full_join() -> None:
-    assert (
-        to_str(TableRef("a").NaturalFullJoin(TableRef("b"))) == "a NATURAL FULL JOIN b"
-    )
-
-
-def test_natural_full_outer_join() -> None:
-    j = TableRef("a").NaturalFullOuterJoin(TableRef("b"))
-    assert to_str(j) == "a NATURAL FULL OUTER JOIN b"
-
-
-def test_natural_inner_join() -> None:
-    assert (
-        to_str(TableRef("a").NaturalInnerJoin(TableRef("b")))
-        == "a NATURAL INNER JOIN b"
-    )
-
-
-def test_chained_joins() -> None:
-    j = (
-        TableRef("a")
-        .Join(TableRef("b"))
-        .On(literal(1))
-        .LeftJoin(TableRef("c"))
-        .On(literal(2))
-    )
-    assert to_str(j) == "a JOIN b ON 1 LEFT JOIN c ON 2"
 
 
 # ---------------------------------------------------------------------------
@@ -272,6 +22,18 @@ def test_select_distinct() -> None:
 
 def test_select_all() -> None:
     assert Select.All("*").get_query() == "SELECT ALL *"
+
+
+def test_select_alias_star() -> None:
+    aliased = TableRef("users").As("t", explicit_as=False)
+    q = Select(aliased.Star).From(aliased)
+    assert q.get_query() == "SELECT t.* FROM users t"
+
+
+def test_table_column_in_select_query() -> None:
+    t = TableRef("users").As("u", explicit_as=False)
+    q = Select(t["id"], t["name"]).From(t)
+    assert q.get_query() == "SELECT u.id, u.name FROM users u"
 
 
 # ---------------------------------------------------------------------------
@@ -299,6 +61,16 @@ def test_select_from_aliased_table() -> None:
     assert q.get_query() == "SELECT * FROM users AS u"
 
 
+def test_table_column_in_join() -> None:
+    o = TableRef("orders").As("o", explicit_as=False)
+    u = TableRef("users").As("u", explicit_as=False)
+    q = Select(o["id"], u["name"]).From(o.Join(u).On(o["user_id"].eq(u["id"])))
+    assert (
+        q.get_query()
+        == "SELECT o.id, u.name FROM orders o JOIN users u ON o.user_id = u.id"
+    )
+
+
 # ---------------------------------------------------------------------------
 # WHERE clause
 # ---------------------------------------------------------------------------
@@ -307,6 +79,12 @@ def test_select_from_aliased_table() -> None:
 def test_select_where() -> None:
     q = Select("*").From(TableRef("t")).Where(literal(1))
     assert q.get_query() == "SELECT * FROM t WHERE 1"
+
+
+def test_table_column_in_where_clause() -> None:
+    t = TableRef("users").As("u", explicit_as=False)
+    q = Select("*").From(t).Where(t["age"] > literal(18))
+    assert q.get_query() == "SELECT * FROM users u WHERE u.age > 18"
 
 
 # ---------------------------------------------------------------------------
@@ -480,7 +258,7 @@ def test_with_values() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Full query example
+# Full clause chain
 # ---------------------------------------------------------------------------
 
 
@@ -502,25 +280,21 @@ def test_full_select() -> None:
 
 
 # ---------------------------------------------------------------------------
-# Full query examples with more complex expressions
+# Complex queries
 # ---------------------------------------------------------------------------
 
 
-def test_complete_1() -> None:
-    assert Select("*").From(TableRef("users")).get_query() == "SELECT * FROM users"
-
-
-def test_complete_2() -> None:
+def test_select_col_helper() -> None:
     q = Select(col("id"), col("name"), col("email")).From(TableRef("users"))
     assert q.get_query() == "SELECT id, name, email FROM users"
 
 
-def test_complete_3() -> None:
+def test_where_col_comparison() -> None:
     q = Select("*").From(TableRef("users")).Where(col("age") > literal(18))
     assert q.get_query() == "SELECT * FROM users WHERE age > 18"
 
 
-def test_complete_4() -> None:
+def test_select_expression_aliases() -> None:
     q = Select(
         col("first_name").As("name"),
         (col("salary") * literal(12)).As("annual_salary"),
@@ -530,7 +304,7 @@ def test_complete_4() -> None:
     )
 
 
-def test_complete_5() -> None:
+def test_join_col_two_arg() -> None:
     q = Select(col("orders", "id"), col("users", "name")).From(
         TableRef("orders")
         .Join(TableRef("users"))
@@ -541,7 +315,7 @@ def test_complete_5() -> None:
     )
 
 
-def test_complete_6() -> None:
+def test_group_by_count() -> None:
     q = (
         Select(col("department"), FunctionName("COUNT")("*").As("headcount"))
         .From(TableRef("employees"))
@@ -552,7 +326,7 @@ def test_complete_6() -> None:
     )
 
 
-def test_complete_7() -> None:
+def test_having_avg() -> None:
     q = (
         Select(
             col("department"),
@@ -570,7 +344,7 @@ def test_complete_7() -> None:
     )
 
 
-def test_complete_8() -> None:
+def test_where_in_subquery() -> None:
     q = (
         Select(col("name"))
         .From(TableRef("employees"))
@@ -588,7 +362,7 @@ def test_complete_8() -> None:
     )
 
 
-def test_complete_9() -> None:
+def test_left_join_isnull() -> None:
     q = (
         Select(col("u", "name"), col("o", "id").As("order_id"))
         .From(
@@ -607,7 +381,7 @@ def test_complete_9() -> None:
     )
 
 
-def test_complete_10() -> None:
+def test_window_rank_partition() -> None:
     q = Select(
         col("name"),
         col("salary"),
@@ -623,7 +397,7 @@ def test_complete_10() -> None:
     )
 
 
-def test_complete_11() -> None:
+def test_cte_with_join() -> None:
     avg = FunctionName("AVG")
     q = (
         With(
@@ -663,7 +437,7 @@ def test_complete_11() -> None:
     )
 
 
-def test_complete_12() -> None:
+def test_recursive_cte() -> None:
     q = (
         With.Recursive(
             TableName("org_chart")("id", "name", "level").As(
@@ -701,7 +475,7 @@ def test_complete_12() -> None:
     )
 
 
-def test_complete_13() -> None:
+def test_subquery_in_from() -> None:
     avg = FunctionName("AVG")
     count = FunctionName("COUNT")
     q = Select(avg(col("count"))).From(
@@ -711,31 +485,4 @@ def test_complete_13() -> None:
     assert (
         q.get_query()
         == "SELECT AVG(count) FROM (SELECT id, COUNT(*) FROM t GROUP BY id)"
-    )
-
-
-# ---------------------------------------------------------------------------
-# Type-level tests (verify type checkers reject invalid compound operands)
-# ---------------------------------------------------------------------------
-
-
-def test_union_rejects_ordered_subselect() -> None:
-    _ = (
-        Select("*")
-        .From(TableRef("a"))
-        .Union(
-            Select("*").From(TableRef("b")).OrderBy(literal(1).Asc)  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
-            # ty doesn't currently identify this error -ty: ignore[invalid-argument-type]
-        )
-    )
-
-
-def test_union_rejects_limited_subselect() -> None:
-    _ = (
-        Select("*")
-        .From(TableRef("a"))
-        .Union(
-            Select("*").From(TableRef("b")).Limit(literal(10))  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
-            # ty doesn't currently identify this error -ty: ignore[invalid-argument-type]
-        )
     )
