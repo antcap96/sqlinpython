@@ -115,21 +115,6 @@ class TableRefIndexedBy(TableOrSubquery):
         self._index_name._create_query(buffer)
 
 
-class TableRefIndexedByKeyword(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    def __call__(self, index_name: Name | str) -> TableRefIndexedBy:
-        if isinstance(index_name, str):
-            index_name = Name(index_name)
-        return TableRefIndexedBy(self._prev, index_name)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" INDEXED BY")
-
-
 class TableRefNotIndexed(TableOrSubquery):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
@@ -161,9 +146,10 @@ class TableRef(TableOrSubquery):
             alias = Name(alias)
         return TableRefAliased(self, alias, explicit_as)
 
-    @property
-    def IndexedBy(self) -> TableRefIndexedByKeyword:
-        return TableRefIndexedByKeyword(self)
+    def IndexedBy(self, index_name: Name | str) -> TableRefIndexedBy:
+        if isinstance(index_name, str):
+            index_name = Name(index_name)
+        return TableRefIndexedBy(self, index_name)
 
     @property
     def NotIndexed(self) -> TableRefNotIndexed:

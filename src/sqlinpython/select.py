@@ -232,10 +232,7 @@ class SelectGroupByClause[T: Core | Complete](
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" GROUP BY ")
-        for i, expr in enumerate(self._exprs):
-            if i > 0:
-                buffer.append(", ")
-            expr._create_query(buffer)
+        comma_separated(buffer, self._exprs)
 
 
 class SelectHavingClause[T: Core | Complete](
