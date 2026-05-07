@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, override
+from typing import override
 
 from sqlinpython.base import SqlElement, comma_separated
+from sqlinpython.expression.core import SchemaTableColumnName, TableColumnName
 from sqlinpython.name import Name
-from sqlinpython.select_base import Complete
-
-if TYPE_CHECKING:
-    from sqlinpython.select_base import SelectStatement_
+from sqlinpython.select_base import Complete, SelectStatement_
 
 
 # SPEC: https://sqlite.org/syntax/table-or-subquery.html
@@ -92,6 +90,9 @@ class TableRefAliased(TableOrSubquery):
     def Star(self) -> TableStarResultColumn:
         return TableStarResultColumn(self._alias)
 
+    def __getitem__(self, column: str) -> TableColumnName:
+        return TableColumnName(self._alias, column)
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
@@ -171,6 +172,11 @@ class TableRef(TableOrSubquery):
     @property
     def Star(self) -> TableStarResultColumn:
         return TableStarResultColumn(self._name)
+
+    def __getitem__(self, column: str) -> TableColumnName | SchemaTableColumnName:
+        if self._schema is not None:
+            return SchemaTableColumnName(self._schema, self._name, column)
+        return TableColumnName(self._name, column)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

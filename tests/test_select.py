@@ -53,16 +53,38 @@ def test_select_alias_star() -> None:
     assert q.get_query() == "SELECT t.* FROM users t"
 
 
-# def test_table_star_result_column2() -> None:
-#     assert to_str(TableRef("users")["*"]) == "users.*"
+def test_table_column_simple() -> None:
+    assert to_str(TableRef("users")["id"]) == "users.id"
 
 
-# def test_table_star_result_column3() -> None:
-#     assert to_str(TableRef("users").As("u")["*"]) == "u.*"
+def test_table_column_aliased() -> None:
+    assert to_str(TableRef("users").As("u")["id"]) == "u.id"
 
 
-# def test_table_column() -> None:
-#     assert to_str(TableRef("users").As("u")["id"]) == "u.id"
+def test_table_column_schema_qualified() -> None:
+    assert to_str(TableRef("main", "users")["id"]) == "main.users.id"
+
+
+def test_table_column_in_select_query() -> None:
+    t = TableRef("users").As("u", explicit_as=False)
+    q = Select(t["id"], t["name"]).From(t)
+    assert q.get_query() == "SELECT u.id, u.name FROM users u"
+
+
+def test_table_column_in_where_clause() -> None:
+    t = TableRef("users").As("u", explicit_as=False)
+    q = Select("*").From(t).Where(t["age"] > literal(18))
+    assert q.get_query() == "SELECT * FROM users u WHERE u.age > 18"
+
+
+def test_table_column_in_join() -> None:
+    o = TableRef("orders").As("o", explicit_as=False)
+    u = TableRef("users").As("u", explicit_as=False)
+    q = Select(o["id"], u["name"]).From(o.Join(u).On(o["user_id"].eq(u["id"])))
+    assert (
+        q.get_query()
+        == "SELECT o.id, u.name FROM orders o JOIN users u ON o.user_id = u.id"
+    )
 
 
 # ---------------------------------------------------------------------------
