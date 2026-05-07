@@ -26,6 +26,7 @@ from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
 
 
+# TODO: replace _PlaceholderSelect usages with real Select(...) expressions
 class _PlaceholderSelect(SelectStatement):
     """Concrete placeholder used in tests to stand in for a real SELECT statement."""
 
@@ -34,7 +35,6 @@ class _PlaceholderSelect(SelectStatement):
         buffer.append("<select-stmt>")
 
 
-# Aliases for backward compatibility with existing test code
 CteSelectStatement = _PlaceholderSelect
 
 
