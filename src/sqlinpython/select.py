@@ -13,6 +13,7 @@ from sqlinpython.select_base import Complete, Core, SelectStatement_
 from sqlinpython.table_or_subquery import (
     JoinClause,
     Subquery,
+    SubqueryAliased,
     TableOrSubquery,
     TableStarResultColumn,
 )
@@ -40,7 +41,16 @@ def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
 # ---------------------------------------------------------------------------
 
 
-class SelectLimitOffset(SelectStatement_[Complete]):
+class ISelectAliasable(SelectStatement_[Complete], ABC):
+    """Mixin for SELECT statements that can be aliased as subqueries."""
+
+    def As(self, alias: Name | str) -> SubqueryAliased:
+        if isinstance(alias, str):
+            alias = Name(alias)
+        return SubqueryAliased(self, alias)
+
+
+class SelectLimitOffset(ISelectAliasable):
     def __init__(self, prev: SqlElement, offset: Expression) -> None:
         self._prev = prev
         self._offset = offset
@@ -52,7 +62,7 @@ class SelectLimitOffset(SelectStatement_[Complete]):
         self._offset._create_query(buffer)
 
 
-class SelectLimitComma(SelectStatement_[Complete]):
+class SelectLimitComma(ISelectAliasable):
     def __init__(self, prev: SqlElement, limit: Expression, offset: Expression) -> None:
         self._prev = prev
         self._limit = limit
@@ -67,7 +77,7 @@ class SelectLimitComma(SelectStatement_[Complete]):
         self._offset._create_query(buffer)
 
 
-class SelectLimit(SelectStatement_[Complete]):
+class SelectLimit(ISelectAliasable):
     def __init__(self, prev: SqlElement, limit: Expression) -> None:
         self._prev = prev
         self._limit = limit
