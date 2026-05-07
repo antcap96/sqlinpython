@@ -17,55 +17,55 @@ class TableOrSubquery(SqlElement, ABC):
     """Base class for all table-or-subquery variants. Provides join methods."""
 
     def Join(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " JOIN", rhs)
+        return JoinRhs(self, "JOIN", rhs)
 
     def LeftJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " LEFT JOIN", rhs)
+        return JoinRhs(self, "LEFT JOIN", rhs)
 
     def LeftOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " LEFT OUTER JOIN", rhs)
+        return JoinRhs(self, "LEFT OUTER JOIN", rhs)
 
     def RightJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " RIGHT JOIN", rhs)
+        return JoinRhs(self, "RIGHT JOIN", rhs)
 
     def RightOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " RIGHT OUTER JOIN", rhs)
+        return JoinRhs(self, "RIGHT OUTER JOIN", rhs)
 
     def FullJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " FULL JOIN", rhs)
+        return JoinRhs(self, "FULL JOIN", rhs)
 
     def FullOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " FULL OUTER JOIN", rhs)
+        return JoinRhs(self, "FULL OUTER JOIN", rhs)
 
     def InnerJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " INNER JOIN", rhs)
+        return JoinRhs(self, "INNER JOIN", rhs)
 
     def CrossJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " CROSS JOIN", rhs)
+        return JoinRhs(self, "CROSS JOIN", rhs)
 
     def NaturalJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL JOIN", rhs)
+        return JoinRhs(self, "NATURAL JOIN", rhs)
 
     def NaturalLeftJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL LEFT JOIN", rhs)
+        return JoinRhs(self, "NATURAL LEFT JOIN", rhs)
 
     def NaturalLeftOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL LEFT OUTER JOIN", rhs)
+        return JoinRhs(self, "NATURAL LEFT OUTER JOIN", rhs)
 
     def NaturalRightJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL RIGHT JOIN", rhs)
+        return JoinRhs(self, "NATURAL RIGHT JOIN", rhs)
 
     def NaturalRightOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL RIGHT OUTER JOIN", rhs)
+        return JoinRhs(self, "NATURAL RIGHT OUTER JOIN", rhs)
 
     def NaturalFullJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL FULL JOIN", rhs)
+        return JoinRhs(self, "NATURAL FULL JOIN", rhs)
 
     def NaturalFullOuterJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL FULL OUTER JOIN", rhs)
+        return JoinRhs(self, "NATURAL FULL OUTER JOIN", rhs)
 
     def NaturalInnerJoin(self, rhs: TableOrSubquery) -> JoinRhs:
-        return JoinRhs(self, " NATURAL INNER JOIN", rhs)
+        return JoinRhs(self, "NATURAL INNER JOIN", rhs)
 
 
 class TableStarResultColumn(SqlElement):
@@ -335,6 +335,7 @@ class JoinRhs(TableOrSubquery):
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._lhs._create_query(buffer)
+        buffer.append(" ")
         buffer.append(self._keyword)
         buffer.append(" ")
         self._rhs._create_query(buffer)

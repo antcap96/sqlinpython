@@ -36,11 +36,6 @@ def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
     return arg
 
 
-# ---------------------------------------------------------------------------
-# LIMIT / OFFSET
-# ---------------------------------------------------------------------------
-
-
 class ISelectAliasable(SelectStatement_[Complete], ABC):
     """Mixin for SELECT statements that can be aliased as subqueries."""
 
@@ -48,6 +43,11 @@ class ISelectAliasable(SelectStatement_[Complete], ABC):
         if isinstance(alias, str):
             alias = Name(alias)
         return SubqueryAliased(self, alias)
+
+
+# ---------------------------------------------------------------------------
+# LIMIT / OFFSET
+# ---------------------------------------------------------------------------
 
 
 class SelectLimitOffset(ISelectAliasable):

@@ -15,6 +15,7 @@ from typing import override
 from sqlinpython.select_base import SelectStatement_, Complete
 
 
+# TODO: replace _PlaceholderSelect usages with real Select(...) expressions
 class _PlaceholderSelect(SelectStatement_[Complete]):
     def __init__(self, text: str) -> None:
         self._text = text

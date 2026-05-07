@@ -13,6 +13,7 @@ from sqlinpython.savepoint import Rollback as Rollback
 from sqlinpython.savepoint import Savepoint as Savepoint
 from sqlinpython.select import Select as Select
 from sqlinpython.select import Values as Values
+from sqlinpython.select_base import SelectStatement as SelectStatement
 from sqlinpython.table_constraint import Check as Check
 from sqlinpython.table_constraint import Constraint as Constraint
 from sqlinpython.table_constraint import ForeignKey as ForeignKey
