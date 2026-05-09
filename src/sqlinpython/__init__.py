@@ -1,6 +1,7 @@
 __version__ = "0.1.0"
 
 from sqlinpython.alter_table import AlterTable as AlterTable
+from sqlinpython.analyze import Analyze as Analyze
 from sqlinpython.column_name import ColumnName as ColumnName
 from sqlinpython.column_name import col as col
 from sqlinpython.common_table_expression import TableName as TableName
