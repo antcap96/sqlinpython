@@ -65,13 +65,13 @@ These types are not yet part of a public api and their names might be changed in
 ## State
 
 TODO:
-- [ ] alter-table-stmt
+- [X] alter-table-stmt
 - [ ] analyze-stmt
 - [ ] attach-stmt
 - [ ] begin-stmt
 - [ ] commit-stmt
 - [X] create-index-stmt
-- [ ] create-table-stmt
+- [X] create-table-stmt
 - [ ] create-trigger-stmt
 - [ ] create-view-stmt
 - [X] create-virtual-table-stmt
@@ -82,13 +82,13 @@ TODO:
 - [X] drop-table-stmt
 - [ ] drop-trigger-stmt
 - [ ] drop-view-stmt
-- [ ] insert-stmt
+- [X] insert-stmt
 - [ ] pragma-stmt
 - [ ] reindex-stmt
 - [X] release-stmt
 - [X] rollback-stmt
 - [X] savepoint-stmt
-- [ ] select-stmt
+- [X] select-stmt
 - [ ] update-stmt
 - [ ] update-stmt-limited
 - [X] vacuum-stmt
