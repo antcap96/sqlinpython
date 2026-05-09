@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import override, Literal, cast, overload, Unpack
+from typing import Literal, cast, overload, override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.name import Name
@@ -81,7 +81,7 @@ class OrderByKeyword:
         self._prev = prev
 
     def __call__(
-        self, *terms: Unpack[tuple[OrderingTerm, *tuple[OrderingTerm, ...]]]
+        self, *terms: *tuple[OrderingTerm, *tuple[OrderingTerm, ...]]
     ) -> OrderByClause:
         return OrderByClause(self._prev, terms)
 
@@ -339,7 +339,7 @@ class PartitionByKeyword:
         self._prev = prev
 
     def __call__(
-        self, *exprs: Unpack[tuple[Expression, *tuple[Expression, ...]]]
+        self, *exprs: *tuple[Expression, *tuple[Expression, ...]]
     ) -> PartitionByClause:
         return PartitionByClause(self._prev, exprs)
 

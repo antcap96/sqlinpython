@@ -1,6 +1,5 @@
-from typing import override
-
 from abc import ABC
+from typing import override
 
 from sqlinpython.base import SqlElement
 

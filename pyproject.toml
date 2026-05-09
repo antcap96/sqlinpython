@@ -26,7 +26,8 @@ build-backend = "uv_build"
 
 [tool.ruff]
 target-version = "py312"
-#lint.select = ["E", "F", "I", "UP"]
+lint.select = ["E", "F", "I", "UP"]
+lint.ignore = ["E501"]
 fix = true
 
 [tool.mypy]

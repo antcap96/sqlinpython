@@ -1,4 +1,4 @@
-from sqlinpython import TableRef
+from sqlinpython import Select, TableRef
 from sqlinpython.base import SqlElement
 from sqlinpython.expression import literal
 from sqlinpython.table_or_subquery import (
@@ -6,7 +6,6 @@ from sqlinpython.table_or_subquery import (
     Subquery,
     TableFunctionRef,
 )
-from sqlinpython import Select
 
 
 def to_str(element: SqlElement) -> str:

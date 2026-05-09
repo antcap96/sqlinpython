@@ -1,6 +1,6 @@
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
-from typing import override, Protocol
+from typing import Protocol, override
 
 
 class ISqlElement(Protocol):

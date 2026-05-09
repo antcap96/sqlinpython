@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from abc import ABC
-from typing import override, overload
+from typing import overload, override
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement
 from sqlinpython.indexed_column import IndexedColumnWithCollate

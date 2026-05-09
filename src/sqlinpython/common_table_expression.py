@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, override
 from sqlinpython.base import SqlElement
 from sqlinpython.insert import InsertKeyword, ReplaceKeyword
 from sqlinpython.name import Name
-from sqlinpython.select_base import SelectStatement, Complete
+from sqlinpython.select_base import Complete, SelectStatement
 
 if TYPE_CHECKING:
     from sqlinpython.select import SelectKeyword, ValuesKeyword

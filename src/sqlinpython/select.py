@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import typing
 from abc import ABC
 from typing import Literal, override
-import typing
 
 from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.expression.core import AliasedExpression, Expression
@@ -17,7 +17,6 @@ from sqlinpython.table_or_subquery import (
     TableOrSubquery,
     TableStarResultColumn,
 )
-
 
 # Result column types
 # "* " is handled by the literal string "*"

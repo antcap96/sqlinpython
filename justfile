@@ -27,6 +27,7 @@ lint:
     {{run}}ruff format --check
 
 format:
+    {{run}}ruff check --select I --fix
     {{run}}ruff format
 
 fix:

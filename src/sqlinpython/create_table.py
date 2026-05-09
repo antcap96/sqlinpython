@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 import typing
-from typing import override, Unpack
 from abc import ABC
+from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
@@ -96,8 +96,8 @@ class CreateTableWithName(SqlElement):
 
     def __call__(
         self,
-        *definitions: Unpack[
-            tuple[ColumnDefinition, *tuple[ColumnDefinition | TableConstraint, ...]]
+        *definitions: *tuple[
+            ColumnDefinition, *tuple[ColumnDefinition | TableConstraint, ...]
         ],
     ) -> CreateTableWithDefinitions:
         # TODO: Validate that any table constraints are at the end

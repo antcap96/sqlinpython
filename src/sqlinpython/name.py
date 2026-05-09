@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import override
-
 import re
+from typing import override
 
 from sqlinpython.base import SqlElement
 

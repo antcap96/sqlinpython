@@ -26,5 +26,8 @@ from sqlinpython.table_or_subquery import NestedFromClause as NestedFromClause
 from sqlinpython.table_or_subquery import Subquery as Subquery
 from sqlinpython.table_or_subquery import TableFunctionRef as TableFunctionRef
 from sqlinpython.table_or_subquery import TableRef as TableRef
+from sqlinpython.transaction import Begin as Begin
+from sqlinpython.transaction import Commit as Commit
+from sqlinpython.transaction import End as End
 from sqlinpython.type_name import TypeName as TypeName
 from sqlinpython.vacuum import Vacuum as Vacuum

@@ -1,6 +1,5 @@
-from sqlinpython import TableRef, Select
+from sqlinpython import Select, TableRef
 from sqlinpython.expression import literal
-
 
 # ---------------------------------------------------------------------------
 # Type-level tests (verify type checkers reject invalid compound operands)

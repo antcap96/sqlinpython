@@ -1,4 +1,4 @@
-from typing import override, Literal, overload
+from typing import Literal, overload, override
 
 from sqlinpython.expression.core import Expression12
 

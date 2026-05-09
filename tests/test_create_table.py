@@ -1,3 +1,5 @@
+from typing import override
+
 import sqlinpython.expression as expr
 from sqlinpython import (
     Check,
@@ -6,13 +8,11 @@ from sqlinpython import (
     Create,
     ForeignKey,
     PrimaryKey,
+    Select,
     TypeName,
     Unique,
-    Select,
 )
-from typing import override
-
-from sqlinpython.select_base import SelectStatement_, Complete
+from sqlinpython.select_base import Complete, SelectStatement_
 
 
 # TODO: replace _PlaceholderSelect usages with real Select(...) expressions

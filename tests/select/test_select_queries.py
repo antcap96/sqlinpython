@@ -1,7 +1,6 @@
-from sqlinpython import col, With, TableRef, TableName, Select, Values
-from sqlinpython.expression import literal, FunctionName
-from sqlinpython.expression.function import WindowName, PartitionBy
-
+from sqlinpython import Select, TableName, TableRef, Values, With, col
+from sqlinpython.expression import FunctionName, literal
+from sqlinpython.expression.function import PartitionBy, WindowName
 
 # ---------------------------------------------------------------------------
 # SELECT *

@@ -8,7 +8,6 @@ from sqlinpython.expression.core import SchemaTableColumnName, TableColumnName
 from sqlinpython.name import Name
 from sqlinpython.select_base import Complete, SelectStatement_
 
-
 # SPEC: https://sqlite.org/syntax/table-or-subquery.html
 # SPEC: https://sqlite.org/syntax/join-clause.html
 

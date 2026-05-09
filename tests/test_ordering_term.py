@@ -1,6 +1,5 @@
-from sqlinpython.ordering_term import OrderingTerm
-
 from sqlinpython import expression as expr
+from sqlinpython.ordering_term import OrderingTerm
 
 
 def to_str(element: OrderingTerm) -> str:

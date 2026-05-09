@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import override, Unpack
-
 from abc import ABC
+from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.expression import Expression
@@ -62,7 +61,7 @@ class CreateIndexWithName(SqlElement):
     def On(
         self,
         table_name: str | Name,
-        *cols: Unpack[tuple[IndexedColumn, *tuple[IndexedColumn, ...]]],
+        *cols: *tuple[IndexedColumn, *tuple[IndexedColumn, ...]],
     ) -> CreateIndexOnTable:
         if isinstance(table_name, str):
             table_name = Name(table_name)

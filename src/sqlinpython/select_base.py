@@ -4,7 +4,6 @@ from abc import ABC
 
 from sqlinpython.base import CompleteSqlQuery
 
-
 # Type tags used to track which SELECT statements may appear as compound operands
 # (UNION / INTERSECT / EXCEPT).
 #

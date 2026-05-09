@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from abc import ABC
-from typing import Unpack, override
+from typing import override
 
 from typing_extensions import TypeIs
 
@@ -273,15 +273,13 @@ class InsertNameAs(InsertColumnNames):
 
     @typing.overload
     def __call__(
-        self, *column_names: Unpack[tuple[Name | str, *tuple[Name | str, ...]]]
+        self, *column_names: *tuple[Name | str, *tuple[Name | str, ...]]
     ) -> InsertColumnNames: ...
 
     @override
     def __call__(
         self,
-        *column_names: Unpack[
-            tuple[Name | str | SelectStatement, *tuple[Name | str, ...]]
-        ],
+        *column_names: *tuple[Name | str | SelectStatement, *tuple[Name | str, ...]],
     ) -> InsertColumnNames | InsertSelect:
         if _is_column_names(column_names):
             names = tuple(

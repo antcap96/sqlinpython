@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import override, Literal
+from typing import Literal, override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.column_definition import ColumnNameWithType

@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import override
-
 from abc import ABC
+from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
