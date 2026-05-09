@@ -67,7 +67,7 @@ These types are not yet part of a public api and their names might be changed in
 TODO:
 - [X] alter-table-stmt
 - [X] analyze-stmt
-- [ ] attach-stmt
+- [X] attach-stmt
 - [ ] begin-stmt
 - [ ] commit-stmt
 - [X] create-index-stmt
