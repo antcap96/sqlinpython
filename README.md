@@ -89,6 +89,6 @@ TODO:
 - [X] rollback-stmt
 - [X] savepoint-stmt
 - [X] select-stmt
-- [ ] update-stmt
+- [X] update-stmt
 - [ ] update-stmt-limited
 - [X] vacuum-stmt

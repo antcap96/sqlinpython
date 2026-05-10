@@ -210,35 +210,35 @@ def test_insert_with_name_objects() -> None:
 
 def test_insert_or_abort_values() -> None:
     assert (
-        Insert.Or.Abort.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrAbort.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "INSERT OR ABORT INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_fail_values() -> None:
     assert (
-        Insert.Or.Fail.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrFail.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "INSERT OR FAIL INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_ignore_values() -> None:
     assert (
-        Insert.Or.Ignore.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrIgnore.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "INSERT OR IGNORE INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_replace_values() -> None:
     assert (
-        Insert.Or.Replace.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrReplace.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "INSERT OR REPLACE INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_rollback_values() -> None:
     assert (
-        Insert.Or.Rollback.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrRollback.Into("users")("id").Values((expr.literal(1),)).get_query()
         == "INSERT OR ROLLBACK INTO users (id) VALUES (1)"
     )
 

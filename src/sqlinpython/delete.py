@@ -101,24 +101,10 @@ class DeleteFromAliased(IIndexHints):
 
 
 class DeleteFrom(IIndexHints):
-    def __init__(
-        self,
-        prev: SqlElement,
-        schema_or_name: Name | str,
-        name: Name | str | None = None,
-        /,
-    ) -> None:
+    def __init__(self, prev: SqlElement, schema: Name | None, name: Name) -> None:
         self._prev = prev
-        if isinstance(schema_or_name, str):
-            schema_or_name = Name(schema_or_name)
-        if isinstance(name, str):
-            name = Name(name)
-        if name is None:
-            self._schema = None
-            self._name = schema_or_name
-        else:
-            self._schema = schema_or_name
-            self._name = name
+        self._schema = schema
+        self._name = name
 
     def As(self, alias: Name | str) -> DeleteFromAliased:
         if isinstance(alias, str):
@@ -142,6 +128,12 @@ class DeleteKeyword(SqlElement):
     def From(
         self, schema_or_name: Name | str, name: Name | str | None = None, /
     ) -> DeleteFrom:
+        if isinstance(schema_or_name, str):
+            schema_or_name = Name(schema_or_name)
+        if isinstance(name, str):
+            name = Name(name)
+        if name is None:
+            return DeleteFrom(self, None, schema_or_name)
         return DeleteFrom(self, schema_or_name, name)
 
     @override

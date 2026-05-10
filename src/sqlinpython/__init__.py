@@ -31,4 +31,5 @@ from sqlinpython.transaction import Begin as Begin
 from sqlinpython.transaction import Commit as Commit
 from sqlinpython.transaction import End as End
 from sqlinpython.type_name import TypeName as TypeName
+from sqlinpython.update import Update as Update
 from sqlinpython.vacuum import Vacuum as Vacuum

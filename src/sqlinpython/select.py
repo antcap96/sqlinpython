@@ -21,7 +21,6 @@ from sqlinpython.table_or_subquery import (
 # Result column types
 # "* " is handled by the literal string "*"
 # table-name.* is handled by TableStarResultColumn from table_or_subquery
-# TODO: Should TableStarResultColumn be an expression?
 ResultColumn = Expression | AliasedExpression | Star_ | TableStarResultColumn
 
 _ResultColumnArg = Literal["*"] | ResultColumn

@@ -11,6 +11,7 @@ from sqlinpython.select_base import Complete, SelectStatement
 if TYPE_CHECKING:
     from sqlinpython.delete import DeleteKeyword
     from sqlinpython.select import SelectKeyword, ValuesKeyword
+    from sqlinpython.update import UpdateKeyword
 
 
 # SPEC: https://sqlite.org/syntax/common-table-expression.html
@@ -119,6 +120,12 @@ class WithClause(SqlElement):
         from sqlinpython.delete import DeleteKeyword
 
         return DeleteKeyword(self)
+
+    @property
+    def Update(self) -> UpdateKeyword:
+        from sqlinpython.update import UpdateKeyword
+
+        return UpdateKeyword(self)
 
     @property
     def Replace(self) -> ReplaceKeyword:

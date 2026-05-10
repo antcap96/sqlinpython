@@ -322,14 +322,14 @@ class Into_(SqlElement):
         buffer.append(" INTO")
 
 
-class InsertAfterOr(SqlElement):
+class InsertOr(SqlElement):
     def __init__(
         self,
         prev: SqlElement,
-        value: typing.Literal["ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"],
+        conflict: typing.Literal["ABORT", "FAIL", "IGNORE", "REPLACE", "ROLLBACK"],
     ) -> None:
         self._prev = prev
-        self._value = value
+        self._conflict = conflict
 
     @property
     def Into(self) -> Into_:
@@ -338,37 +338,7 @@ class InsertAfterOr(SqlElement):
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(f" {self._value}")
-
-
-class InsertOr(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    @property
-    def Abort(self) -> InsertAfterOr:
-        return InsertAfterOr(self, "ABORT")
-
-    @property
-    def Fail(self) -> InsertAfterOr:
-        return InsertAfterOr(self, "FAIL")
-
-    @property
-    def Ignore(self) -> InsertAfterOr:
-        return InsertAfterOr(self, "IGNORE")
-
-    @property
-    def Replace(self) -> InsertAfterOr:
-        return InsertAfterOr(self, "REPLACE")
-
-    @property
-    def Rollback(self) -> InsertAfterOr:
-        return InsertAfterOr(self, "ROLLBACK")
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" OR")
+        buffer.append(f" OR {self._conflict}")
 
 
 class InsertKeyword(SqlElement):
@@ -380,8 +350,24 @@ class InsertKeyword(SqlElement):
         return Into_(self)
 
     @property
-    def Or(self) -> InsertOr:
-        return InsertOr(self)
+    def OrAbort(self) -> InsertOr:
+        return InsertOr(self, "ABORT")
+
+    @property
+    def OrFail(self) -> InsertOr:
+        return InsertOr(self, "FAIL")
+
+    @property
+    def OrIgnore(self) -> InsertOr:
+        return InsertOr(self, "IGNORE")
+
+    @property
+    def OrReplace(self) -> InsertOr:
+        return InsertOr(self, "REPLACE")
+
+    @property
+    def OrRollback(self) -> InsertOr:
+        return InsertOr(self, "ROLLBACK")
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

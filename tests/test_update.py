@@ -1,0 +1,200 @@
+import pytest
+
+from sqlinpython import Select, TableName, Update, With
+from sqlinpython import expression as expr
+from sqlinpython.name import Name
+from sqlinpython.table_or_subquery import TableRef
+
+
+def test_with_update() -> None:
+    q = (
+        With(TableName("cte").As(Select(expr.literal(1))))
+        .Update("users")
+        .Set(column=expr.literal(1))
+    )
+    assert q.get_query() == "WITH cte AS (SELECT 1) UPDATE users SET column = 1"
+
+
+def test_with_recursive_update() -> None:
+    q = (
+        With.Recursive(
+            TableName("cte1").As(Select(expr.literal(1))),
+            TableName("cte2").As(Select(expr.literal(2))),
+        )
+        .Update("users")
+        .Set(column=expr.literal(1))
+    )
+    assert (
+        q.get_query()
+        == "WITH RECURSIVE cte1 AS (SELECT 1), cte2 AS (SELECT 2) UPDATE users SET column = 1"
+    )
+
+
+def test_update() -> None:
+    q = Update("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE users SET column = 1"
+
+
+def test_update_schema_qualified() -> None:
+    q = Update("main", "users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE main.users SET column = 1"
+
+
+def test_update_2() -> None:
+    q = Update("users").Set(column=expr.literal(1), other=expr.literal(2))
+    assert q.get_query() == "UPDATE users SET column = 1, other = 2"
+
+
+def test_update_dict_str() -> None:
+    q = Update("users").Set({"column": expr.literal(1), "other": expr.literal(2)})
+    assert q.get_query() == "UPDATE users SET column = 1, other = 2"
+
+
+def test_update_dict_mixed() -> None:
+    q = Update("users").Set({"column": expr.literal(1), Name("other"): expr.literal(2)})
+    assert q.get_query() == "UPDATE users SET column = 1, other = 2"
+
+
+def test_update_dict_list_str() -> None:
+    q = Update("users").Set({("column", "other"): expr.literal(1)})
+    assert q.get_query() == "UPDATE users SET (column, other) = 1"
+
+
+def test_update_dict_list_mixed() -> None:
+    q = Update("users").Set({("column", Name("other")): expr.literal(1)})
+    assert q.get_query() == "UPDATE users SET (column, other) = 1"
+
+
+def test_update_dict_list_mixed_2() -> None:
+    q = Update("users").Set(
+        {("column", Name("other")): expr.literal(1), "another": expr.literal(2)}
+    )
+    assert q.get_query() == "UPDATE users SET (column, other) = 1, another = 2"
+
+
+def test_update_or_abort() -> None:
+    q = Update.OrAbort("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE OR ABORT users SET column = 1"
+
+
+def test_update_or_fail() -> None:
+    q = Update.OrFail("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE OR FAIL users SET column = 1"
+
+
+def test_update_or_ignore() -> None:
+    q = Update.OrIgnore("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE OR IGNORE users SET column = 1"
+
+
+def test_update_or_replace() -> None:
+    q = Update.OrReplace("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE OR REPLACE users SET column = 1"
+
+
+def test_update_or_rollback() -> None:
+    q = Update.OrRollback("users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE OR ROLLBACK users SET column = 1"
+
+
+def test_update_as() -> None:
+    q = Update("users").As("u").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE users AS u SET column = 1"
+
+
+def test_update_indexed_by() -> None:
+    q = Update("users").IndexedBy("idx_users").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE users INDEXED BY idx_users SET column = 1"
+
+
+def test_update_not_indexed() -> None:
+    q = Update("users").NotIndexed.Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE users NOT INDEXED SET column = 1"
+
+
+def test_update_set_from() -> None:
+    q = Update("users").Set(column=expr.literal(1)).From(TableRef("table"))
+    assert q.get_query() == "UPDATE users SET column = 1 FROM table"
+
+
+def test_update_set_from_join() -> None:
+    q = (
+        Update("users")
+        .Set(column=expr.literal(1))
+        .From(TableRef("table").Join(TableRef("other")))
+    )
+    assert q.get_query() == "UPDATE users SET column = 1 FROM table JOIN other"
+
+
+def test_update_set_from_comma() -> None:
+    q = (
+        Update("users")
+        .Set(column=expr.literal(1))
+        .From(TableRef("table"), TableRef("other"))
+    )
+    assert q.get_query() == "UPDATE users SET column = 1 FROM table, other"
+
+
+def test_update_where() -> None:
+    q = Update("users").Set(column=expr.literal(1)).Where(expr.literal(1))
+    assert q.get_query() == "UPDATE users SET column = 1 WHERE 1"
+
+
+def test_update_returning() -> None:
+    q = Update("users").Set(column=expr.literal(1)).Returning(expr.literal(1))
+    assert q.get_query() == "UPDATE users SET column = 1 RETURNING 1"
+
+
+def test_update_returning_as() -> None:
+    q = (
+        Update("users")
+        .Set(column=expr.literal(1))
+        .Returning(expr.literal(1).As("alias"))
+    )
+    assert q.get_query() == "UPDATE users SET column = 1 RETURNING 1 AS alias"
+
+
+def test_update_where_returning() -> None:
+    q = (
+        Update("users")
+        .Set(column=expr.literal(1))
+        .Where(expr.literal(1))
+        .Returning("*")
+    )
+    assert q.get_query() == "UPDATE users SET column = 1 WHERE 1 RETURNING *"
+
+
+def test_update_set_from_returning() -> None:
+    q = (
+        Update("users")
+        .Set(column=expr.literal(1))
+        .From(TableRef("other"))
+        .Returning("*")
+    )
+    assert q.get_query() == "UPDATE users SET column = 1 FROM other RETURNING *"
+
+
+def test_update_schema_qualified_as() -> None:
+    q = Update("main", "users").As("u").Set(column=expr.literal(1))
+    assert q.get_query() == "UPDATE main.users AS u SET column = 1"
+
+
+def test_update_set_empty_raises() -> None:
+    with pytest.raises(ValueError):
+        _ = Update("users").Set()
+
+
+def test_update_full_chain() -> None:
+    q = (
+        With(TableName("cte").As(Select(expr.literal(1))))
+        .Update.OrAbort("users")
+        .As("u")
+        .Set(column=expr.literal(1))
+        .From(TableRef("other"))
+        .Where(expr.literal(1))
+        .Returning("*")
+    )
+    assert (
+        q.get_query()
+        == "WITH cte AS (SELECT 1) UPDATE OR ABORT users AS u SET column = 1 FROM other WHERE 1 RETURNING *"
+    )
