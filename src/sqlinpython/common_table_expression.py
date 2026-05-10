@@ -9,6 +9,7 @@ from sqlinpython.name import Name
 from sqlinpython.select_base import Complete, SelectStatement
 
 if TYPE_CHECKING:
+    from sqlinpython.delete import DeleteKeyword
     from sqlinpython.select import SelectKeyword, ValuesKeyword
 
 
@@ -113,14 +114,11 @@ class WithClause(SqlElement):
         self._prev = prev
         self._ctes = ctes
 
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" ")
-        for i, cte in enumerate(self._ctes):
-            if i > 0:
-                buffer.append(", ")
-            cte._create_query(buffer)
+    @property
+    def Delete(self) -> DeleteKeyword:
+        from sqlinpython.delete import DeleteKeyword
+
+        return DeleteKeyword(self)
 
     @property
     def Replace(self) -> ReplaceKeyword:
@@ -142,15 +140,24 @@ class WithClause(SqlElement):
 
         return ValuesKeyword(self)
 
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        for i, cte in enumerate(self._ctes):
+            if i > 0:
+                buffer.append(", ")
+            cte._create_query(buffer)
+
 
 class WithRecursive(SqlElement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
     def __call__(
-        self, cte: CommonTableExpression, *more_ctes: CommonTableExpression
+        self, *ctes: *tuple[CommonTableExpression, *tuple[CommonTableExpression, ...]]
     ) -> WithClause:
-        return WithClause(self, (cte,) + more_ctes)
+        return WithClause(self, ctes)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

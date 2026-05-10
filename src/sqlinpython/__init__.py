@@ -8,6 +8,7 @@ from sqlinpython.column_name import col as col
 from sqlinpython.common_table_expression import TableName as TableName
 from sqlinpython.common_table_expression import With as With
 from sqlinpython.create import Create as Create
+from sqlinpython.delete import Delete as Delete
 from sqlinpython.drop_table import DropTable as DropTable
 from sqlinpython.insert import Insert as Insert
 from sqlinpython.insert import Replace as Replace

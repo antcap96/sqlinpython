@@ -13,6 +13,7 @@ from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
+from sqlinpython.returning import ReturningBase
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 
 
@@ -27,31 +28,16 @@ class InsertStatement(CompleteSqlQuery, ABC):
     pass
 
 
-class ReturningClause(InsertStatement):
-    def __init__(
-        self,
-        prev: SqlElement,
-        values: tuple[Star_ | Expression | AliasedExpression, ...],
-    ):
-        self._prev = prev
-        self._values = values
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" RETURNING ")
-        for i, val in enumerate(self._values):
-            if i > 0:
-                buffer.append(", ")
-            val._create_query(buffer)
+class ReturningClause(InsertStatement, ReturningBase):
+    pass
 
 
-class BeforeReturningClause(InsertStatement, ABC):
+class IBeforeReturningClause(InsertStatement, ABC):
     def Returning(
         self, *args: typing.Literal["*"] | Expression | AliasedExpression | Star_
     ) -> ReturningClause:
-        args = tuple(Star if arg == "*" else arg for arg in args)
-        return ReturningClause(self, args)
+        values = tuple(Star if arg == "*" else arg for arg in args)
+        return ReturningClause(self, values)
 
 
 class OnConflictWhere(SqlElement):
@@ -102,13 +88,13 @@ class OnConflictClause(OnConflictCall):
         buffer.append(" ON CONFLICT")
 
 
-class BeforeUpsertClause(BeforeReturningClause, ABC):
+class BeforeUpsertClause(IBeforeReturningClause, ABC):
     @property
     def OnConflict(self) -> OnConflictClause:
         return OnConflictClause(self)
 
 
-class OnConflictUpdateWhere(BeforeReturningClause):
+class OnConflictUpdateWhere(IBeforeReturningClause):
     def __init__(self, prev: SqlElement, condition: Expression):
         self._prev = prev
         self._condition = condition
@@ -227,7 +213,7 @@ class InsertSelect(BeforeUpsertClause):
         self._select_stm._create_query(buffer)
 
 
-class InsertDefaultValues(BeforeReturningClause):
+class InsertDefaultValues(IBeforeReturningClause):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 

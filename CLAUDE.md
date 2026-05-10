@@ -51,6 +51,19 @@ The expression system uses an **operator precedence hierarchy** (Expression1 thr
 
 The `_parenthesize_if_necessary()` function automatically wraps expressions in parentheses based on precedence.
 
+### Interface/Mixin Naming Convention
+
+Abstract mixin classes that provide shared methods use an `I` prefix and must inherit from `ABC` (basedpyright requires explicit abstractness to detect abstract classes):
+
+```python
+class IBeforeWhereClause(IBeforeReturningClause, ABC):
+    def Where(self, condition: Expression) -> DeleteWhere: ...
+
+class IIndexHints(IBeforeWhereClause, ABC):
+    def IndexedBy(...) -> DeleteFromIndexedBy: ...
+    def NotIndexed(...) -> DeleteFromNotIndexed: ...
+```
+
 ### Method Ordering Convention
 
 In all `SqlElement` subclasses, methods must follow this order:

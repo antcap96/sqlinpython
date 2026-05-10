@@ -75,7 +75,7 @@ TODO:
 - [ ] create-trigger-stmt
 - [ ] create-view-stmt
 - [X] create-virtual-table-stmt
-- [ ] delete-stmt
+- [X] delete-stmt
 - [ ] delete-stmt-limited
 - [ ] detach-stmt
 - [ ] drop-index-stmt
