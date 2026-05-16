@@ -3,6 +3,8 @@ from typing import override
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
+# SPEC: https://sqlite.org/lang_savepoint.html
+
 # TODO: Consider a SavepointName
 
 

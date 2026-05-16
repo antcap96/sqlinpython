@@ -6,8 +6,9 @@ from typing import override
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.name import Name
 
+# SPEC: https://sqlite.org/lang_createvtab.html
 
-# Spec: https://sqlite.org/lang_createvtab.html
+
 class CreateVirtualTableStatement(CompleteSqlQuery, ABC):
     pass
 

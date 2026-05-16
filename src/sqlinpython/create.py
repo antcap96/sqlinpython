@@ -6,6 +6,10 @@ from sqlinpython.create_index import CreateIndex
 from sqlinpython.create_table import CreateTable
 from sqlinpython.create_vtable import CreateVirtualTable
 
+# SPEC: https://sqlite.org/lang_createtable.html
+# SPEC: https://sqlite.org/lang_createindex.html
+# SPEC: https://sqlite.org/lang_createvtab.html
+
 
 class CreateUnique(SqlElement):
     def __init__(self, prev: SqlElement):

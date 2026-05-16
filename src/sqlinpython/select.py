@@ -18,6 +18,8 @@ from sqlinpython.table_or_subquery import (
     TableStarResultColumn,
 )
 
+# SPEC: https://sqlite.org/lang_select.html
+
 # Result column types
 # "* " is handled by the literal string "*"
 # table-name.* is handled by TableStarResultColumn from table_or_subquery

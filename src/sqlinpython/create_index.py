@@ -8,6 +8,8 @@ from sqlinpython.expression import Expression
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
+# SPEC: https://sqlite.org/lang_createindex.html
+
 
 class CreateIndexStatement(CompleteSqlQuery, ABC):
     pass
