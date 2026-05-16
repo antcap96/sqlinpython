@@ -20,13 +20,21 @@ def test_cte_basic() -> None:
     assert to_str(TableName("t1").As(select_stmt)) == f"t1 AS ({_expected})"
 
 
-def test_cte_with_columns() -> None:
-    # table-name ( column-name, ... ) AS ( select-stmt )
+def test_cte_with_one_column() -> None:
+    # table-name ( column-name ) AS ( select-stmt )
     assert to_str(TableName("t1")("a").As(select_stmt)) == f"t1(a) AS ({_expected})"
+
+
+def test_cte_with_two_columns() -> None:
+    # table-name ( column-name, column-name ) AS ( select-stmt )
     assert (
         to_str(TableName("t1")("a", "b").As(select_stmt))
         == f"t1(a, b) AS ({_expected})"
     )
+
+
+def test_cte_with_three_columns() -> None:
+    # table-name ( column-name, column-name, column-name ) AS ( select-stmt )
     assert (
         to_str(TableName("t1")("a", "b", "c").As(select_stmt))
         == f"t1(a, b, c) AS ({_expected})"

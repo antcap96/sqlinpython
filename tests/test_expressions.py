@@ -1,6 +1,13 @@
 from sqlinpython import Name
 from sqlinpython import expression as expr
 
+true = expr.literal(True)
+false = expr.literal(False)
+one = expr.literal(1)
+two = expr.literal(2)
+a = expr.literal("a")
+b = expr.literal("b")
+
 
 def to_str(element: expr.Expression) -> str:
     buffer: list[str] = []
@@ -8,194 +15,535 @@ def to_str(element: expr.Expression) -> str:
     return "".join(buffer)
 
 
-def test_literal() -> None:
+# ---------------------------------------------------------------------------
+# Literals
+# ---------------------------------------------------------------------------
+
+
+def test_literal_float() -> None:
     assert to_str(expr.literal(1.0)) == "1.0"
+
+
+def test_literal_int() -> None:
     assert to_str(expr.literal(1)) == "1"
+
+
+def test_literal_string() -> None:
     assert to_str(expr.literal("hello")) == '"hello"'
+
+
+def test_literal_none() -> None:
     assert to_str(expr.literal(None)) == "NULL"
+
+
+def test_literal_true() -> None:
     assert to_str(expr.literal(True)) == "TRUE"
+
+
+def test_literal_false() -> None:
     assert to_str(expr.literal(False)) == "FALSE"
+
+
+def test_literal_current_date() -> None:
     assert to_str(expr.CurrentDate) == "CURRENT_DATE"
+
+
+def test_literal_current_time() -> None:
     assert to_str(expr.CurrentTime) == "CURRENT_TIME"
+
+
+def test_literal_current_timestamp() -> None:
     assert to_str(expr.CurrentTimestamp) == "CURRENT_TIMESTAMP"
 
 
-def test_or_and_operator() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(t.Or(f)) == "TRUE OR FALSE"
-    assert to_str(t.Or(f).Or(t)) == "TRUE OR FALSE OR TRUE"
-    assert to_str(t.Or(f).And(t)) == "(TRUE OR FALSE) AND TRUE"
-
-    assert to_str(t.And(f)) == "TRUE AND FALSE"
-    assert to_str(t.And(f).And(t)) == "TRUE AND FALSE AND TRUE"
-    assert to_str(t.And(f).Or(t)) == "TRUE AND FALSE OR TRUE"
+# ---------------------------------------------------------------------------
+# OR / AND operators
+# ---------------------------------------------------------------------------
 
 
-def test_not() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(expr.Not(f)) == "NOT FALSE"
-    assert to_str(t.Is(expr.Not(f))) == "TRUE IS (NOT FALSE)"
+def test_or_basic() -> None:
+    assert to_str(true.Or(false)) == "TRUE OR FALSE"
 
 
-def test_is_operator() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
+def test_or_chained() -> None:
+    assert to_str(true.Or(false).Or(true)) == "TRUE OR FALSE OR TRUE"
+
+
+def test_or_and_parentheses() -> None:
+    assert to_str(true.Or(false).And(true)) == "(TRUE OR FALSE) AND TRUE"
+
+
+def test_and_basic() -> None:
+    assert to_str(true.And(false)) == "TRUE AND FALSE"
+
+
+def test_and_chained() -> None:
+    assert to_str(true.And(false).And(true)) == "TRUE AND FALSE AND TRUE"
+
+
+def test_and_or_no_parentheses() -> None:
+    assert to_str(true.And(false).Or(true)) == "TRUE AND FALSE OR TRUE"
+
+
+# ---------------------------------------------------------------------------
+# NOT operator
+# ---------------------------------------------------------------------------
+
+
+def test_not_basic() -> None:
+    assert to_str(expr.Not(false)) == "NOT FALSE"
+
+
+def test_not_parenthesized_in_is() -> None:
+    assert to_str(true.Is(expr.Not(false))) == "TRUE IS (NOT FALSE)"
+
+
+# ---------------------------------------------------------------------------
+# IS operator
+# ---------------------------------------------------------------------------
+
+
+def test_is_basic() -> None:
+    assert to_str(true.Is(false)) == "TRUE IS FALSE"
+
+
+def test_is_null() -> None:
     n = expr.literal(None)
-    assert to_str(t.Is(f)) == "TRUE IS FALSE"
     assert to_str(n.Is(n)) == "NULL IS NULL"
-    assert to_str(t.Is.Not(f)) == "TRUE IS NOT FALSE"
-    assert to_str(t.Is.DistinctFrom(f)) == "TRUE IS DISTINCT FROM FALSE"
-    assert to_str(t.Is.Not.DistinctFrom(f)) == "TRUE IS NOT DISTINCT FROM FALSE"
 
 
-def test_eq() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(t.eq(f, double_eq=False)) == "TRUE = FALSE"
-    assert to_str(t.eq(f, double_eq=True)) == "TRUE == FALSE"
-    assert to_str(t.ne(f, arrows=True)) == "TRUE <> FALSE"
-    assert to_str(t.ne(f, arrows=False)) == "TRUE != FALSE"
+def test_is_not() -> None:
+    assert to_str(true.Is.Not(false)) == "TRUE IS NOT FALSE"
 
 
-def test_auto_parentheses() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(expr.Not(t.Or(f).And(t))) == "NOT ((TRUE OR FALSE) AND TRUE)"
-    assert to_str(expr.Not(t).And(f).Or(t)) == "NOT TRUE AND FALSE OR TRUE"
+def test_is_distinct_from() -> None:
+    assert to_str(true.Is.DistinctFrom(false)) == "TRUE IS DISTINCT FROM FALSE"
 
 
-def test_in() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(t.In()) == "TRUE IN ()"
-    assert to_str(t.In(t, f)) == "TRUE IN (TRUE, FALSE)"
-    # TODO: SelectStatement
-    assert to_str(t.In(Name("a"))) == "TRUE IN a"
-    assert to_str(t.In(Name('a"'))) == 'TRUE IN "a"""'
-    assert to_str(t.In(Name("a"), Name("b"))) == "TRUE IN a.b"
-    assert to_str(t.In(Name('a"'), Name('b"'))) == 'TRUE IN "a"""."b"""'
-    # TODO: TableFunction
-
-    assert to_str(t.Not.In()) == "TRUE NOT IN ()"
-    assert to_str(t.Not.In(t, f)) == "TRUE NOT IN (TRUE, FALSE)"
-    # TODO: SelectStatement
-    assert to_str(t.Not.In(Name("a"))) == "TRUE NOT IN a"
-    assert to_str(t.Not.In(Name('a"'))) == 'TRUE NOT IN "a"""'
-    assert to_str(t.Not.In(Name("a"), Name("b"))) == "TRUE NOT IN a.b"
-    assert to_str(t.Not.In(Name('a"'), Name('b"'))) == 'TRUE NOT IN "a"""."b"""'
-    # TODO: TableFunction
-
-    assert to_str(expr.Not(t).In()) == "(NOT TRUE) IN ()"
+def test_is_not_distinct_from() -> None:
+    assert to_str(true.Is.Not.DistinctFrom(false)) == "TRUE IS NOT DISTINCT FROM FALSE"
 
 
-def test_like_likes() -> None:
-    t = expr.literal(True)
-    f = expr.literal(False)
-    assert to_str(t.Like(f)) == "TRUE LIKE FALSE"
-    assert to_str(t.Not.Like(f)) == "TRUE NOT LIKE FALSE"
-    assert to_str(t.Like(expr.Not(f))) == "TRUE LIKE (NOT FALSE)"
-    assert to_str(t.Like(f).Escape(t)) == "TRUE LIKE FALSE ESCAPE TRUE"
-    assert to_str(t.Like(expr.Not(f)).Escape(t)) == "TRUE LIKE (NOT FALSE) ESCAPE TRUE"
-    assert to_str(t.Glob(f)) == "TRUE GLOB FALSE"
-    assert to_str(t.Not.Glob(f)) == "TRUE NOT GLOB FALSE"
-    assert to_str(t.Glob(expr.Not(f))) == "TRUE GLOB (NOT FALSE)"
-    assert to_str(t.Regexp(f)) == "TRUE REGEXP FALSE"
-    assert to_str(t.Not.Regexp(f)) == "TRUE NOT REGEXP FALSE"
-    assert to_str(t.Regexp(expr.Not(f))) == "TRUE REGEXP (NOT FALSE)"
-    assert to_str(t.Match(f)) == "TRUE MATCH FALSE"
-    assert to_str(t.Not.Match(f)) == "TRUE NOT MATCH FALSE"
-    assert to_str(t.Match(expr.Not(f))) == "TRUE MATCH (NOT FALSE)"
+# ---------------------------------------------------------------------------
+# Equality operators
+# ---------------------------------------------------------------------------
 
 
-def test_null_compare() -> None:
-    t = expr.literal(True)
-    assert to_str(t.IsNull) == "TRUE ISNULL"
-    assert to_str(t.Notnull) == "TRUE NOTNULL"
-    assert to_str(t.Not.Null) == "TRUE NOT NULL"
+def test_eq_single() -> None:
+    assert to_str(true.eq(false, double_eq=False)) == "TRUE = FALSE"
 
 
-def test_comparison() -> None:
-    a = expr.literal(1)
-    b = expr.literal(2)
-    assert to_str(a < b) == "1 < 2"
-    assert to_str(a < b + a) == "1 < 2 + 1"
-    assert to_str((a < b) + a) == "(1 < 2) + 1"
-    assert to_str(a <= b) == "1 <= 2"
-    assert to_str(a - b <= a) == "1 - 2 <= 1"
-    assert to_str(a - (b <= a)) == "1 - (2 <= 1)"
-    assert to_str(a > b) == "1 > 2"
-    assert to_str(a > b - a) == "1 > 2 - 1"
-    assert to_str((a > b) - a) == "(1 > 2) - 1"
-    assert to_str(a >= b) == "1 >= 2"
-    assert to_str(a + b >= a) == "1 + 2 >= 1"
-    assert to_str(a + (b >= a)) == "1 + (2 >= 1)"
+def test_eq_double() -> None:
+    assert to_str(true.eq(false, double_eq=True)) == "TRUE == FALSE"
 
 
-def test_arithmetic() -> None:
-    a = expr.literal(1)
-    b = expr.literal(2)
-    assert to_str(a + b) == "1 + 2"
-    assert to_str(a + b + a) == "1 + 2 + 1"
-    assert to_str(a + (b + a)) == "1 + (2 + 1)"
-    assert to_str(a - b) == "1 - 2"
-    assert to_str(a - b - a) == "1 - 2 - 1"
-    assert to_str(a - (b - a)) == "1 - (2 - 1)"
-    assert to_str(a * b) == "1 * 2"
-    assert to_str(a * b * a) == "1 * 2 * 1"
-    assert to_str(a * (b * a)) == "1 * (2 * 1)"
-    assert to_str(a / b) == "1 / 2"
-    assert to_str(a / b / a) == "1 / 2 / 1"
-    assert to_str(a / (b / a)) == "1 / (2 / 1)"
-    assert to_str(a % b) == "1 % 2"
-    assert to_str(a % b % a) == "1 % 2 % 1"
-    assert to_str(a % (b % a)) == "1 % (2 % 1)"
-    assert to_str(a + b * a) == "1 + 2 * 1"
-    assert to_str((a + b) * a) == "(1 + 2) * 1"
-    assert to_str(a + b / a + b) == "1 + 2 / 1 + 2"
-    assert to_str((a + b) * (a - b)) == "(1 + 2) * (1 - 2)"
+def test_ne_arrows() -> None:
+    assert to_str(true.ne(false, arrows=True)) == "TRUE <> FALSE"
 
 
-def test_concat_like() -> None:
-    a = expr.literal("a")
-    b = expr.literal("b")
+def test_ne_bang() -> None:
+    assert to_str(true.ne(false, arrows=False)) == "TRUE != FALSE"
+
+
+# ---------------------------------------------------------------------------
+# Auto-parentheses
+# ---------------------------------------------------------------------------
+
+
+def test_auto_parentheses_not_of_and() -> None:
+    assert (
+        to_str(expr.Not(true.Or(false).And(true))) == "NOT ((TRUE OR FALSE) AND TRUE)"
+    )
+
+
+def test_auto_parentheses_not_and_or() -> None:
+    assert to_str(expr.Not(true).And(false).Or(true)) == "NOT TRUE AND FALSE OR TRUE"
+
+
+# ---------------------------------------------------------------------------
+# IN operator
+# ---------------------------------------------------------------------------
+
+
+def test_in_empty() -> None:
+    assert to_str(true.In()) == "TRUE IN ()"
+
+
+def test_in_values() -> None:
+    assert to_str(true.In(true, false)) == "TRUE IN (TRUE, FALSE)"
+
+
+def test_in_table_name() -> None:
+    assert to_str(true.In(Name("a"))) == "TRUE IN a"
+
+
+def test_in_table_name_quoted() -> None:
+    assert to_str(true.In(Name('a"'))) == 'TRUE IN "a"""'
+
+
+def test_in_schema_table() -> None:
+    assert to_str(true.In(Name("a"), Name("b"))) == "TRUE IN a.b"
+
+
+def test_in_schema_table_quoted() -> None:
+    assert to_str(true.In(Name('a"'), Name('b"'))) == 'TRUE IN "a"""."b"""'
+
+
+def test_not_in_empty() -> None:
+    assert to_str(true.Not.In()) == "TRUE NOT IN ()"
+
+
+def test_not_in_values() -> None:
+    assert to_str(true.Not.In(true, false)) == "TRUE NOT IN (TRUE, FALSE)"
+
+
+def test_not_in_table_name() -> None:
+    assert to_str(true.Not.In(Name("a"))) == "TRUE NOT IN a"
+
+
+def test_not_in_table_name_quoted() -> None:
+    assert to_str(true.Not.In(Name('a"'))) == 'TRUE NOT IN "a"""'
+
+
+def test_not_in_schema_table() -> None:
+    assert to_str(true.Not.In(Name("a"), Name("b"))) == "TRUE NOT IN a.b"
+
+
+def test_not_in_schema_table_quoted() -> None:
+    assert to_str(true.Not.In(Name('a"'), Name('b"'))) == 'TRUE NOT IN "a"""."b"""'
+
+
+def test_in_not_expression_parenthesized() -> None:
+    assert to_str(expr.Not(true).In()) == "(NOT TRUE) IN ()"
+
+
+# ---------------------------------------------------------------------------
+# LIKE / GLOB / REGEXP / MATCH
+# ---------------------------------------------------------------------------
+
+
+def test_like_basic() -> None:
+    assert to_str(true.Like(false)) == "TRUE LIKE FALSE"
+
+
+def test_not_like() -> None:
+    assert to_str(true.Not.Like(false)) == "TRUE NOT LIKE FALSE"
+
+
+def test_like_not_expr_parenthesized() -> None:
+    assert to_str(true.Like(expr.Not(false))) == "TRUE LIKE (NOT FALSE)"
+
+
+def test_like_escape() -> None:
+    assert to_str(true.Like(false).Escape(true)) == "TRUE LIKE FALSE ESCAPE TRUE"
+
+
+def test_like_not_expr_escape() -> None:
+    assert (
+        to_str(true.Like(expr.Not(false)).Escape(true))
+        == "TRUE LIKE (NOT FALSE) ESCAPE TRUE"
+    )
+
+
+def test_glob_basic() -> None:
+    assert to_str(true.Glob(false)) == "TRUE GLOB FALSE"
+
+
+def test_not_glob() -> None:
+    assert to_str(true.Not.Glob(false)) == "TRUE NOT GLOB FALSE"
+
+
+def test_glob_not_expr_parenthesized() -> None:
+    assert to_str(true.Glob(expr.Not(false))) == "TRUE GLOB (NOT FALSE)"
+
+
+def test_regexp_basic() -> None:
+    assert to_str(true.Regexp(false)) == "TRUE REGEXP FALSE"
+
+
+def test_not_regexp() -> None:
+    assert to_str(true.Not.Regexp(false)) == "TRUE NOT REGEXP FALSE"
+
+
+def test_regexp_not_expr_parenthesized() -> None:
+    assert to_str(true.Regexp(expr.Not(false))) == "TRUE REGEXP (NOT FALSE)"
+
+
+def test_match_basic() -> None:
+    assert to_str(true.Match(false)) == "TRUE MATCH FALSE"
+
+
+def test_not_match() -> None:
+    assert to_str(true.Not.Match(false)) == "TRUE NOT MATCH FALSE"
+
+
+def test_match_not_expr_parenthesized() -> None:
+    assert to_str(true.Match(expr.Not(false))) == "TRUE MATCH (NOT FALSE)"
+
+
+# ---------------------------------------------------------------------------
+# NULL comparisons
+# ---------------------------------------------------------------------------
+
+
+def test_isnull() -> None:
+    assert to_str(true.IsNull) == "TRUE ISNULL"
+
+
+def test_notnull() -> None:
+    assert to_str(true.Notnull) == "TRUE NOTNULL"
+
+
+def test_not_null() -> None:
+    assert to_str(true.Not.Null) == "TRUE NOT NULL"
+
+
+# ---------------------------------------------------------------------------
+# Comparison operators
+# ---------------------------------------------------------------------------
+
+
+def test_lt_basic() -> None:
+    assert to_str(one < two) == "1 < 2"
+
+
+def test_lt_rhs_addition() -> None:
+    assert to_str(one < two + one) == "1 < 2 + 1"
+
+
+def test_lt_result_addition() -> None:
+    assert to_str((one < two) + one) == "(1 < 2) + 1"
+
+
+def test_le_basic() -> None:
+    assert to_str(one <= two) == "1 <= 2"
+
+
+def test_le_lhs_subtraction() -> None:
+    assert to_str(one - two <= one) == "1 - 2 <= 1"
+
+
+def test_le_rhs_parenthesized() -> None:
+    assert to_str(one - (two <= one)) == "1 - (2 <= 1)"
+
+
+def test_gt_basic() -> None:
+    assert to_str(one > two) == "1 > 2"
+
+
+def test_gt_rhs_subtraction() -> None:
+    assert to_str(one > two - one) == "1 > 2 - 1"
+
+
+def test_gt_result_subtraction() -> None:
+    assert to_str((one > two) - one) == "(1 > 2) - 1"
+
+
+def test_ge_basic() -> None:
+    assert to_str(one >= two) == "1 >= 2"
+
+
+def test_ge_lhs_addition() -> None:
+    assert to_str(one + two >= one) == "1 + 2 >= 1"
+
+
+def test_ge_rhs_parenthesized() -> None:
+    assert to_str(one + (two >= one)) == "1 + (2 >= 1)"
+
+
+# ---------------------------------------------------------------------------
+# Arithmetic operators
+# ---------------------------------------------------------------------------
+
+
+def test_add_basic() -> None:
+    assert to_str(one + two) == "1 + 2"
+
+
+def test_add_chained() -> None:
+    assert to_str(one + two + one) == "1 + 2 + 1"
+
+
+def test_add_rhs_parenthesized() -> None:
+    assert to_str(one + (two + one)) == "1 + (2 + 1)"
+
+
+def test_sub_basic() -> None:
+    assert to_str(one - two) == "1 - 2"
+
+
+def test_sub_chained() -> None:
+    assert to_str(one - two - one) == "1 - 2 - 1"
+
+
+def test_sub_rhs_parenthesized() -> None:
+    assert to_str(one - (two - one)) == "1 - (2 - 1)"
+
+
+def test_mul_basic() -> None:
+    assert to_str(one * two) == "1 * 2"
+
+
+def test_mul_chained() -> None:
+    assert to_str(one * two * one) == "1 * 2 * 1"
+
+
+def test_mul_rhs_parenthesized() -> None:
+    assert to_str(one * (two * one)) == "1 * (2 * 1)"
+
+
+def test_div_basic() -> None:
+    assert to_str(one / two) == "1 / 2"
+
+
+def test_div_chained() -> None:
+    assert to_str(one / two / one) == "1 / 2 / 1"
+
+
+def test_div_rhs_parenthesized() -> None:
+    assert to_str(one / (two / one)) == "1 / (2 / 1)"
+
+
+def test_mod_basic() -> None:
+    assert to_str(one % two) == "1 % 2"
+
+
+def test_mod_chained() -> None:
+    assert to_str(one % two % one) == "1 % 2 % 1"
+
+
+def test_mod_rhs_parenthesized() -> None:
+    assert to_str(one % (two % one)) == "1 % (2 % 1)"
+
+
+def test_add_mul_precedence() -> None:
+    assert to_str(one + two * one) == "1 + 2 * 1"
+
+
+def test_add_mul_lhs_parenthesized() -> None:
+    assert to_str((one + two) * one) == "(1 + 2) * 1"
+
+
+def test_add_div_add() -> None:
+    assert to_str(one + two / one + two) == "1 + 2 / 1 + 2"
+
+
+def test_mixed_add_mul_sub() -> None:
+    assert to_str((one + two) * (one - two)) == "(1 + 2) * (1 - 2)"
+
+
+# ---------------------------------------------------------------------------
+# Concatenation / extraction operators
+# ---------------------------------------------------------------------------
+
+
+def test_concat_basic() -> None:
     assert to_str(a.Concat(b)) == '"a" || "b"'
+
+
+def test_concat_chained() -> None:
     assert to_str(a.Concat(b).Concat(a)) == '"a" || "b" || "a"'
+
+
+def test_concat_rhs_parenthesized() -> None:
     assert to_str(a.Concat(b.Concat(a))) == '"a" || ("b" || "a")'
+
+
+def test_extract_basic() -> None:
     assert to_str(a.Extract(b)) == '"a" -> "b"'
+
+
+def test_extract_chained() -> None:
     assert to_str(a.Extract(b).Extract(a)) == '"a" -> "b" -> "a"'
+
+
+def test_extract_rhs_parenthesized() -> None:
     assert to_str(a.Extract(b.Extract(a))) == '"a" -> ("b" -> "a")'
+
+
+def test_extract2_basic() -> None:
     assert to_str(a.Extract2(b)) == '"a" ->> "b"'
+
+
+def test_extract2_chained_extract() -> None:
     assert to_str(a.Extract2(b).Extract(a)) == '"a" ->> "b" -> "a"'
+
+
+def test_extract_chained_extract2() -> None:
     assert to_str(a.Extract(b.Extract2(a))) == '"a" -> ("b" ->> "a")'
 
 
-def test_unary_operators() -> None:
-    a = expr.literal(1)
-    b = expr.literal(2)
-    assert to_str(-a) == "-1"
-    assert to_str(+a) == "+1"
-    assert to_str(~a) == "~1"
-    assert to_str(-b + a) == "-2 + 1"
-    assert to_str(a + (+b)) == "1 + +2"
-    assert to_str(~b + a) == "~2 + 1"
+# ---------------------------------------------------------------------------
+# Unary operators
+# ---------------------------------------------------------------------------
 
 
-def test_bind_parameter() -> None:
+def test_unary_neg() -> None:
+    assert to_str(-one) == "-1"
+
+
+def test_unary_pos() -> None:
+    assert to_str(+one) == "+1"
+
+
+def test_unary_invert() -> None:
+    assert to_str(~one) == "~1"
+
+
+def test_unary_neg_add() -> None:
+    assert to_str(-two + one) == "-2 + 1"
+
+
+def test_unary_pos_rhs() -> None:
+    assert to_str(one + (+two)) == "1 + +2"
+
+
+def test_unary_invert_add() -> None:
+    assert to_str(~two + one) == "~2 + 1"
+
+
+# ---------------------------------------------------------------------------
+# Bind parameters
+# ---------------------------------------------------------------------------
+
+
+def test_bind_parameter_positional() -> None:
     assert to_str(expr.BindParameter()) == "?"
+
+
+def test_bind_parameter_numbered() -> None:
     assert to_str(expr.BindParameter(2)) == "?2"
+
+
+def test_bind_parameter_named_colon_default() -> None:
     assert to_str(expr.BindParameter("id")) == ":id"
+
+
+def test_bind_parameter_named_colon_explicit() -> None:
     assert to_str(expr.BindParameter("id", ":")) == ":id"
+
+
+def test_bind_parameter_named_at() -> None:
     assert to_str(expr.BindParameter("id", "@")) == "@id"
+
+
+def test_bind_parameter_named_dollar() -> None:
     assert to_str(expr.BindParameter("id", "$")) == "$id"
 
 
-def test_case() -> None:
+# ---------------------------------------------------------------------------
+# CASE expression
+# ---------------------------------------------------------------------------
+
+
+def test_case_when_then_end() -> None:
     assert (
         to_str(expr.Case.When(expr.literal(1)).Then(expr.literal(2)).End)
         == "CASE WHEN 1 THEN 2 END"
     )
+
+
+def test_case_when_then_else_end() -> None:
     assert (
         to_str(
             expr.Case.When(expr.literal(1))
@@ -205,12 +553,18 @@ def test_case() -> None:
         )
         == "CASE WHEN 1 THEN 2 ELSE 3 END"
     )
+
+
+def test_case_operand_when_then_end() -> None:
     assert (
         to_str(
             expr.Case(expr.literal("a")).When(expr.literal(1)).Then(expr.literal(2)).End
         )
         == 'CASE "a" WHEN 1 THEN 2 END'
     )
+
+
+def test_case_operand_when_then_else_end() -> None:
     assert (
         to_str(
             expr.Case(expr.literal("a"))
@@ -221,6 +575,9 @@ def test_case() -> None:
         )
         == 'CASE "a" WHEN 1 THEN 2 ELSE 3 END'
     )
+
+
+def test_case_multiple_when_then() -> None:
     assert (
         to_str(
             expr.Case.When(expr.literal(1))
@@ -231,6 +588,9 @@ def test_case() -> None:
         )
         == "CASE WHEN 1 THEN 2 WHEN 3 THEN 4 END"
     )
+
+
+def test_case_multiple_when_then_else() -> None:
     assert (
         to_str(
             expr.Case.When(expr.literal(1))

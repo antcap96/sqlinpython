@@ -1,21 +1,48 @@
-from sqlinpython import ColumnName, literal
-from sqlinpython.base import SqlElement
+from sqlinpython import ColumnName, IndexedColumn, literal
 
 
-def create_query(element: SqlElement) -> str:
+def to_str(element: IndexedColumn) -> str:
     buffer: list[str] = []
     element._create_query(buffer)
     return "".join(buffer)
 
 
-def test_indexed_column() -> None:
+def test_indexed_column_name() -> None:
     a = ColumnName("a")
-    assert create_query(a) == "a"
-    assert create_query(a.Collate("b")) == "a COLLATE b"
-    assert create_query(a.Asc) == "a ASC"
-    assert create_query(a.Desc) == "a DESC"
-    assert create_query(a.Collate("b").Asc) == "a COLLATE b ASC"
-    assert create_query(literal(1)) == "1"
-    assert create_query(literal(1).Collate("b")) == "1 COLLATE b"
-    assert create_query(literal(1).Collate("b").Asc) == "1 COLLATE b ASC"
-    assert create_query(literal(1).Collate("b").Desc) == "1 COLLATE b DESC"
+    assert to_str(a) == "a"
+
+
+def test_indexed_column_collate() -> None:
+    a = ColumnName("a")
+    assert to_str(a.Collate("b")) == "a COLLATE b"
+
+
+def test_indexed_column_asc() -> None:
+    a = ColumnName("a")
+    assert to_str(a.Asc) == "a ASC"
+
+
+def test_indexed_column_desc() -> None:
+    a = ColumnName("a")
+    assert to_str(a.Desc) == "a DESC"
+
+
+def test_indexed_column_collate_asc() -> None:
+    a = ColumnName("a")
+    assert to_str(a.Collate("b").Asc) == "a COLLATE b ASC"
+
+
+def test_indexed_column_literal() -> None:
+    assert to_str(literal(1)) == "1"
+
+
+def test_indexed_column_literal_collate() -> None:
+    assert to_str(literal(1).Collate("b")) == "1 COLLATE b"
+
+
+def test_indexed_column_literal_collate_asc() -> None:
+    assert to_str(literal(1).Collate("b").Asc) == "1 COLLATE b ASC"
+
+
+def test_indexed_column_literal_collate_desc() -> None:
+    assert to_str(literal(1).Collate("b").Desc) == "1 COLLATE b DESC"
