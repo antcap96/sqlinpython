@@ -1,5 +1,5 @@
+from sqlinpython import Case, literal
 from sqlinpython.base import SqlElement
-from sqlinpython.expression import Case, literal
 
 
 def to_str(element: SqlElement) -> str:

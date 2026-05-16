@@ -1,16 +1,17 @@
 from typing import override
 
-import sqlinpython.expression as expr
 from sqlinpython import (
     Check,
     ColumnName,
     Constraint,
     Create,
+    CurrentDate,
     ForeignKey,
     PrimaryKey,
     Select,
     TypeName,
     Unique,
+    literal,
 )
 from sqlinpython.select_base import Complete, SelectStatement_
 
@@ -29,7 +30,7 @@ def test_create_table() -> None:
     a = ColumnName("a")
     b = ColumnName("b")
     assert (
-        Create.Table("table_name").As(Select(expr.literal(1))).get_query()
+        Create.Table("table_name").As(Select(literal(1))).get_query()
         == "CREATE TABLE table_name AS SELECT 1"
     )
     assert (
@@ -154,15 +155,15 @@ def test_column_definition() -> None:
         == "CREATE TABLE table_name (a DEFAULT 1 NOT NULL)"
     )
     assert (
-        start(a.Default(expr.literal(1)).Unique).get_query()
+        start(a.Default(literal(1)).Unique).get_query()
         == "CREATE TABLE table_name (a DEFAULT 1 UNIQUE)"
     )
     assert (
-        start(a.Default(expr.literal("a")).Unique).get_query()
+        start(a.Default(literal("a")).Unique).get_query()
         == 'CREATE TABLE table_name (a DEFAULT "a" UNIQUE)'
     )
     assert (
-        start(a.Default(expr.CurrentDate).NotNull.Unique).get_query()
+        start(a.Default(CurrentDate).NotNull.Unique).get_query()
         == "CREATE TABLE table_name (a DEFAULT CURRENT_DATE NOT NULL UNIQUE)"
     )
     assert (
@@ -170,23 +171,22 @@ def test_column_definition() -> None:
         == "CREATE TABLE table_name (a COLLATE utf8)"
     )
     assert (
-        start(a.As(expr.literal("a"))).get_query()
-        == 'CREATE TABLE table_name (a AS ("a"))'
+        start(a.As(literal("a"))).get_query() == 'CREATE TABLE table_name (a AS ("a"))'
     )
     assert (
-        start(a.Collate("utf8").As(expr.literal("a"))).get_query()
+        start(a.Collate("utf8").As(literal("a"))).get_query()
         == 'CREATE TABLE table_name (a COLLATE utf8 AS ("a"))'
     )
     assert (
-        start(a.GeneratedAlways.As(expr.literal("a"))).get_query()
+        start(a.GeneratedAlways.As(literal("a"))).get_query()
         == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a"))'
     )
     assert (
-        start(a.GeneratedAlways.As(expr.literal("a")).Stored).get_query()
+        start(a.GeneratedAlways.As(literal("a")).Stored).get_query()
         == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") STORED)'
     )
     assert (
-        start(a.GeneratedAlways.As(expr.literal("a")).Virtual).get_query()
+        start(a.GeneratedAlways.As(literal("a")).Virtual).get_query()
         == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") VIRTUAL)'
     )
 
@@ -254,13 +254,11 @@ def test_table_constraint() -> None:
         == "CREATE TABLE table_name (a, UNIQUE (a) ON CONFLICT ROLLBACK)"
     )
     assert (
-        start(
-            a, Constraint("check").Check(expr.literal(1) > expr.literal(0))
-        ).get_query()
+        start(a, Constraint("check").Check(literal(1) > literal(0))).get_query()
         == "CREATE TABLE table_name (a, CONSTRAINT check CHECK (1 > 0))"
     )
     assert (
-        start(a, Check(expr.literal(1) > expr.literal(0))).get_query()
+        start(a, Check(literal(1) > literal(0))).get_query()
         == "CREATE TABLE table_name (a, CHECK (1 > 0))"
     )
     assert (

@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
@@ -8,7 +9,11 @@ from sqlinpython.name import Name
 # TODO: Consider a SavepointName
 
 
-class SavepointComplete(CompleteSqlQuery):
+class SavepointStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class SavepointComplete(SavepointStatement):
     def __init__(self, prev: SqlElement, savepoint: Name) -> None:
         self._prev = prev
         self._savepoint = savepoint
@@ -37,7 +42,11 @@ class SavepointKeyword(SqlElement):
 Savepoint = SavepointKeyword()
 
 
-class ReleaseComplete(CompleteSqlQuery):
+class ReleaseStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class ReleaseComplete(ReleaseStatement):
     def __init__(self, prev: SqlElement, savepoint: Name) -> None:
         self._prev = prev
         self._savepoint = savepoint
@@ -80,7 +89,11 @@ class ReleaseKeyword(ReleaseWithSavepoint):
 Release = ReleaseKeyword()
 
 
-class RollbackComplete(CompleteSqlQuery):
+class RollbackStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class RollbackComplete(RollbackStatement):
     def __init__(self, prev: SqlElement, savepoint: Name) -> None:
         self._prev = prev
         self._savepoint = savepoint

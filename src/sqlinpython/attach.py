@@ -9,7 +9,11 @@ from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/lang_attach.html
-class AttachComplete(CompleteSqlQuery):
+class AttachStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class AttachComplete(AttachStatement):
     def __init__(self, prev: SqlElement, schema_name: Name) -> None:
         self._prev = prev
         self._schema_name = schema_name

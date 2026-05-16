@@ -1,11 +1,12 @@
-from sqlinpython import Select, TableRef
-from sqlinpython.base import SqlElement
-from sqlinpython.expression import literal
-from sqlinpython.table_or_subquery import (
+from sqlinpython import (
     NestedFromClause,
+    Select,
     Subquery,
     TableFunctionRef,
+    TableRef,
+    literal,
 )
+from sqlinpython.base import SqlElement
 
 
 def to_str(element: SqlElement) -> str:

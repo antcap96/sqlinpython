@@ -20,10 +20,16 @@
 
 from typing import override
 
-import sqlinpython.expression as expr
-from sqlinpython import ColumnName, Insert, Replace, TableName, With
-from sqlinpython.name import Name
-from sqlinpython.select_base import SelectStatement
+from sqlinpython import (
+    ColumnName,
+    Insert,
+    Name,
+    Replace,
+    SelectStatement,
+    TableName,
+    With,
+    literal,
+)
 
 
 # TODO: replace _PlaceholderSelect usages with real Select(...) expressions
@@ -46,7 +52,7 @@ CteSelectStatement = _PlaceholderSelect
 def test_insert_values_simplest() -> None:
     # Most basic complete INSERT query
     assert (
-        Insert.Into("t")("c").Values((expr.literal(1),)).get_query()
+        Insert.Into("t")("c").Values((literal(1),)).get_query()
         == "INSERT INTO t (c) VALUES (1)"
     )
 
@@ -58,7 +64,7 @@ def test_insert_values_empty() -> None:
 
 def test_insert_values_single_row() -> None:
     assert (
-        Insert.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT INTO users (id) VALUES (1)"
     )
 
@@ -66,7 +72,7 @@ def test_insert_values_single_row() -> None:
 def test_insert_values_multiple_columns() -> None:
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice")'
     )
@@ -75,7 +81,7 @@ def test_insert_values_multiple_columns() -> None:
 def test_insert_values_multiple_rows() -> None:
     assert (
         Insert.Into("users")("id")
-        .Values((expr.literal(1),), (expr.literal(2),), (expr.literal(3),))
+        .Values((literal(1),), (literal(2),), (literal(3),))
         .get_query()
         == "INSERT INTO users (id) VALUES (1), (2), (3)"
     )
@@ -85,8 +91,8 @@ def test_insert_values_multiple_rows_multiple_columns() -> None:
     assert (
         Insert.Into("users")("id", "name")
         .Values(
-            (expr.literal(1), expr.literal("Alice")),
-            (expr.literal(2), expr.literal("Bob")),
+            (literal(1), literal("Alice")),
+            (literal(2), literal("Bob")),
         )
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice"), (2, "Bob")'
@@ -99,10 +105,10 @@ def test_insert_values_various_types() -> None:
         Insert.Into("t")("a", "b", "c", "d")
         .Values(
             (
-                expr.literal(1),
-                expr.literal("text"),
-                expr.literal(3.14),
-                expr.literal(True),
+                literal(1),
+                literal("text"),
+                literal(3.14),
+                literal(True),
             )
         )
         .get_query()
@@ -164,24 +170,21 @@ def test_insert_select_with_columns() -> None:
 
 def test_insert_with_schema() -> None:
     assert (
-        Insert.Into("main", "users")("id").Values((expr.literal(1),)).get_query()
+        Insert.Into("main", "users")("id").Values((literal(1),)).get_query()
         == "INSERT INTO main.users (id) VALUES (1)"
     )
 
 
 def test_insert_with_alias() -> None:
     assert (
-        Insert.Into("users").As("u")("id").Values((expr.literal(1),)).get_query()
+        Insert.Into("users").As("u")("id").Values((literal(1),)).get_query()
         == "INSERT INTO users AS u (id) VALUES (1)"
     )
 
 
 def test_insert_with_schema_and_alias() -> None:
     assert (
-        Insert.Into("main", "users")
-        .As("u")("id")
-        .Values((expr.literal(1),))
-        .get_query()
+        Insert.Into("main", "users").As("u")("id").Values((literal(1),)).get_query()
         == "INSERT INTO main.users AS u (id) VALUES (1)"
     )
 
@@ -189,7 +192,7 @@ def test_insert_with_schema_and_alias() -> None:
 def test_insert_quoted_names() -> None:
     # Names with special characters should be quoted
     assert (
-        Insert.Into("my table")("user id").Values((expr.literal(1),)).get_query()
+        Insert.Into("my table")("user id").Values((literal(1),)).get_query()
         == 'INSERT INTO "my table" ("user id") VALUES (1)'
     )
 
@@ -197,7 +200,7 @@ def test_insert_quoted_names() -> None:
 def test_insert_with_name_objects() -> None:
     assert (
         Insert.Into("users")(Name("id"), Name("name"))
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice")'
     )
@@ -210,35 +213,35 @@ def test_insert_with_name_objects() -> None:
 
 def test_insert_or_abort_values() -> None:
     assert (
-        Insert.OrAbort.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrAbort.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT OR ABORT INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_fail_values() -> None:
     assert (
-        Insert.OrFail.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrFail.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT OR FAIL INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_ignore_values() -> None:
     assert (
-        Insert.OrIgnore.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrIgnore.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT OR IGNORE INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_replace_values() -> None:
     assert (
-        Insert.OrReplace.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrReplace.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT OR REPLACE INTO users (id) VALUES (1)"
     )
 
 
 def test_insert_or_rollback_values() -> None:
     assert (
-        Insert.OrRollback.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Insert.OrRollback.Into("users")("id").Values((literal(1),)).get_query()
         == "INSERT OR ROLLBACK INTO users (id) VALUES (1)"
     )
 
@@ -250,7 +253,7 @@ def test_insert_or_rollback_values() -> None:
 
 def test_replace_values() -> None:
     assert (
-        Replace.Into("users")("id").Values((expr.literal(1),)).get_query()
+        Replace.Into("users")("id").Values((literal(1),)).get_query()
         == "REPLACE INTO users (id) VALUES (1)"
     )
 
@@ -270,7 +273,7 @@ def test_replace_default_values() -> None:
 def test_with_cte_insert_values() -> None:
     cte = TableName("temp").As(_PlaceholderSelect())
     assert (
-        With(cte).Insert.Into("users")("id").Values((expr.literal(1),)).get_query()
+        With(cte).Insert.Into("users")("id").Values((literal(1),)).get_query()
         == "WITH temp AS (<select-stmt>) INSERT INTO users (id) VALUES (1)"
     )
 
@@ -286,7 +289,7 @@ def test_with_cte_insert_default_values() -> None:
 def test_with_cte_replace_values() -> None:
     cte = TableName("temp").As(_PlaceholderSelect())
     assert (
-        With(cte).Replace.Into("users")("id").Values((expr.literal(1),)).get_query()
+        With(cte).Replace.Into("users")("id").Values((literal(1),)).get_query()
         == "WITH temp AS (<select-stmt>) REPLACE INTO users (id) VALUES (1)"
     )
 
@@ -303,10 +306,7 @@ def test_with_multiple_ctes_insert() -> None:
     cte1 = TableName("t1").As(_PlaceholderSelect())
     cte2 = TableName("t2")("a", "b").As(_PlaceholderSelect())
     assert (
-        With(cte1, cte2)
-        .Insert.Into("target")("x")
-        .Values((expr.literal(1),))
-        .get_query()
+        With(cte1, cte2).Insert.Into("target")("x").Values((literal(1),)).get_query()
         == "WITH t1 AS (<select-stmt>), t2(a, b) AS (<select-stmt>) INSERT INTO target (x) VALUES (1)"
     )
 
@@ -338,7 +338,7 @@ def test_on_conflict_do_nothing_simple() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO NOTHING'
@@ -351,7 +351,7 @@ def test_on_conflict_do_nothing_multiple_columns() -> None:
     col2 = ColumnName("email")
     assert (
         Insert.Into("users")("id", "email", "name")
-        .Values((expr.literal(1), expr.literal("a@b.com"), expr.literal("Alice")))
+        .Values((literal(1), literal("a@b.com"), literal("Alice")))
         .OnConflict(col1, col2)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, email, name) VALUES (1, "a@b.com", "Alice") ON CONFLICT(id, email) DO NOTHING'
@@ -363,9 +363,9 @@ def test_on_conflict_with_where() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Where(col > expr.literal(0))
+        .Where(col > literal(0))
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO NOTHING'
     )
@@ -376,7 +376,7 @@ def test_on_conflict_column_with_collate() -> None:
     col = ColumnName("name").Collate("NOCASE")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(name COLLATE NOCASE) DO NOTHING'
@@ -388,7 +388,7 @@ def test_on_conflict_column_with_asc() -> None:
     col = ColumnName("id").Asc
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id ASC) DO NOTHING'
@@ -400,7 +400,7 @@ def test_on_conflict_column_with_desc() -> None:
     col = ColumnName("id").Desc
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id DESC) DO NOTHING'
@@ -412,7 +412,7 @@ def test_on_conflict_column_with_collate_and_asc() -> None:
     col = ColumnName("name").Collate("NOCASE").Asc
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(name COLLATE NOCASE ASC) DO NOTHING'
@@ -440,9 +440,9 @@ def test_on_conflict_do_update_set_single_column() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet((ColumnName("name"), expr.literal("Updated")))
+        .Do.UpdateSet((ColumnName("name"), literal("Updated")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
     )
@@ -453,9 +453,9 @@ def test_on_conflict_do_update_set_string_column() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet(("name", expr.literal("Updated")))
+        .Do.UpdateSet(("name", literal("Updated")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
     )
@@ -466,11 +466,11 @@ def test_on_conflict_do_update_set_multiple_assignments() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name", "email")
-        .Values((expr.literal(1), expr.literal("Alice"), expr.literal("a@b.com")))
+        .Values((literal(1), literal("Alice"), literal("a@b.com")))
         .OnConflict(col)
         .Do.UpdateSet(
-            ("name", expr.literal("Updated")),
-            ("email", expr.literal("new@email.com")),
+            ("name", literal("Updated")),
+            ("email", literal("new@email.com")),
         )
         .get_query()
         == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET name = "Updated", email = "new@email.com"'
@@ -483,9 +483,9 @@ def test_on_conflict_do_update_set_column_list() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name", "email")
-        .Values((expr.literal(1), expr.literal("Alice"), expr.literal("a@b.com")))
+        .Values((literal(1), literal("Alice"), literal("a@b.com")))
         .OnConflict(col)
-        .Do.UpdateSet((("name", "email"), expr.literal("some_expr")))
+        .Do.UpdateSet((("name", "email"), literal("some_expr")))
         .get_query()
         == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET (name, email) = "some_expr"'
     )
@@ -497,10 +497,10 @@ def test_on_conflict_do_update_set_with_where() -> None:
     name_col = ColumnName("name")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet(("name", expr.literal("Updated")))
-        .Where(name_col.ne(expr.literal("Admin")))
+        .Do.UpdateSet(("name", literal("Updated")))
+        .Where(name_col.ne(literal("Admin")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated" WHERE name != "Admin"'
     )
@@ -511,10 +511,10 @@ def test_on_conflict_do_update_set_with_conflict_where() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Where(col > expr.literal(0))
-        .Do.UpdateSet(("name", expr.literal("Updated")))
+        .Where(col > literal(0))
+        .Do.UpdateSet(("name", literal("Updated")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO UPDATE SET name = "Updated"'
     )
@@ -530,7 +530,7 @@ def test_returning_star() -> None:
     # RETURNING *
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .Returning("*")
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING *'
@@ -542,7 +542,7 @@ def test_returning_single_column() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .Returning(col)
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id'
@@ -554,8 +554,8 @@ def test_returning_expression() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
-        .Returning(col + expr.literal(1))
+        .Values((literal(1), literal("Alice")))
+        .Returning(col + literal(1))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id + 1'
     )
@@ -566,7 +566,7 @@ def test_returning_with_alias() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .Returning(col.As("user_id"))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id'
@@ -579,7 +579,7 @@ def test_returning_multiple_columns() -> None:
     name_col = ColumnName("name")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .Returning(id_col, name_col)
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id, name'
@@ -592,7 +592,7 @@ def test_returning_multiple_with_aliases() -> None:
     name_col = ColumnName("name")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .Returning(id_col.As("user_id"), name_col.As("user_name"))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id, name AS user_name'
@@ -612,7 +612,7 @@ def test_returning_with_on_conflict() -> None:
     col = ColumnName("id")
     assert (
         Insert.Into("users")("id", "name")
-        .Values((expr.literal(1), expr.literal("Alice")))
+        .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.Returning("*")
         .get_query()
@@ -623,9 +623,6 @@ def test_returning_with_on_conflict() -> None:
 def test_replace_returning() -> None:
     # REPLACE ... RETURNING *
     assert (
-        Replace.Into("users")("id")
-        .Values((expr.literal(1),))
-        .Returning("*")
-        .get_query()
+        Replace.Into("users")("id").Values((literal(1),)).Returning("*").get_query()
         == "REPLACE INTO users (id) VALUES (1) RETURNING *"
     )

@@ -1,5 +1,4 @@
-import sqlinpython.expression as expr
-from sqlinpython import ColumnName, Create
+from sqlinpython import ColumnName, Create, literal
 
 
 def test_create_index() -> None:
@@ -31,7 +30,7 @@ def test_create_index() -> None:
     assert (
         Create.Index("my_index")
         .On("my_table", col1)
-        .Where(expr.literal(1) > expr.literal(0))
+        .Where(literal(1) > literal(0))
         .get_query()
         == "CREATE INDEX my_index ON my_table (col1) WHERE 1 > 0"
     )

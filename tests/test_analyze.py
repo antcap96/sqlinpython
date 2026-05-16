@@ -1,5 +1,4 @@
-from sqlinpython import Analyze
-from sqlinpython.name import Name
+from sqlinpython import Analyze, Name
 
 
 def test_analyze() -> None:

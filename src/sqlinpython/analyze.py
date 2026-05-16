@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
@@ -7,7 +8,11 @@ from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/lang_analyze.html
-class AnalyzeComplete(CompleteSqlQuery):
+class AnalyzeStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class AnalyzeComplete(AnalyzeStatement):
     def __init__(self, prev: SqlElement, schema: Name, table: Name | None) -> None:
         self._prev = prev
         self._schema = schema
@@ -23,7 +28,7 @@ class AnalyzeComplete(CompleteSqlQuery):
             self._table._create_query(buffer)
 
 
-class AnalyzeKeyword(CompleteSqlQuery):
+class AnalyzeKeyword(AnalyzeStatement):
     def __init__(self) -> None:
         pass
 

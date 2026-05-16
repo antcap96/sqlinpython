@@ -1,5 +1,4 @@
-from sqlinpython import expression as expr
-from sqlinpython.expression.function import (
+from sqlinpython import (
     FunctionName,
     Groups,
     OrderBy,
@@ -8,7 +7,9 @@ from sqlinpython.expression.function import (
     Rows,
     Star,
     WindowName,
+    literal,
 )
+from sqlinpython import expression as expr
 
 
 def to_str(element: expr.Expression) -> str:
@@ -21,8 +22,8 @@ def test_function_calls() -> None:
     MAX = FunctionName("MAX")
     COUNT = FunctionName("COUNT")
     GROUP_CONCAT = FunctionName("GROUP_CONCAT")
-    a = expr.literal(1)
-    b = expr.literal(2)
+    a = literal(1)
+    b = literal(2)
 
     # Basic
     assert to_str(MAX(a, b)) == "MAX(1, 2)"
@@ -54,8 +55,8 @@ def test_function_calls() -> None:
 def test_filter_clause() -> None:
     COUNT = FunctionName("COUNT")
     SUM = FunctionName("SUM")
-    a = expr.literal(1)
-    b = expr.literal(2)
+    a = literal(1)
+    b = literal(2)
 
     # Basic filter
     assert to_str(COUNT("*").FilterWhere(a > b)) == "COUNT(*) FILTER (WHERE 1 > 2)"
@@ -72,8 +73,8 @@ def test_filter_clause() -> None:
 def test_over_clause() -> None:
     SUM = FunctionName("SUM")
     ROW_NUMBER = FunctionName("ROW_NUMBER")
-    a = expr.literal(1)
-    b = expr.literal(2)
+    a = literal(1)
+    b = literal(2)
 
     # Empty OVER ()
     assert to_str(ROW_NUMBER().Over()) == "ROW_NUMBER() OVER ()"
@@ -122,8 +123,8 @@ def test_over_clause() -> None:
 
 def test_frame_spec() -> None:
     SUM = FunctionName("SUM")
-    a = expr.literal(1)
-    b = expr.literal(2)
+    a = literal(1)
+    b = literal(2)
 
     assert to_str(SUM(a).Over(Rows.CurrentRow)) == "SUM(1) OVER (ROWS CURRENT ROW)"
     assert to_str(SUM(a).Over(Range.CurrentRow)) == "SUM(1) OVER (RANGE CURRENT ROW)"

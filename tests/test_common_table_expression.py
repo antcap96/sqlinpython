@@ -1,10 +1,8 @@
-from sqlinpython import TableName, With
+from sqlinpython import Select, TableName, TableRef, With
 from sqlinpython.common_table_expression import (
     CommonTableExpression,
     WithClause,
 )
-from sqlinpython.select import Select
-from sqlinpython.table_or_subquery import TableRef
 
 
 def to_str(element: CommonTableExpression | WithClause) -> str:

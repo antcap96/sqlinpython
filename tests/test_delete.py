@@ -1,10 +1,16 @@
-from sqlinpython import Delete, Select, TableName, With
-from sqlinpython import expression as expr
-from sqlinpython.delete import DeleteStatement, DeleteStatementLimited
+from sqlinpython import (
+    Delete,
+    DeleteStatement,
+    DeleteStatementLimited,
+    Select,
+    TableName,
+    With,
+    literal,
+)
 
 
 def test_with_delete() -> None:
-    q = With(TableName("cte").As(Select(expr.literal(1)))).Delete.From("users")
+    q = With(TableName("cte").As(Select(literal(1)))).Delete.From("users")
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "WITH cte AS (SELECT 1) DELETE FROM users"
@@ -12,8 +18,8 @@ def test_with_delete() -> None:
 
 def test_with_recursive_delete() -> None:
     q = With.Recursive(
-        TableName("cte1").As(Select(expr.literal(1))),
-        TableName("cte2").As(Select(expr.literal(2))),
+        TableName("cte1").As(Select(literal(1))),
+        TableName("cte2").As(Select(literal(2))),
     ).Delete.From("users")
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
@@ -38,7 +44,7 @@ def test_delete_schema_qualified() -> None:
 
 
 def test_delete_where() -> None:
-    q = Delete.From("users").Where(expr.literal(1))
+    q = Delete.From("users").Where(literal(1))
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users WHERE 1"
@@ -59,7 +65,7 @@ def test_delete_indexed() -> None:
 
 
 def test_delete_indexed_where() -> None:
-    q = Delete.From("users").IndexedBy("idx_users").Where(expr.literal(1))
+    q = Delete.From("users").IndexedBy("idx_users").Where(literal(1))
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users INDEXED BY idx_users WHERE 1"
@@ -80,21 +86,21 @@ def test_delete_as_not_indexed() -> None:
 
 
 def test_delete_as_where() -> None:
-    q = Delete.From("users").As("u").Where(expr.literal(1))
+    q = Delete.From("users").As("u").Where(literal(1))
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users AS u WHERE 1"
 
 
 def test_delete_returning_clause() -> None:
-    q = Delete.From("users").Returning(expr.literal(1))
+    q = Delete.From("users").Returning(literal(1))
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users RETURNING 1"
 
 
 def test_delete_where_returning() -> None:
-    q = Delete.From("users").Where(expr.literal(1)).Returning("*")
+    q = Delete.From("users").Where(literal(1)).Returning("*")
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users WHERE 1 RETURNING *"
@@ -109,7 +115,7 @@ def test_delete_returning_clause_star() -> None:
 
 def test_delete_returning_clause_as() -> None:
     q = Delete.From("users").Returning(
-        expr.literal(1).As("result"), expr.literal(2).As("other_result")
+        literal(1).As("result"), literal(2).As("other_result")
     )
     assert isinstance(q, DeleteStatement)
     assert isinstance(q, DeleteStatementLimited)
@@ -117,31 +123,31 @@ def test_delete_returning_clause_as() -> None:
 
 
 def test_delete_limited_order_by_1() -> None:
-    q = Delete.From("users").OrderBy(expr.literal(1))
+    q = Delete.From("users").OrderBy(literal(1))
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users ORDER BY 1"
 
 
 def test_delete_limited_order_by_2() -> None:
-    q = Delete.From("users").OrderBy(expr.literal(1), expr.literal(2).Asc)
+    q = Delete.From("users").OrderBy(literal(1), literal(2).Asc)
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users ORDER BY 1, 2 ASC"
 
 
 def test_delete_limited_limit_1() -> None:
-    q = Delete.From("users").Limit(expr.literal(1))
+    q = Delete.From("users").Limit(literal(1))
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users LIMIT 1"
 
 
 def test_delete_limited_limit_2() -> None:
-    q = Delete.From("users").Limit(expr.literal(1), expr.literal(2))
+    q = Delete.From("users").Limit(literal(1), literal(2))
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users LIMIT 1, 2"
 
 
 def test_delete_limited_limit_offset() -> None:
-    q = Delete.From("users").Limit(expr.literal(1)).Offset(expr.literal(2))
+    q = Delete.From("users").Limit(literal(1)).Offset(literal(2))
     assert isinstance(q, DeleteStatementLimited)
     assert q.get_query() == "DELETE FROM users LIMIT 1 OFFSET 2"
 
@@ -153,13 +159,13 @@ def test_delete_limited_empty_order_by_fails_type_check() -> None:
 
 def test_delete_limited_full_chain() -> None:
     q = (
-        With(TableName("cte").As(Select(expr.literal(1))))
+        With(TableName("cte").As(Select(literal(1))))
         .Delete.From("users")
         .As("u")
-        .Where(expr.literal(1))
+        .Where(literal(1))
         .Returning("*")
-        .OrderBy(expr.literal(1))
-        .Limit(expr.literal(1))
+        .OrderBy(literal(1))
+        .Limit(literal(1))
     )
     assert isinstance(q, DeleteStatementLimited)
     assert (

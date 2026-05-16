@@ -28,6 +28,7 @@ build-backend = "uv_build"
 target-version = "py312"
 lint.select = ["E", "F", "I", "UP"]
 lint.ignore = ["E501"]
+lint.per-file-ignores = {"src/sqlinpython/__init__.py" = ["F403"]}
 fix = true
 
 [tool.mypy]

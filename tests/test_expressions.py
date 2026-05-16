@@ -1,5 +1,5 @@
+from sqlinpython import Name
 from sqlinpython import expression as expr
-from sqlinpython.name import Name
 
 
 def to_str(element: expr.Expression) -> str:

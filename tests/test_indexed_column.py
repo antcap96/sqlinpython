@@ -1,5 +1,4 @@
-import sqlinpython.expression as expr
-from sqlinpython import ColumnName
+from sqlinpython import ColumnName, literal
 from sqlinpython.base import SqlElement
 
 
@@ -16,7 +15,7 @@ def test_indexed_column() -> None:
     assert create_query(a.Asc) == "a ASC"
     assert create_query(a.Desc) == "a DESC"
     assert create_query(a.Collate("b").Asc) == "a COLLATE b ASC"
-    assert create_query(expr.literal(1)) == "1"
-    assert create_query(expr.literal(1).Collate("b")) == "1 COLLATE b"
-    assert create_query(expr.literal(1).Collate("b").Asc) == "1 COLLATE b ASC"
-    assert create_query(expr.literal(1).Collate("b").Desc) == "1 COLLATE b DESC"
+    assert create_query(literal(1)) == "1"
+    assert create_query(literal(1).Collate("b")) == "1 COLLATE b"
+    assert create_query(literal(1).Collate("b").Asc) == "1 COLLATE b ASC"
+    assert create_query(literal(1).Collate("b").Desc) == "1 COLLATE b DESC"

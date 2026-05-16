@@ -7,7 +7,11 @@ from sqlinpython.base import CompleteSqlQuery, SqlElement
 
 
 # SPEC: https://sqlite.org/lang_transaction.html
-class BeginWithTransaction(CompleteSqlQuery):
+class BeginStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class BeginWithTransaction(BeginStatement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
@@ -62,7 +66,11 @@ class BeginKeyword(BeginWithTransaction, IBeginTransaction):
 Begin = BeginKeyword()
 
 
-class CommitWithTransaction(CompleteSqlQuery):
+class CommitStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class CommitWithTransaction(CommitStatement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 

@@ -5,7 +5,13 @@ from .core import Not as Not
 from .function import FunctionCall as FunctionCall
 from .function import FunctionCallWithFilter as FunctionCallWithFilter
 from .function import FunctionName as FunctionName
+from .function import Groups as Groups
+from .function import OrderBy as OrderBy
+from .function import PartitionBy as PartitionBy
+from .function import Range as Range
+from .function import Rows as Rows
 from .function import Star as Star
+from .function import WindowName as WindowName
 from .literal import CurrentDate as CurrentDate
 from .literal import CurrentTime as CurrentTime
 from .literal import CurrentTimestamp as CurrentTimestamp

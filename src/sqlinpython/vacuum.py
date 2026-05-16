@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
@@ -5,7 +6,11 @@ from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/lang_vacuum.html
-class VacuumWithIntoFileName(CompleteSqlQuery):
+class VacuumStatement(CompleteSqlQuery, ABC):
+    pass
+
+
+class VacuumWithIntoFileName(VacuumStatement):
     def __init__(self, prev: SqlElement, file_name: str) -> None:
         self._prev = prev
         self._file_name = file_name
