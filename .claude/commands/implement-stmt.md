@@ -67,6 +67,8 @@ Do a pair code review with the user
 
 ## Step 9 — Automated Branch review
 
+Wait for confirmation from the user before starting this step.
+
 Spawn a **general-purpose agent** with this prompt (fill in `<stmt>` and `<branch>`):
 
 > "You are reviewing the `feature/<stmt>-stmt` branch of the sqlinpython repository before it is squashed and merged to main. Run `git diff main..HEAD` to see all changes, then read every new or modified file in full. Produce a structured review covering: (1) correctness — does the implementation match the SQLite spec and the tests? (2) style — does it follow the patterns in the existing codebase (method ordering, `_create_query` last, `override` decorator, `from __future__ import annotations`, etc.)? (3) missing cases — any forms of the SQL statement not covered? Avoid running python scripts, if you are unaware of sqlite grammar, check the documentation. Report your findings clearly so the user can discuss them."

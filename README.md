@@ -90,5 +90,5 @@ TODO:
 - [X] savepoint-stmt
 - [X] select-stmt
 - [X] update-stmt
-- [ ] update-stmt-limited
+- [X] update-stmt-limited
 - [X] vacuum-stmt

@@ -9,11 +9,13 @@ from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.name import Name
+from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.returning import ReturningBase
 from sqlinpython.table_or_subquery import TableOrSubquery
 
 # SPEC: https://sqlite.org/lang_update.html
 # SPEC: https://sqlite.org/syntax/qualified-table-name.html
+# SPEC: https://sqlite.org/syntax/update-stmt-limited.html
 
 # NOTE: The qualified-table-name classes (UpdateTable, UpdateTableAliased,
 # UpdateTableIndexedBy, UpdateTableNotIndexed) duplicate those in delete.py.
@@ -22,15 +24,107 @@ from sqlinpython.table_or_subquery import TableOrSubquery
 # while it must not be for UPDATE (SET is required).
 
 
-class UpdateStatement(CompleteSqlQuery, ABC):
+class UpdateStatementLimited(CompleteSqlQuery, ABC):
+    """Base for update-stmt-limited (ORDER BY / LIMIT requires SQLITE_ENABLE_UPDATE_DELETE_LIMIT)."""
+
     pass
 
 
-class UpdateReturning(UpdateStatement, ReturningBase):
+class UpdateStatement(UpdateStatementLimited, ABC):
+    """Base for update-stmt (no ORDER BY / LIMIT; no compile-time flag needed)."""
+
     pass
 
 
-class IBeforeReturningClause(UpdateStatement, ABC):
+# ---------------------------------------------------------------------------
+# LIMIT / OFFSET (update-stmt-limited)
+# ---------------------------------------------------------------------------
+
+
+class UpdateLimitOffset(UpdateStatementLimited):
+    def __init__(self, prev: SqlElement, offset: Expression) -> None:
+        self._prev = prev
+        self._offset = offset
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" OFFSET ")
+        self._offset._create_query(buffer)
+
+
+class UpdateLimitComma(UpdateStatementLimited):
+    def __init__(self, prev: SqlElement, limit: Expression, offset: Expression) -> None:
+        self._prev = prev
+        self._limit = limit
+        self._offset = offset
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" LIMIT ")
+        self._limit._create_query(buffer)
+        buffer.append(", ")
+        self._offset._create_query(buffer)
+
+
+class UpdateLimit(UpdateStatementLimited):
+    def __init__(self, prev: SqlElement, limit: Expression) -> None:
+        self._prev = prev
+        self._limit = limit
+
+    def Offset(self, offset: Expression) -> UpdateLimitOffset:
+        return UpdateLimitOffset(self, offset)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" LIMIT ")
+        self._limit._create_query(buffer)
+
+
+class IUpdateLimit(SqlElement, ABC):
+    @typing.overload
+    def Limit(self, expr: Expression) -> UpdateLimit: ...
+    @typing.overload
+    def Limit(self, expr: Expression, offset: Expression) -> UpdateLimitComma: ...
+    def Limit(
+        self, expr: Expression, offset: Expression | None = None
+    ) -> UpdateLimit | UpdateLimitComma:
+        if offset is None:
+            return UpdateLimit(self, expr)
+        return UpdateLimitComma(self, expr, offset)
+
+
+class UpdateOrderBy(UpdateStatementLimited, IUpdateLimit):
+    def __init__(self, prev: SqlElement, terms: tuple[OrderingTerm, ...]) -> None:
+        self._prev = prev
+        self._terms = terms
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ORDER BY ")
+        comma_separated(buffer, self._terms)
+
+
+class IUpdateOrderBy(IUpdateLimit, ABC):
+    def OrderBy(
+        self, *terms: *tuple[OrderingTerm, *tuple[OrderingTerm, ...]]
+    ) -> UpdateOrderBy:
+        return UpdateOrderBy(self, terms)
+
+
+# ---------------------------------------------------------------------------
+# Regular update-stmt chain
+# ---------------------------------------------------------------------------
+
+
+class UpdateReturning(UpdateStatement, IUpdateOrderBy, ReturningBase):
+    pass
+
+
+class IBeforeReturningClause(UpdateStatement, IUpdateOrderBy, ABC):
     def Returning(
         self,
         *args: typing.Literal["*"] | Expression | AliasedExpression | Star_,
@@ -266,6 +360,3 @@ class UpdateKeyword(SqlElement):
 
 
 Update = UpdateKeyword()
-
-# TODO: update-stmt-limited (https://sqlite.org/syntax/update-stmt-limited.html)
-# adds ORDER BY and LIMIT/OFFSET support and is not yet implemented.
