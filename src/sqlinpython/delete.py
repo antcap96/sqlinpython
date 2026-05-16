@@ -4,15 +4,17 @@ import typing
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
 from sqlinpython.name import Name
+from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.returning import ReturningBase
 
 # SPEC: https://sqlite.org/lang_delete.html
 # SPEC: https://sqlite.org/syntax/qualified-table-name.html
+# SPEC: https://sqlite.org/syntax/delete-stmt-limited.html
 
 # NOTE: The qualified-table-name classes (DeleteFrom, DeleteFromAliased,
 # DeleteFromIndexedBy, DeleteFromNotIndexed) will be duplicated in update.py.
@@ -21,15 +23,107 @@ from sqlinpython.returning import ReturningBase
 # while it must not be for UPDATE (SET is required).
 
 
-class DeleteStatement(CompleteSqlQuery, ABC):
+class DeleteStatementLimited(CompleteSqlQuery, ABC):
+    """Base for delete-stmt-limited (ORDER BY / LIMIT requires SQLITE_ENABLE_UPDATE_DELETE_LIMIT)."""
+
     pass
 
 
-class DeleteReturning(DeleteStatement, ReturningBase):
+class DeleteStatement(DeleteStatementLimited, ABC):
+    """Base for delete-stmt (no ORDER BY / LIMIT; no compile-time flag needed)."""
+
     pass
 
 
-class IBeforeReturningClause(DeleteStatement, ABC):
+# ---------------------------------------------------------------------------
+# LIMIT / OFFSET (delete-stmt-limited)
+# ---------------------------------------------------------------------------
+
+
+class DeleteLimitOffset(DeleteStatementLimited):
+    def __init__(self, prev: SqlElement, offset: Expression) -> None:
+        self._prev = prev
+        self._offset = offset
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" OFFSET ")
+        self._offset._create_query(buffer)
+
+
+class DeleteLimitComma(DeleteStatementLimited):
+    def __init__(self, prev: SqlElement, limit: Expression, offset: Expression) -> None:
+        self._prev = prev
+        self._limit = limit
+        self._offset = offset
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" LIMIT ")
+        self._limit._create_query(buffer)
+        buffer.append(", ")
+        self._offset._create_query(buffer)
+
+
+class DeleteLimit(DeleteStatementLimited):
+    def __init__(self, prev: SqlElement, limit: Expression) -> None:
+        self._prev = prev
+        self._limit = limit
+
+    def Offset(self, offset: Expression) -> DeleteLimitOffset:
+        return DeleteLimitOffset(self, offset)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" LIMIT ")
+        self._limit._create_query(buffer)
+
+
+class IDeleteLimit(SqlElement, ABC):
+    @typing.overload
+    def Limit(self, expr: Expression) -> DeleteLimit: ...
+    @typing.overload
+    def Limit(self, expr: Expression, offset: Expression) -> DeleteLimitComma: ...
+    def Limit(
+        self, expr: Expression, offset: Expression | None = None
+    ) -> DeleteLimit | DeleteLimitComma:
+        if offset is None:
+            return DeleteLimit(self, expr)
+        return DeleteLimitComma(self, expr, offset)
+
+
+class DeleteOrderBy(DeleteStatementLimited, IDeleteLimit):
+    def __init__(self, prev: SqlElement, terms: tuple[OrderingTerm, ...]) -> None:
+        self._prev = prev
+        self._terms = terms
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ORDER BY ")
+        comma_separated(buffer, self._terms)
+
+
+class IDeleteOrderBy(IDeleteLimit, ABC):
+    def OrderBy(
+        self, *terms: *tuple[OrderingTerm, *tuple[OrderingTerm, ...]]
+    ) -> DeleteOrderBy:
+        return DeleteOrderBy(self, terms)
+
+
+# ---------------------------------------------------------------------------
+# Regular delete-stmt chain
+# ---------------------------------------------------------------------------
+
+
+class DeleteReturning(DeleteStatement, IDeleteOrderBy, ReturningBase):
+    pass
+
+
+class IBeforeReturningClause(DeleteStatement, IDeleteOrderBy, ABC):
     def Returning(
         self,
         *args: typing.Literal["*"] | Expression | AliasedExpression | Star_,

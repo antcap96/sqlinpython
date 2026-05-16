@@ -76,7 +76,7 @@ TODO:
 - [ ] create-view-stmt
 - [X] create-virtual-table-stmt
 - [X] delete-stmt
-- [ ] delete-stmt-limited
+- [X] delete-stmt-limited
 - [ ] detach-stmt
 - [ ] drop-index-stmt
 - [X] drop-table-stmt
