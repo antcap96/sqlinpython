@@ -23,6 +23,25 @@ just check             # Full CI check: lint, types, and tests
 
 **Before adding any `# type: ignore` comment, you must ask me for approval.** Type ignores should be used sparingly and only when there's a legitimate reason that can't be fixed otherwise. Always investigate if there's a better solution first.
 
+### Intentional type-error tests
+
+Tests that verify a call is rejected by the type checkers use a bare expression statement (no `_ =` assignment — that triggers `reportUnknownVariableType`) with inline suppression for each checker:
+
+```python
+SomeClass().BadCall()  # type: ignore[error-code] # pyright: ignore[reportCode]
+# ty doesn't currently identify this error -ty: ignore[ty-error-code]
+```
+
+`ty` often misses errors that mypy/pyright catch; leave the hypothetical ignore code in a comment.
+
+Multi-line expected strings in assertions must use explicit `+` concatenation — basedpyright flags `reportImplicitStringConcatenation`:
+
+```python
+assert q.get_query() == (
+    "WITH cte AS (SELECT 1) "
+    + "UPDATE users SET column = 1"
+)
+
 ## Architecture Overview
 
 sqlinpython is a Python library that constructs SQL queries using type-annotated Python objects, providing editor autocompletion and static syntax checking. Queries are built using a chained-builder pattern and converted to SQL strings via `get_query()`.
@@ -197,3 +216,14 @@ With(cte).Insert.Into("table")...                             # WITH cte INSERT 
 1. Entry point singleton classes use `*Keyword` suffix (e.g., `InsertKeyword`, `ReplaceKeyword`)
 2. Use `@typing.overload` for methods accepting different argument types (e.g., `ColumnName.As` handles both aliasing and generated column expressions)
 3. `AliasedExpression` class in `expression/core.py` handles `expr AS alias` syntax
+
+### Statement / statement-limited pairs (`update.py`)
+
+When a statement has a "limited" variant (e.g. `update-stmt` / `update-stmt-limited`), the plain base class extends the limited one — not the other way around:
+
+```python
+class UpdateStatementLimited(CompleteSqlQuery, ABC): ...  # ORDER BY / LIMIT results
+class UpdateStatement(UpdateStatementLimited, ABC): ...   # plain UPDATE results
+```
+
+This means any plain UPDATE result satisfies `isinstance(q, UpdateStatementLimited)` (Liskov: a plain UPDATE is always valid wherever a limited UPDATE is accepted). The ORDER BY / LIMIT result classes only extend the limited base, not the plain one. Apply this pattern for any future stmt / stmt-limited pair (e.g. `delete-stmt-limited`).
