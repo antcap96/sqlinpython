@@ -83,12 +83,42 @@ class IIndexHints(IBeforeWhereClause, ABC):
     def NotIndexed(...) -> DeleteFromNotIndexed: ...
 ```
 
+**Encode the base class in the mixin when all implementors share it.** If every class that implements a mixin is always also a `ColumnDefinition`, put `ColumnDefinition` in the mixin's bases — not in every subclass. This removes repetition and makes the constraint explicit:
+
+```python
+class IColumnConstraint(ColumnDefinition, IColumnConstraintWithName, ABC):
+    def Constraint(self, name: Name | str) -> ColumnConstraintWithName: ...
+
+# result classes only need IColumnConstraint, not (ColumnDefinition, IColumnConstraint)
+class WithCheck(IColumnConstraint): ...
+class WithDefault(IColumnConstraint): ...
+```
+
+**But** only do this when it is truly universal. `IColumnConstraintWithName` is also implemented by `ColumnConstraintWithName` (the result of `.Constraint("name")`), which is NOT a `ColumnDefinition` on its own — so `ColumnDefinition` belongs on `IColumnConstraint`, not `IColumnConstraintWithName`.
+
 ### Method Ordering Convention
 
 In all `SqlElement` subclasses, methods must follow this order:
 1. `__init__` — always first
 2. Other methods/properties (in any order)
 3. `_create_query` — always last
+
+### Class Ordering Convention
+
+Within a module, classes are ordered so that **reading bottom-to-top follows the builder chain**: the entry point (or closest class to the entry point) sits at the bottom, and terminal states sit at the top. Abstract bases and mixins must be defined before the classes that use them, so they appear near the top regardless.
+
+```
+# top — abstract bases and mixins (must come first for inheritance)
+class ColumnDefinition(SqlElement, ABC): ...
+class IColumnConstraint(ColumnDefinition, ...): ...
+
+# middle — terminal states (deepest in the chain)
+class ConflictClauseAutoIncrement(IColumnConstraint): ...
+class WithNotNull(ConflictClause): ...
+
+# bottom — entry point (first class a user touches)
+class ColumnNameWithType(IColumnConstraint): ...
+```
 
 ### Chained Builder Pattern
 
@@ -118,8 +148,11 @@ Entry points are singleton instances: `Create`, `Case`, `Not`, `Insert`, `Replac
 - `ordering_term.py`: ORDER BY terms with NULLS FIRST/LAST support
 - `name.py`: Identifier handling with automatic quoting
 - `create.py`, `create_table.py`, `create_index.py`: CREATE statement builders
-- `column_definition.py`, `column_constraint.py`: Column specifications
-- `table_constraint.py`, `foreign_key_clause.py`: Table-level constraints
+- `column_definition.py`: Column specifications and column-constraint mixins
+- `column_name.py`: `ColumnName` and `col()` helper
+- `column_foreign_key_clause.py`: Column-level FK clause chain (produces `ColumnDefinition`)
+- `table_constraint.py`: Table-level constraints
+- `table_foreign_key_clause.py`: Table-level FK clause chain (produces `TableConstraint`)
 - `common_table_expression.py`: CTEs and WITH clause
 - `insert.py`: INSERT/REPLACE statements with upsert and RETURNING
 
@@ -216,6 +249,20 @@ With(cte).Insert.Into("table")...                             # WITH cte INSERT 
 1. Entry point singleton classes use `*Keyword` suffix (e.g., `InsertKeyword`, `ReplaceKeyword`)
 2. Use `@typing.overload` for methods accepting different argument types (e.g., `ColumnName.As` handles both aliasing and generated column expressions)
 3. `AliasedExpression` class in `expression/core.py` handles `expr AS alias` syntax
+
+### Parallel chains: two files over generics
+
+When two chains are structurally identical but rooted in different base classes (e.g. column FK vs table FK), prefer **two separate files** over a generic abstraction. Generics require abstract bound classes and type parameter syntax that add complexity without improving readability. Duplication across two small files is cheaper than the indirection:
+
+```
+# column_foreign_key_clause.py  — inherits ColumnDefinition
+class ColumnReferences_(ColumnBeforeDeferrable): ...
+
+# table_foreign_key_clause.py   — inherits TableConstraint
+class TableReferences_(TableBeforeDeferrable): ...
+```
+
+This also enforces correct type separation at no extra cost — a `TableReferences_` cannot be used where a `ColumnDefinition` is expected.
 
 ### Statement / statement-limited pairs (`update.py`)
 

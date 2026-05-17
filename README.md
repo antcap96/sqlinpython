@@ -84,7 +84,7 @@ TODO:
 - [ ] drop-view-stmt
 - [X] insert-stmt
 - [ ] pragma-stmt
-- [ ] reindex-stmt
+- [X] reindex-stmt
 - [X] release-stmt
 - [X] rollback-stmt
 - [X] savepoint-stmt

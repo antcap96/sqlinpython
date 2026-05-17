@@ -11,6 +11,7 @@ from sqlinpython.delete import DeleteStatementLimited as DeleteStatementLimited
 from sqlinpython.detach import DetachStatement as DetachStatement
 from sqlinpython.drop_table import DropTableStatement as DropTableStatement
 from sqlinpython.insert import InsertStatement as InsertStatement
+from sqlinpython.reindex import ReindexStatement as ReindexStatement
 from sqlinpython.savepoint import ReleaseStatement as ReleaseStatement
 from sqlinpython.savepoint import RollbackStatement as RollbackStatement
 from sqlinpython.savepoint import SavepointStatement as SavepointStatement

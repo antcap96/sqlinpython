@@ -17,6 +17,7 @@ from sqlinpython.expression import Range as Range
 from sqlinpython.expression import Rows as Rows
 from sqlinpython.insert import Insert as Insert
 from sqlinpython.insert import Replace as Replace
+from sqlinpython.reindex import Reindex as Reindex
 from sqlinpython.savepoint import Release as Release
 from sqlinpython.savepoint import Rollback as Rollback
 from sqlinpython.savepoint import Savepoint as Savepoint
