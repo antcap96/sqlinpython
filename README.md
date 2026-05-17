@@ -78,10 +78,10 @@ TODO:
 - [X] delete-stmt
 - [X] delete-stmt-limited
 - [X] detach-stmt
-- [ ] drop-index-stmt
+- [X] drop-index-stmt
 - [X] drop-table-stmt
-- [ ] drop-trigger-stmt
-- [ ] drop-view-stmt
+- [X] drop-trigger-stmt
+- [X] drop-view-stmt
 - [X] insert-stmt
 - [ ] pragma-stmt
 - [X] reindex-stmt

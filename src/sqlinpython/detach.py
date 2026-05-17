@@ -42,12 +42,9 @@ class DetachDatabaseKeyword(IDetachCall):
 
 
 class DetachKeyword(IDetachCall):
-    def __init__(self) -> None:
-        self._database = DetachDatabaseKeyword(self)
-
     @property
     def Database(self) -> DetachDatabaseKeyword:
-        return self._database
+        return DetachDatabaseKeyword(self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

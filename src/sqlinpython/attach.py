@@ -58,12 +58,9 @@ class AttachDatabaseKeyword(IAttachCall):
 
 
 class AttachKeyword(IAttachCall):
-    def __init__(self) -> None:
-        self._database = AttachDatabaseKeyword(self)
-
     @property
     def Database(self) -> AttachDatabaseKeyword:
-        return self._database
+        return AttachDatabaseKeyword(self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

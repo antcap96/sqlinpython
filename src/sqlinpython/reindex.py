@@ -50,9 +50,6 @@ class ReindexWithName(ReindexStatement):
 
 
 class ReindexKeyword(ReindexStatement):
-    def __init__(self) -> None:
-        self._expressions = ReindexExpressions(self)
-
     def __call__(self, name: Name | str) -> ReindexWithName:
         if isinstance(name, str):
             name = Name(name)
@@ -69,7 +66,7 @@ class ReindexKeyword(ReindexStatement):
 
     @property
     def Expressions(self) -> ReindexExpressions:
-        return self._expressions
+        return ReindexExpressions(self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
