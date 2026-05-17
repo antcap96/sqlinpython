@@ -230,6 +230,36 @@ def test_column_definition_default_current_date_not_null_unique() -> None:
     )
 
 
+def test_column_definition_default_force_parenthesis_int() -> None:
+    q = Create.Table("table_name")(a.Default(1, force_parenthesis=True))
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT (1))"
+
+
+def test_column_definition_default_force_parenthesis_literal() -> None:
+    q = Create.Table("table_name")(a.Default(literal("a"), force_parenthesis=True))
+    assert q.get_query() == 'CREATE TABLE table_name (a DEFAULT ("a"))'
+
+
+def test_column_definition_default_expression() -> None:
+    q = Create.Table("table_name")(a.Default(b + literal(1)))
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT (b + 1))"
+
+
+def test_column_definition_check() -> None:
+    q = Create.Table("table_name")(a.Check(b > literal(0)))
+    assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0))"
+
+
+def test_column_definition_check_not_null() -> None:
+    q = Create.Table("table_name")(a.Check(b > literal(0)).NotNull)
+    assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0) NOT NULL)"
+
+
+def test_column_definition_named_check() -> None:
+    q = Create.Table("table_name")(a.Constraint("c").Check(b > literal(0)))
+    assert q.get_query() == "CREATE TABLE table_name (a CONSTRAINT c CHECK (b > 0))"
+
+
 def test_column_definition_collate() -> None:
     q = Create.Table("table_name")(a.Collate("utf8"))
     assert q.get_query() == "CREATE TABLE table_name (a COLLATE utf8)"
@@ -493,3 +523,10 @@ def test_foreign_key_clause_deferrable_initially_immediate() -> None:
         q.get_query()
         == "CREATE TABLE table_name (a REFERENCES d DEFERRABLE INITIALLY IMMEDIATE)"
     )
+
+
+def test_create_table_doesnt_accept_table_constraint() -> None:
+    Create.Table("table_name")(
+        Constraint("a").ForeignKey("b").References("t")  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
+        # ty doesn't currently identify this error -ty: ignore[invalid-argument]
+    ).WithoutRowId.Strict

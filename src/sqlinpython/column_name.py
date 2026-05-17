@@ -6,6 +6,7 @@ from typing import overload, override
 from sqlinpython.column_definition import (
     ColumnNameWithType,
     GeneratedAlwaysAs,
+    IColumnConstraint,
     WithCollate,
 )
 from sqlinpython.expression.core import (
@@ -50,8 +51,7 @@ class ColumnNameWithCollate(CollateOperator, WithCollate):
         return GeneratedAlwaysAs(self, alias_or_expr)
 
 
-# TODO: Any better way to handle mypy error "incompatible with definition in base class"
-class ColumnName(Name, ColumnNameWithType, Expression12):  # type: ignore [misc]
+class ColumnName(Name, IColumnConstraint, Expression12):
     def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
         return ColumnNameWithType(self, type_name)
 

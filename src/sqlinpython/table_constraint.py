@@ -10,7 +10,7 @@ from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
 if TYPE_CHECKING:
-    from sqlinpython.foreign_key_clause import References_
+    from sqlinpython.table_foreign_key_clause import TableReferences_
 
 
 class ConstraintKeyword(SqlElement):
@@ -64,13 +64,13 @@ class ForeignKeyConstraint(SqlElement):
         self._prev = prev
         self._column_names = column_names
 
-    def References(self, foreign_table_name: Name | str) -> References_:
-        from sqlinpython.foreign_key_clause import References_
+    def References(self, foreign_table_name: Name | str) -> TableReferences_:
+        from sqlinpython.table_foreign_key_clause import TableReferences_
 
         if isinstance(foreign_table_name, str):
             foreign_table_name = Name(foreign_table_name)
 
-        return References_(self, foreign_table_name)
+        return TableReferences_(self, foreign_table_name)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
