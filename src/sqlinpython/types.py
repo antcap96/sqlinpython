@@ -8,6 +8,7 @@ from sqlinpython.create_vtable import (
 )
 from sqlinpython.delete import DeleteStatement as DeleteStatement
 from sqlinpython.delete import DeleteStatementLimited as DeleteStatementLimited
+from sqlinpython.detach import DetachStatement as DetachStatement
 from sqlinpython.drop_table import DropTableStatement as DropTableStatement
 from sqlinpython.insert import InsertStatement as InsertStatement
 from sqlinpython.savepoint import ReleaseStatement as ReleaseStatement

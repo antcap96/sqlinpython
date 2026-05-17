@@ -4,6 +4,7 @@ from sqlinpython.attach import Attach as Attach
 from sqlinpython.common_table_expression import With as With
 from sqlinpython.create import Create as Create
 from sqlinpython.delete import Delete as Delete
+from sqlinpython.detach import Detach as Detach
 from sqlinpython.drop_table import DropTable as DropTable
 from sqlinpython.expression import Case as Case
 from sqlinpython.expression import CurrentDate as CurrentDate
