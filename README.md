@@ -83,7 +83,7 @@ TODO:
 - [X] drop-trigger-stmt
 - [X] drop-view-stmt
 - [X] insert-stmt
-- [ ] pragma-stmt
+- [X] pragma-stmt
 - [X] reindex-stmt
 - [X] release-stmt
 - [X] rollback-stmt
