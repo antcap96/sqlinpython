@@ -86,10 +86,10 @@ class CreateTableWithDefinitions(CreateTableStatement):
 
 
 class CreateTableWithName(SqlElement):
-    def __init__(self, prev: SqlElement, schema_name: Name, table_name: Name | None):
+    def __init__(self, prev: SqlElement, schema: Name, table: Name | None):
         self._prev = prev
-        self._schema_name = schema_name
-        self._table_name = table_name
+        self._schema = schema
+        self._table = table
 
     def As(self, select_stmt: SelectStatement) -> CreateTableAs:
         return CreateTableAs(self, select_stmt)
@@ -107,10 +107,10 @@ class CreateTableWithName(SqlElement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._schema_name._create_query(buffer)
-        if self._table_name is not None:
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-            self._table_name._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class CreateTableIfNotExists(SqlElement):
@@ -118,13 +118,13 @@ class CreateTableIfNotExists(SqlElement):
         self._prev = prev
 
     def __call__(
-        self, schema_name: str | Name, table_name: str | Name | None = None
+        self, schema: str | Name, table: str | Name | None = None, /
     ) -> CreateTableWithName:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        if isinstance(table_name, str):
-            table_name = Name(table_name)
-        return CreateTableWithName(self, schema_name, table_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(table, str):
+            table = Name(table)
+        return CreateTableWithName(self, schema, table)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

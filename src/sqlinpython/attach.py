@@ -14,15 +14,15 @@ class AttachStatement(CompleteSqlQuery, ABC):
 
 
 class AttachComplete(AttachStatement):
-    def __init__(self, prev: SqlElement, schema_name: Name) -> None:
+    def __init__(self, prev: SqlElement, schema: Name) -> None:
         self._prev = prev
-        self._schema_name = schema_name
+        self._schema = schema
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" AS ")
-        self._schema_name._create_query(buffer)
+        self._schema._create_query(buffer)
 
 
 class AttachWithExpr(SqlElement):
@@ -30,10 +30,10 @@ class AttachWithExpr(SqlElement):
         self._prev = prev
         self._file_expr = file_expr
 
-    def As(self, schema_name: Name | str) -> AttachComplete:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        return AttachComplete(self, schema_name)
+    def As(self, schema: Name | str) -> AttachComplete:
+        if isinstance(schema, str):
+            schema = Name(schema)
+        return AttachComplete(self, schema)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

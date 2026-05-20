@@ -284,10 +284,10 @@ class InsertNameAs(InsertColumnNames):
 
 
 class IntoName(InsertNameAs):
-    def __init__(self, prev: SqlElement, name: Name, name2: Name | None) -> None:
+    def __init__(self, prev: SqlElement, schema: Name, table: Name | None) -> None:
         self._prev = prev
-        self._name = name
-        self._name2 = name2
+        self._schema = schema
+        self._table = table
 
     # TODO: Is alias a name or is it more restrictive?
     def As(self, alias: Name | str) -> InsertNameAs:
@@ -299,22 +299,24 @@ class IntoName(InsertNameAs):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._name._create_query(buffer)
-        if self._name2 is not None:
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-            self._name2._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class Into_(SqlElement):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
-    def __call__(self, name: Name | str, name2: Name | str | None = None) -> IntoName:
-        if isinstance(name, str):
-            name = Name(name)
-        if isinstance(name2, str):
-            name2 = Name(name2)
-        return IntoName(self, name, name2)
+    def __call__(
+        self, schema: Name | str, table: Name | str | None = None, /
+    ) -> IntoName:
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(table, str):
+            table = Name(table)
+        return IntoName(self, schema, table)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

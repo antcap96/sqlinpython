@@ -46,10 +46,10 @@ class CreateViewWithColumns(SqlElement):
 
 
 class CreateViewWithName(SqlElement):
-    def __init__(self, prev: SqlElement, schema_name: Name, view_name: Name | None):
+    def __init__(self, prev: SqlElement, schema: Name, view: Name | None):
         self._prev = prev
-        self._schema_name = schema_name
-        self._view_name = view_name
+        self._schema = schema
+        self._view = view
 
     def As(self, select_stmt: SelectStatement) -> CreateViewAs:
         return CreateViewAs(self, select_stmt)
@@ -65,10 +65,10 @@ class CreateViewWithName(SqlElement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._schema_name._create_query(buffer)
-        if self._view_name is not None:
+        self._schema._create_query(buffer)
+        if self._view is not None:
             buffer.append(".")
-            self._view_name._create_query(buffer)
+            self._view._create_query(buffer)
 
 
 class CreateViewIfNotExists(SqlElement):
@@ -76,13 +76,13 @@ class CreateViewIfNotExists(SqlElement):
         self._prev = prev
 
     def __call__(
-        self, schema_name: str | Name, view_name: str | Name | None = None
+        self, schema: str | Name, view: str | Name | None = None, /
     ) -> CreateViewWithName:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        if isinstance(view_name, str):
-            view_name = Name(view_name)
-        return CreateViewWithName(self, schema_name, view_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(view, str):
+            view = Name(view)
+        return CreateViewWithName(self, schema, view)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

@@ -31,11 +31,11 @@ class CreateIndexOnTable(CreateIndexStatement):
     def __init__(
         self,
         prev: SqlElement,
-        table_name: Name,
+        table: Name,
         columns: tuple[IndexedColumn, ...],
     ):
         self._prev = prev
-        self._table_name = table_name
+        self._table = table
         self._columns = columns
 
     def Where(self, expr: Expression) -> CreateIndexWithWhere:
@@ -45,7 +45,7 @@ class CreateIndexOnTable(CreateIndexStatement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ON ")
-        self._table_name._create_query(buffer)
+        self._table._create_query(buffer)
         buffer.append(" (")
         for i, col in enumerate(self._columns):
             if i > 0:
@@ -55,28 +55,28 @@ class CreateIndexOnTable(CreateIndexStatement):
 
 
 class CreateIndexWithName(SqlElement):
-    def __init__(self, prev: SqlElement, schema_name: Name, index_name: Name | None):
+    def __init__(self, prev: SqlElement, schema: Name, index: Name | None):
         self._prev = prev
-        self._schema_name = schema_name
-        self._index_name = index_name
+        self._schema = schema
+        self._index = index
 
     def On(
         self,
-        table_name: str | Name,
+        table: str | Name,
         *cols: *tuple[IndexedColumn, *tuple[IndexedColumn, ...]],
     ) -> CreateIndexOnTable:
-        if isinstance(table_name, str):
-            table_name = Name(table_name)
-        return CreateIndexOnTable(self, table_name, cols)
+        if isinstance(table, str):
+            table = Name(table)
+        return CreateIndexOnTable(self, table, cols)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._schema_name._create_query(buffer)
-        if self._index_name is not None:
+        self._schema._create_query(buffer)
+        if self._index is not None:
             buffer.append(".")
-            self._index_name._create_query(buffer)
+            self._index._create_query(buffer)
 
 
 class CreateIndexIfNotExists(CreateIndexWithName):
@@ -84,13 +84,13 @@ class CreateIndexIfNotExists(CreateIndexWithName):
         self._prev = prev
 
     def __call__(
-        self, schema_name: str | Name, index_name: str | Name | None = None
+        self, schema: str | Name, index: str | Name | None = None, /
     ) -> CreateIndexWithName:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        if isinstance(index_name, str):
-            index_name = Name(index_name)
-        return CreateIndexWithName(self, schema_name, index_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(index, str):
+            index = Name(index)
+        return CreateIndexWithName(self, schema, index)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

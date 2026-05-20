@@ -30,9 +30,9 @@ class CreateVirtualTableWithArgs(CreateVirtualTableStatement):
 
 
 class CreateVirtualTableUsing(CreateVirtualTableStatement):
-    def __init__(self, prev: SqlElement, module_name: Name):
+    def __init__(self, prev: SqlElement, module: Name):
         self._prev = prev
-        self._module_name = module_name
+        self._module = module
 
     def __call__(self, *args: str) -> CreateVirtualTableWithArgs:
         return CreateVirtualTableWithArgs(self, args)
@@ -41,28 +41,28 @@ class CreateVirtualTableUsing(CreateVirtualTableStatement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" USING ")
-        self._module_name._create_query(buffer)
+        self._module._create_query(buffer)
 
 
 class CreateVirtualTableWithName(SqlElement):
-    def __init__(self, prev: SqlElement, schema_name: Name, table_name: Name | None):
+    def __init__(self, prev: SqlElement, schema: Name, table: Name | None):
         self._prev = prev
-        self._schema_name = schema_name
-        self._table_name = table_name
+        self._schema = schema
+        self._table = table
 
-    def Using(self, module_name: str | Name) -> CreateVirtualTableUsing:
-        if isinstance(module_name, str):
-            module_name = Name(module_name)
-        return CreateVirtualTableUsing(self, module_name)
+    def Using(self, module: str | Name) -> CreateVirtualTableUsing:
+        if isinstance(module, str):
+            module = Name(module)
+        return CreateVirtualTableUsing(self, module)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._schema_name._create_query(buffer)
-        if self._table_name is not None:
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-            self._table_name._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class CreateVirtualTableIfNotExists(SqlElement):
@@ -70,13 +70,13 @@ class CreateVirtualTableIfNotExists(SqlElement):
         self._prev = prev
 
     def __call__(
-        self, schema_name: str | Name, table_name: str | Name | None = None
+        self, schema: str | Name, table: str | Name | None = None, /
     ) -> CreateVirtualTableWithName:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        if isinstance(table_name, str):
-            table_name = Name(table_name)
-        return CreateVirtualTableWithName(self, schema_name, table_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(table, str):
+            table = Name(table)
+        return CreateVirtualTableWithName(self, schema, table)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

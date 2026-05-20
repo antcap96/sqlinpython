@@ -13,22 +13,22 @@ class DetachStatement(CompleteSqlQuery, ABC):
 
 
 class DetachComplete(DetachStatement):
-    def __init__(self, prev: SqlElement, schema_name: Name) -> None:
+    def __init__(self, prev: SqlElement, schema: Name) -> None:
         self._prev = prev
-        self._schema_name = schema_name
+        self._schema = schema
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        self._schema_name._create_query(buffer)
+        self._schema._create_query(buffer)
 
 
 class IDetachCall(SqlElement, ABC):
-    def __call__(self, schema_name: Name | str) -> DetachComplete:
-        if isinstance(schema_name, str):
-            schema_name = Name(schema_name)
-        return DetachComplete(self, schema_name)
+    def __call__(self, schema: Name | str) -> DetachComplete:
+        if isinstance(schema, str):
+            schema = Name(schema)
+        return DetachComplete(self, schema)
 
 
 class DetachDatabaseKeyword(IDetachCall):

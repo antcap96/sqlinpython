@@ -350,13 +350,13 @@ class AlterTableAlter(SqlElement):
 
 
 class AlterTable(SqlElement):
-    def __init__(self, name: Name | str, name2: Name | str | None = None) -> None:
-        if isinstance(name, str):
-            name = Name(name)
-        if isinstance(name2, str):
-            name2 = Name(name2)
-        self._name = name
-        self._name2 = name2
+    def __init__(self, schema: Name | str, table: Name | str | None = None, /) -> None:
+        if isinstance(schema, str):
+            schema = Name(schema)
+        if isinstance(table, str):
+            table = Name(table)
+        self._schema = schema
+        self._table = table
 
     @property
     def Rename(self) -> AlterTableRename:
@@ -377,7 +377,7 @@ class AlterTable(SqlElement):
     @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append("ALTER TABLE ")
-        self._name._create_query(buffer)
-        if self._name2 is not None:
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-            self._name2._create_query(buffer)
+            self._table._create_query(buffer)

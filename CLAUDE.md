@@ -274,3 +274,18 @@ class UpdateStatement(UpdateStatementLimited, ABC): ...   # plain UPDATE results
 ```
 
 This means any plain UPDATE result satisfies `isinstance(q, UpdateStatementLimited)` (Liskov: a plain UPDATE is always valid wherever a limited UPDATE is accepted). The ORDER BY / LIMIT result classes only extend the limited base, not the plain one. Apply this pattern for any future stmt / stmt-limited pair (e.g. `delete-stmt-limited`).
+
+### Schema/table storage pattern
+
+Storage classes that hold an optional `[schema.]name` always store the **first positional argument in `self._schema` and the optional second in `self._table` (or `self._name` for non-table objects)**. The second attribute is `None` when only one argument was given — meaning `self._schema` then holds the object name itself.
+
+`_create_query` writes `self._schema` unconditionally, then conditionally appends `.self._table`:
+
+```python
+self._schema._create_query(buffer)
+if self._table is not None:
+    buffer.append(".")
+    self._table._create_query(buffer)
+```
+
+Public entry-point classes that do their own 1-arg/2-arg disambiguation in `__init__` (e.g. `TableRef`, `AlterTable`) follow the same storage layout after resolving. Call-site methods that do the disambiguation before calling an internal `__init__` pass `(schema, name)` directly without an intermediate `if name is None` branch.

@@ -269,10 +269,10 @@ class UpdateTableAliased(IIndexHints):
 
 
 class UpdateTable(IIndexHints):
-    def __init__(self, prev: SqlElement, schema: Name | None, name: Name) -> None:
+    def __init__(self, prev: SqlElement, schema: Name, table: Name | None) -> None:
         self._prev = prev
         self._schema = schema
-        self._name = name
+        self._table = table
 
     def As(self, alias: Name | str) -> UpdateTableAliased:
         if isinstance(alias, str):
@@ -283,10 +283,10 @@ class UpdateTable(IIndexHints):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        if self._schema is not None:
-            self._schema._create_query(buffer)
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-        self._name._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class UpdateOr(SqlElement):
@@ -299,15 +299,13 @@ class UpdateOr(SqlElement):
         self._conflict = conflict
 
     def __call__(
-        self, schema_or_name: Name | str, name: Name | str | None = None, /
+        self, schema: Name | str, name: Name | str | None = None, /
     ) -> UpdateTable:
-        if isinstance(schema_or_name, str):
-            schema_or_name = Name(schema_or_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
         if isinstance(name, str):
             name = Name(name)
-        if name is None:
-            return UpdateTable(self, None, schema_or_name)
-        return UpdateTable(self, schema_or_name, name)
+        return UpdateTable(self, schema, name)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -320,15 +318,13 @@ class UpdateKeyword(SqlElement):
         self._prev = prev
 
     def __call__(
-        self, schema_or_name: Name | str, name: Name | str | None = None, /
+        self, schema: Name | str, name: Name | str | None = None, /
     ) -> UpdateTable:
-        if isinstance(schema_or_name, str):
-            schema_or_name = Name(schema_or_name)
+        if isinstance(schema, str):
+            schema = Name(schema)
         if isinstance(name, str):
             name = Name(name)
-        if name is None:
-            return UpdateTable(self, None, schema_or_name)
-        return UpdateTable(self, schema_or_name, name)
+        return UpdateTable(self, schema, name)
 
     @property
     def OrAbort(self) -> UpdateOr:

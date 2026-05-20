@@ -127,18 +127,13 @@ class TableRefNotIndexed(TableOrSubquery):
 class TableRef(TableOrSubquery):
     """Represents [schema.]table-name in a FROM clause."""
 
-    def __init__(self, schema: Name | str, name: Name | str | None = None, /) -> None:
-        if isinstance(name, str):
-            name = Name(name)
+    def __init__(self, schema: Name | str, table: Name | str | None = None, /) -> None:
         if isinstance(schema, str):
             schema = Name(schema)
-
-        if name is None:
-            self._name = schema
-            self._schema = None
-        else:
-            self._name = name
-            self._schema = schema
+        if isinstance(table, str):
+            table = Name(table)
+        self._schema = schema
+        self._table = table
 
     def As(self, alias: Name | str, *, explicit_as: bool = True) -> TableRefAliased:
         if isinstance(alias, str):
@@ -156,19 +151,21 @@ class TableRef(TableOrSubquery):
 
     @property
     def Star(self) -> TableStarResultColumn:
-        return TableStarResultColumn(self._name)
+        return TableStarResultColumn(
+            self._table if self._table is not None else self._schema
+        )
 
     def __getitem__(self, column: str) -> TableColumnName | SchemaTableColumnName:
-        if self._schema is not None:
-            return SchemaTableColumnName(self._schema, self._name, column)
-        return TableColumnName(self._name, column)
+        if self._table is not None:
+            return SchemaTableColumnName(self._schema, self._table, column)
+        return TableColumnName(self._schema, column)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
-        if self._schema is not None:
-            self._schema._create_query(buffer)
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-        self._name._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class TableFunctionRefAliased(TableOrSubquery):
@@ -205,27 +202,22 @@ class TableFunctionRef(SqlElement):
     """Table function name — call it to produce a table-function-ref."""
 
     def __init__(self, schema: Name | str, name: Name | str | None = None, /) -> None:
-        if isinstance(name, str):
-            name = Name(name)
         if isinstance(schema, str):
             schema = Name(schema)
-
-        if name is None:
-            self._name = schema
-            self._schema = None
-        else:
-            self._name = name
-            self._schema = schema
+        if isinstance(name, str):
+            name = Name(name)
+        self._schema = schema
+        self._name = name
 
     def __call__(self, *args: SqlElement) -> TableFunctionRefCall:
         return TableFunctionRefCall(self, args)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
-        if self._schema is not None:
-            self._schema._create_query(buffer)
+        self._schema._create_query(buffer)
+        if self._name is not None:
             buffer.append(".")
-        self._name._create_query(buffer)
+            self._name._create_query(buffer)
 
 
 class SubqueryAliased(TableOrSubquery):

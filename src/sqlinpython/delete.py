@@ -195,10 +195,10 @@ class DeleteFromAliased(IIndexHints):
 
 
 class DeleteFrom(IIndexHints):
-    def __init__(self, prev: SqlElement, schema: Name | None, name: Name) -> None:
+    def __init__(self, prev: SqlElement, schema: Name, table: Name | None) -> None:
         self._prev = prev
         self._schema = schema
-        self._name = name
+        self._table = table
 
     def As(self, alias: Name | str) -> DeleteFromAliased:
         if isinstance(alias, str):
@@ -209,26 +209,22 @@ class DeleteFrom(IIndexHints):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        if self._schema is not None:
-            self._schema._create_query(buffer)
+        self._schema._create_query(buffer)
+        if self._table is not None:
             buffer.append(".")
-        self._name._create_query(buffer)
+            self._table._create_query(buffer)
 
 
 class DeleteKeyword(SqlElement):
     def __init__(self, prev: SqlElement | None = None) -> None:
         self._prev = prev
 
-    def From(
-        self, schema_or_name: Name | str, name: Name | str | None = None, /
-    ) -> DeleteFrom:
-        if isinstance(schema_or_name, str):
-            schema_or_name = Name(schema_or_name)
+    def From(self, schema: Name | str, name: Name | str | None = None, /) -> DeleteFrom:
+        if isinstance(schema, str):
+            schema = Name(schema)
         if isinstance(name, str):
             name = Name(name)
-        if name is None:
-            return DeleteFrom(self, None, schema_or_name)
-        return DeleteFrom(self, schema_or_name, name)
+        return DeleteFrom(self, schema, name)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
