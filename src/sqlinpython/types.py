@@ -3,6 +3,7 @@ from sqlinpython.analyze import AnalyzeStatement as AnalyzeStatement
 from sqlinpython.attach import AttachStatement as AttachStatement
 from sqlinpython.create_index import CreateIndexStatement as CreateIndexStatement
 from sqlinpython.create_table import CreateTableStatement as CreateTableStatement
+from sqlinpython.create_view import CreateViewStatement as CreateViewStatement
 from sqlinpython.create_vtable import (
     CreateVirtualTableStatement as CreateVirtualTableStatement,
 )

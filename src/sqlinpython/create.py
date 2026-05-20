@@ -4,11 +4,13 @@ from typing import override
 from sqlinpython.base import SqlElement
 from sqlinpython.create_index import CreateIndex
 from sqlinpython.create_table import CreateTable
+from sqlinpython.create_view import CreateView
 from sqlinpython.create_vtable import CreateVirtualTable
 
 # SPEC: https://sqlite.org/lang_createtable.html
 # SPEC: https://sqlite.org/lang_createindex.html
 # SPEC: https://sqlite.org/lang_createvtab.html
+# SPEC: https://sqlite.org/lang_createview.html
 
 
 class CreateUnique(SqlElement):
@@ -33,6 +35,10 @@ class CreateTempTable(SqlElement):
     @property
     def Table(self) -> CreateTable:
         return CreateTable(self)
+
+    @property
+    def View(self) -> CreateView:
+        return CreateView(self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

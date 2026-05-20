@@ -73,7 +73,7 @@ TODO:
 - [X] create-index-stmt
 - [X] create-table-stmt
 - [ ] create-trigger-stmt
-- [ ] create-view-stmt
+- [X] create-view-stmt
 - [X] create-virtual-table-stmt
 - [X] delete-stmt
 - [X] delete-stmt-limited
