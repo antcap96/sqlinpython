@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import Expression
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
@@ -47,10 +47,7 @@ class CreateIndexOnTable(CreateIndexStatement):
         buffer.append(" ON ")
         self._table._create_query(buffer)
         buffer.append(" (")
-        for i, col in enumerate(self._columns):
-            if i > 0:
-                buffer.append(", ")
-            col._create_query(buffer)
+        comma_separated(buffer, self._columns)
         buffer.append(")")
 
 

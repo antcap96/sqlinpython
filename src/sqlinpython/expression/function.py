@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Literal, cast, overload, override
 
-from sqlinpython.base import SqlElement
+from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 
@@ -112,10 +112,7 @@ class OrderByClause(WindowDefn):
             self._prev._create_query(buffer)
             buffer.append(" ")
         buffer.append("ORDER BY ")
-        for i, term in enumerate(self._terms):
-            if i > 0:
-                buffer.append(", ")
-            term._create_query(buffer)
+        comma_separated(buffer, self._terms)
 
 
 # SPEC: https://sqlite.org/syntax/frame-spec.html
@@ -362,10 +359,7 @@ class PartitionByClause(OrderByClause):
             self._prev._create_query(buffer)
             buffer.append(" ")
         buffer.append("PARTITION BY ")
-        for i, term in enumerate(self._exprs):
-            if i > 0:
-                buffer.append(", ")
-            term._create_query(buffer)
+        comma_separated(buffer, self._exprs)
 
 
 class WindowName(Name, PartitionByClause):
@@ -440,16 +434,10 @@ class FunctionCall(FunctionCallWithFilter):
         else:
             if self._distinct:
                 buffer.append("DISTINCT ")
-            for i, arg in enumerate(self._args):
-                if i > 0:
-                    buffer.append(", ")
-                arg._create_query(buffer)
+            comma_separated(buffer, self._args)
             if self._order_by:
                 buffer.append(" ORDER BY ")
-                for i, term in enumerate(self._order_by):
-                    if i > 0:
-                        buffer.append(", ")
-                    term._create_query(buffer)
+                comma_separated(buffer, self._order_by)
         buffer.append(")")
 
     def FilterWhere(self, expr: Expression) -> FunctionCallWithFilter:

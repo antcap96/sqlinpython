@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
 
@@ -38,10 +38,7 @@ class CreateViewWithColumns(SqlElement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
-        for i, col in enumerate(self._columns):
-            if i > 0:
-                buffer.append(", ")
-            col._create_query(buffer)
+        comma_separated(buffer, self._columns)
         buffer.append(")")
 
 

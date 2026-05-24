@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import TYPE_CHECKING, overload, override
 
-from sqlinpython.base import SqlElement
+from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression
 from sqlinpython.indexed_column import IndexedColumn
@@ -79,10 +79,8 @@ class ForeignKeyConstraint(SqlElement):
             buffer.append(" FOREIGN KEY(")
         else:
             buffer.append("FOREIGN KEY(")
-        for i, column_name in enumerate(self._column_names):
-            if i > 0:
-                buffer.append(", ")
-            column_name._create_query(buffer)
+
+        comma_separated(buffer, self._column_names)
         buffer.append(")")
 
 
@@ -168,10 +166,7 @@ class ConstraintBeforeConflictClause(TableConstraintWithConflictClause):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
-        for i, column in enumerate(self._columns):
-            if i > 0:
-                buffer.append(", ")
-            column._create_query(buffer)
+        comma_separated(buffer, self._columns)
         if self._autoincrement:
             buffer.append(" AUTOINCREMENT")
         buffer.append(")")

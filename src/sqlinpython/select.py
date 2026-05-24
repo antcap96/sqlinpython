@@ -132,10 +132,10 @@ class ISelectCompound[T: Core | Complete](ISelectOrderBy, SelectStatement_[T], A
 
 class ISelectWindowClause[T: Core | Complete](ISelectCompound[T], ABC):
     def Window(self, *defs: tuple[Name | str, WindowDefn]) -> SelectWindowClause[T]:
-        defs = tuple(
+        defs_names = tuple(
             (Name(name) if isinstance(name, str) else name, defn) for name, defn in defs
         )
-        return SelectWindowClause(self, defs)
+        return SelectWindowClause(self, defs_names)
 
 
 class ISelectHavingClause[T: Core | Complete](ISelectWindowClause[T], ABC):

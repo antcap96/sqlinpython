@@ -6,7 +6,7 @@ from typing import override
 
 from typing_extensions import TypeIs
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.column_name import ColumnName
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
@@ -68,10 +68,7 @@ class OnConflictCall(OnConflictWhere):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
-        for i, arg in enumerate(self._args):
-            if i > 0:
-                buffer.append(", ")
-            arg._create_query(buffer)
+        comma_separated(buffer, self._args)
         buffer.append(")")
 
 
@@ -125,16 +122,13 @@ class OnConflictDoUpdateSet(OnConflictUpdateWhere):
         for i, (k, v) in enumerate(self._args):
             if i > 0:
                 buffer.append(", ")
-            if isinstance(k, tuple):
-                buffer.append("(")
-                for j, x in enumerate(k):
-                    if j > 0:
-                        buffer.append(", ")
-                    x._create_query(buffer)
-                buffer.append(") = ")
-            else:
+            if isinstance(k, ColumnName):
                 k._create_query(buffer)
                 buffer.append(" = ")
+            else:
+                buffer.append("(")
+                comma_separated(buffer, k)
+                buffer.append(") = ")
             v._create_query(buffer)
 
 
@@ -194,10 +188,7 @@ class InsertValues(BeforeUpsertClause):
             if i > 0:
                 buffer.append(", ")
             buffer.append("(")
-            for j, value in enumerate(tuple):
-                if j > 0:
-                    buffer.append(", ")
-                value._create_query(buffer)
+            comma_separated(buffer, tuple)
             buffer.append(")")
 
 
@@ -242,10 +233,7 @@ class InsertColumnNames(SqlElement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
-        for i, column_name in enumerate(self._column_names):
-            if i > 0:
-                buffer.append(", ")
-            column_name._create_query(buffer)
+        comma_separated(buffer, self._column_names)
         buffer.append(")")
 
 
@@ -255,7 +243,7 @@ class InsertNameAs(InsertColumnNames):
         self._alias = alias
 
     @typing.overload
-    def __call__(self, select_stm: SelectStatement, /) -> InsertSelect: ...
+    def __call__(self, select_stm: SelectStatement, /) -> InsertSelect: ...  # ty: ignore[invalid-overload]  # https://github.com/astral-sh/ty/issues/1746
 
     @typing.overload
     def __call__(

@@ -180,16 +180,13 @@ class UpdateSet(IBeforeWhereClause):
         for i, (k, v) in enumerate(self._assignments):
             if i > 0:
                 buffer.append(", ")
-            if isinstance(k, tuple):
-                buffer.append("(")
-                for j, col in enumerate(k):
-                    if j > 0:
-                        buffer.append(", ")
-                    col._create_query(buffer)
-                buffer.append(") = ")
-            else:
+            if isinstance(k, Name):
                 k._create_query(buffer)
                 buffer.append(" = ")
+            else:
+                buffer.append("(")
+                comma_separated(buffer, k)
+                buffer.append(") = ")
             v._create_query(buffer)
 
 

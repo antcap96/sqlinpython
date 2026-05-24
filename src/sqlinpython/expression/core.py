@@ -4,7 +4,7 @@ import typing
 from abc import ABC
 from typing import overload, override
 
-from sqlinpython.base import NotImplementedSqlElement, SqlElement
+from sqlinpython.base import NotImplementedSqlElement, SqlElement, comma_separated
 from sqlinpython.indexed_column import IndexedColumnWithCollate
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
@@ -464,10 +464,7 @@ class InExpressionWithExpressions(Expression4):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN (")
-        for i, expr in enumerate(self._exprs):
-            if i > 0:
-                buffer.append(", ")
-            expr._create_query(buffer)
+        comma_separated(buffer, self._exprs)
         buffer.append(")")
 
 
@@ -522,10 +519,7 @@ class InExpressionWithTableFunctionArgs(Expression4):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append("(")
-        for i, expr in enumerate(self._exprs):
-            if i > 0:
-                buffer.append(", ")
-            expr._create_query(buffer)
+        comma_separated(buffer, self._exprs)
         buffer.append(")")
 
 

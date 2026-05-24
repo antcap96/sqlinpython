@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import SqlElement
+from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.table_constraint import TableConstraint
 
@@ -175,10 +175,7 @@ class TableReferenceWithColumns(TableBeforeDeferrable):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
-        for i, column_name in enumerate(self._column_names):
-            if i > 0:
-                buffer.append(", ")
-            column_name._create_query(buffer)
+        comma_separated(buffer, self._column_names)
         buffer.append(")")
 
 
