@@ -72,7 +72,7 @@ TODO:
 - [X] commit-stmt
 - [X] create-index-stmt
 - [X] create-table-stmt
-- [ ] create-trigger-stmt
+- [X] create-trigger-stmt
 - [X] create-view-stmt
 - [X] create-virtual-table-stmt
 - [X] delete-stmt

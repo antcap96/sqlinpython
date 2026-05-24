@@ -105,19 +105,23 @@ In all `SqlElement` subclasses, methods must follow this order:
 
 ### Class Ordering Convention
 
-Within a module, classes are ordered so that **reading bottom-to-top follows the builder chain**: the entry point (or closest class to the entry point) sits at the bottom, and terminal states sit at the top. Abstract bases and mixins must be defined before the classes that use them, so they appear near the top regardless.
+Within a module, classes are ordered so that **reading bottom-to-top follows the builder chain**: the entry point (or closest class to the entry point) sits at the bottom, and terminal states sit at the top. Abstract base classes (those inherited throughout the chain) remain at the top. Mixins (`I*` classes that add behaviour via methods) are placed just above the first concrete class that uses them — not grouped at the top.
 
 ```
-# top — abstract bases and mixins (must come first for inheritance)
+# top — abstract base class (inherited everywhere, must come first)
 class ColumnDefinition(SqlElement, ABC): ...
-class IColumnConstraint(ColumnDefinition, ...): ...
 
-# middle — terminal states (deepest in the chain)
+# top — terminal states (deepest in the chain)
 class ConflictClauseAutoIncrement(IColumnConstraint): ...
 class WithNotNull(ConflictClause): ...
 
+# mixin placed just above its first user
+class IColumnConstraint(ColumnDefinition, ...): ...
+class ColumnNameWithType(IColumnConstraint): ...  # first user
+class AnotherUser(IColumnConstraint): ...
+
 # bottom — entry point (first class a user touches)
-class ColumnNameWithType(IColumnConstraint): ...
+class ColumnDefinitionEntry(SqlElement): ...
 ```
 
 ### Chained Builder Pattern

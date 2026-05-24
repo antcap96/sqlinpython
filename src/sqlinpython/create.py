@@ -4,6 +4,7 @@ from typing import override
 from sqlinpython.base import SqlElement
 from sqlinpython.create_index import CreateIndex
 from sqlinpython.create_table import CreateTable
+from sqlinpython.create_trigger import CreateTrigger
 from sqlinpython.create_view import CreateView
 from sqlinpython.create_vtable import CreateVirtualTable
 
@@ -35,6 +36,10 @@ class CreateTempTable(SqlElement):
     @property
     def Table(self) -> CreateTable:
         return CreateTable(self)
+
+    @property
+    def Trigger(self) -> CreateTrigger:
+        return CreateTrigger(self)
 
     @property
     def View(self) -> CreateView:
