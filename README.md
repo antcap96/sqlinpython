@@ -9,47 +9,50 @@ The type checks are only made with external tools like [mypy](https://github.com
 A simple example usage of this library might look like this:
 
 ```python
-from sqlinpython import Select, TableRef, ColumnRef
+from sqlinpython import Select, TableRef, col
 assert (
-    Select(ColumnRef("a")).From(TableRef("b")).get_query()
-    == 'SELECT a FROM b'
+    Select(col("a")).From(TableRef("b")).get_query()
+    == "SELECT a FROM b"
 )
 ```
 
 But the library is capable of much more complex queries like the following:
 
 ```python
-from sqlinpython import Select, TableRef, ColumnRef, Value, functions as f
-(
-    Select(ColumnRef("full_name"))
+from sqlinpython import Select, TableRef, FunctionName, col, literal
+assert (
+    Select(col("full_name"))
     .From(TableRef("SALES_PERSON"))
-    .Where(ColumnRef("ranking") >= Value(5.0))
+    .Where(col("ranking") >= literal(5.0))
     .UnionAll(
-        Select(ColumnRef("reviewer_name"))
+        Select(col("reviewer_name"))
         .From(TableRef("CUSTOMER_REVIEW"))
-        .GroupBy(ColumnRef("reviewer_name"))
-        .Having(f.Avg(ColumnRef("score")) >= Value(8.0))
+        .GroupBy(col("reviewer_name"))
+        .Having(FunctionName("AVG")(col("score")) >= literal(8.0))
     )
     .get_query()
+    == "SELECT full_name FROM SALES_PERSON WHERE ranking >= 5.0 UNION ALL SELECT reviewer_name FROM CUSTOMER_REVIEW GROUP BY reviewer_name HAVING AVG(score) >= 8.0"
 )
-output = 'SELECT full_name FROM SALES_PERSON WHERE ranking >= 5.0 UNION ALL SELECT reviewer_name FROM CUSTOMER_REVIEW GROUP BY reviewer_name HAVING AVG(score) >= 8.0'
 ```
 
 Although for larger queries, for the sake of readability, you should probably split up the components into variables:
 
 ```python
 sales_people = (
-    Select(ColumnRef("full_name"))
+    Select(col("full_name"))
     .From(TableRef("SALES_PERSON"))
-    .Where(ColumnRef("ranking") >= Value(5.0))
+    .Where(col("ranking") >= literal(5.0))
 )
 reviewers = (
-    Select(ColumnRef("reviewer_name"))
+    Select(col("reviewer_name"))
     .From(TableRef("CUSTOMER_REVIEW"))
-    .GroupBy(ColumnRef("reviewer_name"))
-    .Having(f.Avg(ColumnRef("score")) >= Value(8.0))
+    .GroupBy(col("reviewer_name"))
+    .Having(FunctionName("AVG")(col("score")) >= literal(8.0))
 )
-sales_people.UnionAll(reviewers).get_query()
+assert (
+    sales_people.UnionAll(reviewers).get_query()
+    == "SELECT full_name FROM SALES_PERSON WHERE ranking >= 5.0 UNION ALL SELECT reviewer_name FROM CUSTOMER_REVIEW GROUP BY reviewer_name HAVING AVG(score) >= 8.0"
+)
 ```
 
 Further examples can be seen in the [tests](./tests) directory.
@@ -60,35 +63,3 @@ In order to only allow valid SQL syntax, the library creates hundreds of differe
 For example, a select query of the type ``Select(...).From(...)`` has the type ``SelectStatementWithFrom``, while the type of a select query of the type ``Select(...)`` has the type ``SelectStatementWithSelectExpression``.
 
 These types are not yet part of a public api and their names might be changed in the future.
-
-
-## State
-
-TODO:
-- [X] alter-table-stmt
-- [X] analyze-stmt
-- [X] attach-stmt
-- [X] begin-stmt
-- [X] commit-stmt
-- [X] create-index-stmt
-- [X] create-table-stmt
-- [X] create-trigger-stmt
-- [X] create-view-stmt
-- [X] create-virtual-table-stmt
-- [X] delete-stmt
-- [X] delete-stmt-limited
-- [X] detach-stmt
-- [X] drop-index-stmt
-- [X] drop-table-stmt
-- [X] drop-trigger-stmt
-- [X] drop-view-stmt
-- [X] insert-stmt
-- [X] pragma-stmt
-- [X] reindex-stmt
-- [X] release-stmt
-- [X] rollback-stmt
-- [X] savepoint-stmt
-- [X] select-stmt
-- [X] update-stmt
-- [X] update-stmt-limited
-- [X] vacuum-stmt
