@@ -1,5 +1,5 @@
 {
-  description = "F1 Dash Analysis with uv and pyproject.toml for Python dependency management";
+  description = "sql query builder for sqlite with uv and pyproject.toml for Python dependency management";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
@@ -69,7 +69,7 @@
         let
           pkgs = nixpkgs.legacyPackages.${system};
           pythonSet = pythonSets.${system}.overrideScope editableOverlay;
-          virtualenv = pythonSet.mkVirtualEnv "aqlinpython-dev-env" workspace.deps.all;
+          virtualenv = pythonSet.mkVirtualEnv "sqlinpython-dev-env" workspace.deps.all;
         in
         {
           default = pkgs.mkShell {
@@ -92,7 +92,7 @@
       );
 
       packages = forAllSystems (system: {
-        default = pythonSets.${system}.mkVirtualEnv "aqlinpython-env" workspace.deps.default;
+        default = pythonSets.${system}.mkVirtualEnv "sqlinpython-env" workspace.deps.default;
       });
     };
 }
