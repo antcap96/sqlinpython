@@ -43,7 +43,14 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `expression/literal.py` | N/A | N/A | Flat leaf types, no chain |
 | `name.py` | N/A | N/A | Foundation class |
 | `base.py` | N/A | N/A | Foundation class |
-| Simple stmts | N/A | N/A | `analyze.py`, `attach.py`, `detach.py`, `pragma.py`, `reindex.py`, `savepoint.py`, `transaction.py`, `vacuum.py` — single-class or two-class files |
+| `analyze.py` | N/A | N/A | Single entry + single result; no chain to evaluate |
+| `attach.py` | Excellent | N/A | `IAttachCall` mixin correctly shared by `AttachKeyword` and `AttachDatabaseKeyword` |
+| `detach.py` | Excellent | N/A | `IDetachCall` mixin correctly shared by `DetachKeyword` and `DetachDatabaseKeyword` |
+| `pragma.py` | N/A | N/A | Linear two-class chain; no shared behaviour |
+| `reindex.py` | N/A | N/A | All methods on the single entry class; no inheritance chain |
+| `savepoint.py` | Needs Work | N/A | Three concrete-to-concrete inheritance issues (see detail) |
+| `transaction.py` | Needs Work | N/A | `IBeginTransaction`/`ICommitTransaction` don't encode their statement base, forcing redundant concrete inheritance (see detail) |
+| `vacuum.py` | Needs Work | N/A | `VacuumKeyword(VacuumWithSchema(VacuumWithIntoFileName))` concrete chain shares `.Into()` — needs `IVacuumInto` mixin |
 | `builders.py`, `keywords.py`, `types.py` | N/A | N/A | Utilities / re-export files |
 
 ---
@@ -148,6 +155,52 @@ One ordering issue in the ADD section: `AlterTableAddConstraintCheck` (terminal,
 `IsExpression(IsNotExpression(IsDistinctFromExpression))` is concrete-to-concrete inheritance to share `__call__` — the same anti-pattern as `insert.py`'s upsert chain.
 
 **Ordering:** The precedence chain ordered lowest-to-highest (`Expression1` OR → `Expression13` literals) reads naturally top-to-bottom, which is the reverse of the CLAUDE.md convention but is a reasonable domain-specific exception.
+
+---
+
+### `savepoint.py` — Needs Work / N/A
+
+Three concrete-to-concrete inheritance issues:
+
+1. `ReleaseKeyword(ReleaseWithSavepoint)` inherits `__call__(savepoint) -> ReleaseComplete`. Fix: `ICallableReleaseSavepoint(SqlElement, ABC)` mixin; both `ReleaseWithSavepoint` and `ReleaseKeyword` extend it.
+
+2. `RollbackWithTo(RollbackWithToSavepoint)` inherits `__call__(savepoint) -> RollbackComplete`. Fix: `ICallableRollbackSavepoint(SqlElement, ABC)` mixin; both extend it directly.
+
+3. `RollbackWithTransaction(RollbackComplete)` inherits from the concrete result class solely to land in `RollbackStatement`'s hierarchy — it doesn't use any of `RollbackComplete`'s own behaviour. Should extend `RollbackStatement` directly.
+
+   `RollbackKeyword(RollbackWithTransaction)` then inherits `.To` from the concrete class. Fix: `IRollbackWithTo(RollbackStatement, ABC)` mixin providing `.To`; both `RollbackWithTransaction` and `RollbackKeyword` extend it.
+
+---
+
+### `transaction.py` — Needs Work / N/A
+
+`IBeginTransaction` and `ICommitTransaction` already exist as mixins providing `.Transaction`, but neither encodes `BeginStatement`/`CommitStatement` as a base. As a result, `BeginWithType`, `BeginKeyword`, `CommitKeyword`, and `EndKeyword` must all inherit from the concrete `BeginWithTransaction`/`CommitWithTransaction` classes purely to become `BeginStatement`/`CommitStatement` subtypes.
+
+Fix: encode the statement base in each mixin:
+
+```python
+class IBeginTransaction(BeginStatement, ABC):
+    @property
+    def Transaction(self) -> BeginWithTransaction: ...
+
+class BeginWithType(IBeginTransaction): ...    # no longer inherits BeginWithTransaction
+class BeginKeyword(IBeginTransaction): ...     # no longer inherits BeginWithTransaction
+
+class ICommitTransaction(CommitStatement, ABC):
+    @property
+    def Transaction(self) -> CommitWithTransaction: ...
+
+class CommitKeyword(ICommitTransaction): ...   # no longer inherits CommitWithTransaction
+class EndKeyword(ICommitTransaction): ...      # no longer inherits CommitWithTransaction
+```
+
+---
+
+### `vacuum.py` — Needs Work / N/A
+
+`VacuumKeyword(VacuumWithSchema(VacuumWithIntoFileName))` is a three-level concrete chain where each level inherits solely to share the `.Into()` method defined on `VacuumWithSchema`.
+
+Fix: `IVacuumInto(VacuumStatement, ABC)` mixin providing `.Into() -> VacuumWithIntoFileName`; both `VacuumWithSchema` and `VacuumKeyword` extend it directly instead of chaining.
 
 ---
 
