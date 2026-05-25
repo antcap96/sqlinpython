@@ -442,7 +442,7 @@ def test_on_conflict_do_update_set_single_column() -> None:
         Insert.Into("users")("id", "name")
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet((ColumnName("name"), literal("Updated")))
+        .Do.UpdateSet(name=literal("Updated"))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
     )
@@ -455,7 +455,7 @@ def test_on_conflict_do_update_set_string_column() -> None:
         Insert.Into("users")("id", "name")
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet(("name", literal("Updated")))
+        .Do.UpdateSet(name=literal("Updated"))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
     )
@@ -468,10 +468,7 @@ def test_on_conflict_do_update_set_multiple_assignments() -> None:
         Insert.Into("users")("id", "name", "email")
         .Values((literal(1), literal("Alice"), literal("a@b.com")))
         .OnConflict(col)
-        .Do.UpdateSet(
-            ("name", literal("Updated")),
-            ("email", literal("new@email.com")),
-        )
+        .Do.UpdateSet(name=literal("Updated"), email=literal("new@email.com"))
         .get_query()
         == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET name = "Updated", email = "new@email.com"'
     )
@@ -485,7 +482,7 @@ def test_on_conflict_do_update_set_column_list() -> None:
         Insert.Into("users")("id", "name", "email")
         .Values((literal(1), literal("Alice"), literal("a@b.com")))
         .OnConflict(col)
-        .Do.UpdateSet((("name", "email"), literal("some_expr")))
+        .Do.UpdateSet({("name", "email"): literal("some_expr")})
         .get_query()
         == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET (name, email) = "some_expr"'
     )
@@ -499,7 +496,7 @@ def test_on_conflict_do_update_set_with_where() -> None:
         Insert.Into("users")("id", "name")
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
-        .Do.UpdateSet(("name", literal("Updated")))
+        .Do.UpdateSet(name=literal("Updated"))
         .Where(name_col.ne(literal("Admin")))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated" WHERE name != "Admin"'
@@ -514,7 +511,7 @@ def test_on_conflict_do_update_set_with_conflict_where() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Where(col > literal(0))
-        .Do.UpdateSet(("name", literal("Updated")))
+        .Do.UpdateSet(name=literal("Updated"))
         .get_query()
         == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO UPDATE SET name = "Updated"'
     )

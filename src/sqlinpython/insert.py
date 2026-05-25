@@ -7,7 +7,6 @@ from typing import override
 from typing_extensions import TypeIs
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.column_name import ColumnName
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
@@ -40,14 +39,111 @@ class IBeforeReturningClause(InsertStatement, ABC):
         return ReturningClause(self, values)
 
 
-class OnConflictWhere(SqlElement):
-    def __init__(self, prev: SqlElement, expr: Expression):
+class OnConflictUpdateWhere(IBeforeReturningClause):
+    def __init__(self, prev: SqlElement, condition: Expression):
         self._prev = prev
-        self._expr = expr
+        self._condition = condition
 
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" WHERE ")
+        self._condition._create_query(buffer)
+
+
+_Assignment = tuple[Name | tuple[Name, ...], Expression]
+
+
+class OnConflictDoUpdateSet(IBeforeReturningClause):
+    def __init__(self, prev: SqlElement, assignments: list[_Assignment]) -> None:
+        self._prev = prev
+        self._assignments = assignments
+
+    def Where(self, condition: Expression) -> OnConflictUpdateWhere:
+        return OnConflictUpdateWhere(self, condition)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" UPDATE SET ")
+        for i, (k, v) in enumerate(self._assignments):
+            if i > 0:
+                buffer.append(", ")
+            if isinstance(k, Name):
+                k._create_query(buffer)
+                buffer.append(" = ")
+            else:
+                buffer.append("(")
+                comma_separated(buffer, k)
+                buffer.append(") = ")
+            v._create_query(buffer)
+
+
+class IBeforeUpsertClause(IBeforeReturningClause, ABC):
+    @property
+    def OnConflict(self) -> OnConflictClause:
+        return OnConflictClause(self)
+
+
+class OnConflictDoNothing(IBeforeUpsertClause):
+    def __init__(self, prev: SqlElement):
+        self._prev = prev
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" NOTHING")
+
+
+class OnConflictDo(SqlElement):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    @property
+    def Nothing(self) -> OnConflictDoNothing:
+        return OnConflictDoNothing(self)
+
+    def UpdateSet(
+        self,
+        __assignments: dict[str | Name | tuple[str | Name, ...], Expression]
+        | None = None,
+        /,
+        **kwargs: Expression,
+    ) -> OnConflictDoUpdateSet:
+        assignments: list[_Assignment] = []
+        source = __assignments.items() if __assignments is not None else ()
+        for k, v in source:
+            if isinstance(k, str):
+                assignments.append((Name(k), v))
+            elif isinstance(k, Name):
+                assignments.append((k, v))
+            else:
+                col_names: list[Name] = []
+                for x in k:
+                    col_names.append(Name(x) if isinstance(x, str) else x)
+                assignments.append((tuple(col_names), v))
+        for k, v in kwargs.items():
+            assignments.append((Name(k), v))
+        if not assignments:
+            raise ValueError("UpdateSet() requires at least one assignment")
+        return OnConflictDoUpdateSet(self, assignments)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" DO")
+
+
+class IOnConflictDo(SqlElement, ABC):
     @property
     def Do(self) -> OnConflictDo:
         return OnConflictDo(self)
+
+
+class OnConflictWhere(IOnConflictDo):
+    def __init__(self, prev: SqlElement, expr: Expression):
+        self._prev = prev
+        self._expr = expr
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -56,7 +152,7 @@ class OnConflictWhere(SqlElement):
         self._expr._create_query(buffer)
 
 
-class OnConflictCall(OnConflictWhere):
+class OnConflictCall(IOnConflictDo):
     def __init__(self, prev: SqlElement, args: tuple[IndexedColumn, ...]):
         self._prev = prev
         self._args = args
@@ -72,7 +168,7 @@ class OnConflictCall(OnConflictWhere):
         buffer.append(")")
 
 
-class OnConflictClause(OnConflictCall):
+class OnConflictClause(IOnConflictDo):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
@@ -85,95 +181,29 @@ class OnConflictClause(OnConflictCall):
         buffer.append(" ON CONFLICT")
 
 
-class BeforeUpsertClause(IBeforeReturningClause, ABC):
-    @property
-    def OnConflict(self) -> OnConflictClause:
-        return OnConflictClause(self)
-
-
-class OnConflictUpdateWhere(IBeforeReturningClause):
-    def __init__(self, prev: SqlElement, condition: Expression):
-        self._prev = prev
-        self._condition = condition
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" WHERE ")
-        self._condition._create_query(buffer)
-
-
-class OnConflictDoUpdateSet(OnConflictUpdateWhere):
-    def __init__(
-        self,
-        prev: SqlElement,
-        args: list[tuple[tuple[ColumnName, ...] | ColumnName, Expression]],
-    ) -> None:
-        self._prev = prev
-        self._args = args
-
-    def Where(self, condition: Expression) -> OnConflictUpdateWhere:
-        return OnConflictUpdateWhere(self, condition)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" UPDATE SET ")
-        for i, (k, v) in enumerate(self._args):
-            if i > 0:
-                buffer.append(", ")
-            if isinstance(k, ColumnName):
-                k._create_query(buffer)
-                buffer.append(" = ")
-            else:
-                buffer.append("(")
-                comma_separated(buffer, k)
-                buffer.append(") = ")
-            v._create_query(buffer)
-
-
-class OnConflictDo(SqlElement):
+class InsertDefaultValues(IBeforeReturningClause):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
-    @property
-    def Nothing(self) -> OnConflictDoNothing:
-        return OnConflictDoNothing(self)
-
-    def UpdateSet(
-        self, *args: tuple[tuple[ColumnName | str, ...] | ColumnName | str, Expression]
-    ) -> OnConflictDoUpdateSet:
-        arguments: list[tuple[tuple[ColumnName, ...] | ColumnName, Expression]] = []
-        for k, v in args:
-            match k:
-                case ColumnName():
-                    arguments.append((k, v))
-                case str():
-                    arguments.append((ColumnName(k), v))
-                case _:
-                    key = tuple(
-                        x if isinstance(x, ColumnName) else ColumnName(x) for x in k
-                    )
-                    arguments.append((key, v))
-        return OnConflictDoUpdateSet(self, arguments)
-
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" DO")
+        buffer.append(" DEFAULT VALUES")
 
 
-class OnConflictDoNothing(BeforeUpsertClause):
-    def __init__(self, prev: SqlElement):
+class InsertSelect(IBeforeUpsertClause):
+    def __init__(self, prev: SqlElement, select_stm: SelectStatement) -> None:
         self._prev = prev
+        self._select_stm = select_stm
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" NOTHING")
+        buffer.append(" ")
+        self._select_stm._create_query(buffer)
 
 
-class InsertValues(BeforeUpsertClause):
+class InsertValues(IBeforeUpsertClause):
     def __init__(
         self, prev: SqlElement, values: tuple[tuple[Expression, ...], ...]
     ) -> None:
@@ -192,33 +222,7 @@ class InsertValues(BeforeUpsertClause):
             buffer.append(")")
 
 
-class InsertSelect(BeforeUpsertClause):
-    def __init__(self, prev: SqlElement, select_stm: SelectStatement) -> None:
-        self._prev = prev
-        self._select_stm = select_stm
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" ")
-        self._select_stm._create_query(buffer)
-
-
-class InsertDefaultValues(IBeforeReturningClause):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" DEFAULT VALUES")
-
-
-class InsertColumnNames(SqlElement):
-    def __init__(self, prev: SqlElement, column_names: tuple[Name, ...]) -> None:
-        self._prev = prev
-        self._column_names = column_names
-
+class IInsertBody(SqlElement, ABC):
     def Values(self, *values: tuple[Expression, ...]) -> InsertValues:
         return InsertValues(self, values)
 
@@ -229,6 +233,12 @@ class InsertColumnNames(SqlElement):
     def DefaultValues(self) -> InsertDefaultValues:
         return InsertDefaultValues(self)
 
+
+class InsertColumnNames(IInsertBody):
+    def __init__(self, prev: SqlElement, column_names: tuple[Name, ...]) -> None:
+        self._prev = prev
+        self._column_names = column_names
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
@@ -237,11 +247,7 @@ class InsertColumnNames(SqlElement):
         buffer.append(")")
 
 
-class InsertNameAs(InsertColumnNames):
-    def __init__(self, prev: SqlElement, alias: Name) -> None:
-        self._prev = prev
-        self._alias = alias
-
+class ICallableWithColumnNames(IInsertBody, ABC):
     @typing.overload
     def __call__(self, select_stm: SelectStatement, /) -> InsertSelect: ...  # ty: ignore[invalid-overload]  # https://github.com/astral-sh/ty/issues/1746
 
@@ -264,6 +270,12 @@ class InsertNameAs(InsertColumnNames):
         assert isinstance(first, SelectStatement_)
         return InsertSelect(self, first)
 
+
+class InsertNameAs(ICallableWithColumnNames):
+    def __init__(self, prev: SqlElement, alias: Name) -> None:
+        self._prev = prev
+        self._alias = alias
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
@@ -271,7 +283,7 @@ class InsertNameAs(InsertColumnNames):
         self._alias._create_query(buffer)
 
 
-class IntoName(InsertNameAs):
+class IntoName(ICallableWithColumnNames):
     def __init__(self, prev: SqlElement, schema: Name, table: Name | None) -> None:
         self._prev = prev
         self._schema = schema

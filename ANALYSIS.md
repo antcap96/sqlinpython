@@ -32,7 +32,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
 | `indexed_column.py` | Good | Good | `IndexedColumnWithCollate` (produces `ColumnNameWithOrdering`) correctly sits below it in the file |
 | `column_name.py` | Good | Good | `ColumnNameWithCollate` bridges expression and column-def worlds via multiple inheritance; `ColumnName` multi-inheritance is necessary; ordering correct |
-| `insert.py` | Needs Work | Needs Work | Upsert sub-chain uses concrete→concrete inheritance instead of `I*` mixins; `IBeforeReturningClause` placed too high; ON CONFLICT terminals below their producer |
+| `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Good | Needs Work | No `I*` mixins; `TableConstraint` (abstract base) buried at line 143 instead of at top; `ConstraintKeyword` (entry) at line 16 instead of bottom |
 | `expression/core.py` | Needs Work | Good | `NegatedOperator` duplicates ~8 methods from `Expression`; `IsExpression` chain uses concrete→concrete inheritance (same anti-pattern as `insert.py`); ordering follows precedence chain top→bottom which is reasonable for this domain |
 | `expression/function.py` | Good | Needs Work | `FunctionCall→FunctionCallWithFilter→FunctionCallWithOver` concrete chain is acceptable; `FunctionName` (entry) at line 27 instead of near the bottom |
@@ -50,30 +50,17 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 
 ## Detailed Notes for Files with Issues
 
-### `insert.py` — Needs Work / Needs Work
+### `insert.py` — Fixed
 
-**Mixin issues:**
+All mixin and ordering issues resolved:
 
-The upsert chain (`OnConflictClause → OnConflictCall → OnConflictWhere`) uses concrete-to-concrete inheritance to share `.Do` property access instead of an `I*` mixin. This leaks `.Where()` onto `OnConflictClause` — you can write `.OnConflict.Where(expr)` which isn't valid SQL (WHERE requires a column list). An `IOnConflictDo` mixin would prevent this.
-
-`OnConflictDoUpdateSet(OnConflictUpdateWhere)` inherits from the WHERE result class solely to pick up `IBeforeReturningClause` in the hierarchy. The correct approach would be to have both extend `IBeforeReturningClause` directly.
-
-**Ordering issues:**
-
-`IBeforeReturningClause` is placed at line 35 (just after the abstract base), but its first user is `BeforeUpsertClause` at line 88. It should be placed just above `BeforeUpsertClause`.
-
-The ON CONFLICT terminal states are in the wrong order: `OnConflictUpdateWhere` (terminal) sits below `OnConflictDoUpdateSet` (which produces it via `.Where()`), and `OnConflictDoNothing` (terminal) sits below `OnConflictDo` (which produces it via `.Nothing`). Both terminals should be above their producers.
-
-Correct inner ordering of the ON CONFLICT section (top → bottom):
-```
-OnConflictUpdateWhere        # deepest terminal
-OnConflictDoUpdateSet        # has .Where()
-OnConflictDoNothing          # other terminal
-OnConflictDo                 # has .Nothing / .UpdateSet()
-OnConflictWhere              # has .Do
-OnConflictCall               # has .Where() / .Do
-OnConflictClause             # has __call__() / .Do
-```
+- `IOnConflictDo(SqlElement, ABC)` replaces the `OnConflictClause → OnConflictCall → OnConflictWhere` concrete chain; `.Where()` leak removed.
+- `OnConflictDoUpdateSet` extends `IBeforeReturningClause` directly.
+- `BeforeUpsertClause` renamed to `IBeforeUpsertClause`.
+- `IInsertBody(SqlElement, ABC)` extracts `Values`, `__call__` (select), and `DefaultValues` from `InsertColumnNames`.
+- `ICallableWithColumnNames(IInsertBody, ABC)` extracts the overloaded `__call__` that dispatches between column names and `SelectStatement`; `InsertNameAs` and `IntoName` both extend it directly instead of using concrete-to-concrete inheritance.
+- `UpdateSet` API aligned with `Set` in `update.py`: dict + `**kwargs`, uses `Name` throughout, validates non-empty.
+- Class ordering corrected: terminals at top, entry chain at bottom, each mixin placed just above its first user.
 
 ---
 

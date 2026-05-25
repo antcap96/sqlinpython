@@ -201,18 +201,15 @@ class IBeforeSetClause(SqlElement, ABC):
         assignments: list[_Assignment] = []
         source = __assignments.items() if __assignments is not None else ()
         for k, v in source:
-            if isinstance(k, tuple):
+            if isinstance(k, str):
+                assignments.append((Name(k), v))
+            elif isinstance(k, Name):
+                assignments.append((k, v))
+            else:
                 col_names: list[Name] = []
                 for x in k:
-                    if isinstance(x, str):
-                        col_names.append(Name(x))
-                    elif isinstance(x, Name):
-                        col_names.append(x)
+                    col_names.append(Name(x) if isinstance(x, str) else x)
                 assignments.append((tuple(col_names), v))
-            elif isinstance(k, str):
-                assignments.append((Name(k), v))
-            else:
-                assignments.append((k, v))
         for k, v in kwargs.items():
             assignments.append((Name(k), v))
         if not assignments:
