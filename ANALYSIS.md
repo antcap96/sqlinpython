@@ -18,7 +18,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `create_trigger.py` | Excellent | Excellent | Four `I*` mixins (`IBeforeBegin`, `IWithWhen`, `IBeforeOnTable`, `IEventClause`), all correctly placed |
 | `column_definition.py` | Excellent | Excellent | Fixed: `ConstraintWithClause` marked `ABC`; `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern |
 | `column_foreign_key_clause.py` | Excellent | Excellent | Fixed: `ColumnBeforeDeferrable` merged into `IColumnBeforeDeferrable`; ON and DEFERRABLE sub-chains inverted to terminal-at-top |
-| `table_foreign_key_clause.py` | Excellent | Needs Work | Identical to column FK — same strengths and the same ordering issue |
+| `table_foreign_key_clause.py` | Excellent | Excellent | Fixed: `TableBeforeDeferrable` merged into `ITableBeforeDeferrable`; DEFERRABLE sub-chain moved above ON sub-chain |
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
 | `common_table_expression.py` | Good | Excellent | No `I*` mixins needed (chain too short); concrete inheritance reuse is appropriate; ordering perfect |
 | `expression/case.py` | Good | Excellent | `CaseKeyword(CaseWithBaseExpr)` for `.When()` reuse; perfect terminal-at-top ordering |
@@ -86,9 +86,11 @@ All mixin and ordering issues resolved:
 - ON sub-chain inverted to `ColumnOnActionDo`, `ColumnOnAction_`, `ColumnOn_` and placed below DEFERRABLE sub-chain.
 - Final order: `ColumnForeignKeyClause` → DEFERRABLE sub-chain → `IColumnBeforeDeferrable` → ON sub-chain → `ColumnMatch_` → `ColumnReferenceWithColumns` → `ColumnReferences_` (entry).
 
-### `table_foreign_key_clause.py` — Excellent / Needs Work
+### `table_foreign_key_clause.py` — Fixed
 
-Identical ordering issue — inner sub-chains ordered top→bottom instead of bottom→top (see original notes above for the pattern).
+- `ITableBeforeDeferrable(SqlElement, ABC)` + `TableBeforeDeferrable(TableForeignKeyClause, ITableBeforeDeferrable, ABC)` merged into `ITableBeforeDeferrable(TableForeignKeyClause, ABC)` (same fix as column FK).
+- DEFERRABLE sub-chain (`TableInitiallyHow`, `TableInitially_`, `TableDeferrable_`, `TableNot_`) placed above ON sub-chain and `TableMatch_` — true terminals extending `TableForeignKeyClause` directly.
+- `ITableBeforeDeferrable` mixin placed just above its first user (`TableOnActionDo`).
 
 ---
 
