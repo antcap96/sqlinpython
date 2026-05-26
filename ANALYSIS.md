@@ -27,7 +27,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `create_index.py` | Good | Excellent | Short, linear chain; `CreateIndex(CreateIndexIfNotExists)` reuse pattern correct |
 | `drop.py` | Good | Excellent | Generics used effectively for the four DROP variants; clean ordering |
 | `type_name.py` | Good | Excellent | `TypeName(Name, CompleteTypeName)` inherits `__call__` reuse; two-class file, correct ordering |
-| `alter_table.py` | Good | Good | `IAlterTableRenameColumnTo` and `IAlterTableAlterColumn` well-placed; one ordering issue in ADD section (see detail) |
+| `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
 | `create.py` | Good | Good | `CreateKeyword(CreateTempTable, CreateUnique)` multiple inheritance to share `.Table`/`.Index`/etc. without duplication; `__init__` doesn't call `super().__init__` which is a minor smell |
 | `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
 | `indexed_column.py` | Good | Good | `IndexedColumnWithCollate` (produces `ColumnNameWithOrdering`) correctly sits below it in the file |
@@ -140,9 +140,10 @@ ConstraintKeyword / Constraint           # entry — bottom
 
 ---
 
-### `alter_table.py` — Good / Good
+### `alter_table.py` — Fixed
 
-One ordering issue in the ADD section: `AlterTableAddConstraintCheck` (terminal, produced by `AlterTableAddConstraintWithName.Check()`) sits below `AlterTableAddConstraintWithName` — it should be above it.
+- `IAlterTableOnConflict(AlterTableStatement, ABC)` mixin added, extracting the `.OnConflict` property duplicated across `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableWithConflict` moved to sit just above the mixin instead of at the top of the file.
+- `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName`.
 
 ---
 

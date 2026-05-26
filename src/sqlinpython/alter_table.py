@@ -16,10 +16,6 @@ class AlterTableStatement(CompleteSqlQuery, ABC):
     pass
 
 
-class AlterTableWithConflict(OnConflictAction, AlterTableStatement):
-    pass
-
-
 # ----- RENAME -----
 
 
@@ -126,14 +122,33 @@ class AlterTableAddColumnDef(AlterTableStatement):
         self._column_def._create_query(buffer)
 
 
-class AlterTableAddCheck(AlterTableStatement):
+class AlterTableWithConflict(OnConflictAction, AlterTableStatement):
+    pass
+
+
+class IAlterTableOnConflict(AlterTableStatement, ABC):
+    @property
+    def OnConflict(self) -> OnConflict_[AlterTableWithConflict]:
+        return OnConflict_(AlterTableWithConflict, self)
+
+
+class AlterTableAddCheck(IAlterTableOnConflict):
     def __init__(self, prev: SqlElement, expr: Expression) -> None:
         self._prev = prev
         self._expr = expr
 
-    @property
-    def OnConflict(self) -> OnConflict_[AlterTableWithConflict]:
-        return OnConflict_(AlterTableWithConflict, self)
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" CHECK (")
+        self._expr._create_query(buffer)
+        buffer.append(")")
+
+
+class AlterTableAddConstraintCheck(AlterTableStatement):
+    def __init__(self, prev: AlterTableAddConstraintWithName, expr: Expression) -> None:
+        self._prev = prev
+        self._expr = expr
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -156,19 +171,6 @@ class AlterTableAddConstraintWithName(SqlElement):
         self._prev._create_query(buffer)
         buffer.append(" CONSTRAINT ")
         self._name._create_query(buffer)
-
-
-class AlterTableAddConstraintCheck(AlterTableStatement):
-    def __init__(self, prev: AlterTableAddConstraintWithName, expr: Expression) -> None:
-        self._prev = prev
-        self._expr = expr
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" CHECK (")
-        self._expr._create_query(buffer)
-        buffer.append(")")
 
 
 class AlterTableAdd(SqlElement):
@@ -274,13 +276,9 @@ class AlterTableAlterColumnDropNotNull(AlterTableStatement):
         buffer.append(" DROP NOT NULL")
 
 
-class AlterTableAlterColumnSetNotNull(AlterTableStatement):
+class AlterTableAlterColumnSetNotNull(IAlterTableOnConflict):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
-
-    @property
-    def OnConflict(self) -> OnConflict_[AlterTableWithConflict]:
-        return OnConflict_(AlterTableWithConflict, self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
