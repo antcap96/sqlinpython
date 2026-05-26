@@ -16,7 +16,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `delete.py` | Excellent | Excellent | Textbook — five `I*` mixins, each placed just above first user |
 | `update.py` | Excellent | Excellent | Same discipline as `delete.py` |
 | `create_trigger.py` | Excellent | Excellent | Four `I*` mixins (`IBeforeBegin`, `IWithWhen`, `IBeforeOnTable`, `IEventClause`), all correctly placed |
-| `column_definition.py` | Excellent | Good | `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern; minor: `ConstraintWithClause` not marked `ABC` |
+| `column_definition.py` | Excellent | Excellent | Fixed: `ConstraintWithClause` marked `ABC`; `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern |
 | `column_foreign_key_clause.py` | Excellent | Needs Work | `IColumnBeforeDeferrable`/`ColumnBeforeDeferrable` split clean; inner sub-chains ordered top→bottom instead of bottom→top |
 | `table_foreign_key_clause.py` | Excellent | Needs Work | Identical to column FK — same strengths and the same ordering issue |
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |

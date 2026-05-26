@@ -124,7 +124,7 @@ class ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered):
         buffer.append(" PRIMARY KEY")
 
 
-class ConstraintWithClause(OnConflictAction, IColumnConstraint):
+class ConstraintWithClause(OnConflictAction, IColumnConstraint, ABC):
     pass
 
 
