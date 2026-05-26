@@ -19,7 +19,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `column_definition.py` | Excellent | Good | `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern; minor: `ConstraintWithClause` not marked `ABC` |
 | `column_foreign_key_clause.py` | Excellent | Needs Work | `IColumnBeforeDeferrable`/`ColumnBeforeDeferrable` split clean; inner sub-chains ordered top→bottom instead of bottom→top |
 | `table_foreign_key_clause.py` | Excellent | Needs Work | Identical to column FK — same strengths and the same ordering issue |
-| `select.py` | Excellent | Needs Work | Eight generic `I*` mixins; concrete chain (`SelectColumns`→…→`SelectValues`) is ordered entry-first instead of entry-last |
+| `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
 | `common_table_expression.py` | Good | Excellent | No `I*` mixins needed (chain too short); concrete inheritance reuse is appropriate; ordering perfect |
 | `expression/case.py` | Good | Excellent | `CaseKeyword(CaseWithBaseExpr)` for `.When()` reuse; perfect terminal-at-top ordering |
 | `create_view.py` | Good | Excellent | Minor: `.As()` duplicated in `CreateViewWithColumns` and `CreateViewWithName` — a one-method `IHasAs` mixin would remove it |
@@ -71,25 +71,11 @@ All mixin and ordering issues resolved:
 
 ---
 
-### `select.py` — Excellent / Needs Work
+### `select.py` — Fixed
 
-**Ordering issue only.**
-
-The eight `I*` mixins form a dependency chain (`ISelectFromClause → ISelectWhereClause → … → ISelectLimit`), which means they must be defined together in dependency order before any concrete class that uses them. Grouping them is therefore correct.
-
-The problem is the concrete classes block (lines 173–328): `SelectColumns` sits at the TOP of that block, but it is the FIRST result in the chain (produced directly by `SelectKeyword`), so it should be at the BOTTOM of the block, just above the entry keywords. The current order reads top-to-bottom as the builder chain, which is the opposite of the CLAUDE.md convention.
-
-Correct order for the concrete block (top → bottom):
-```
-SelectValues / SelectCompound   # most terminal
-SelectOrderBy
-SelectWindowClause
-SelectHavingClause
-SelectGroupByClause
-SelectWhereClause
-SelectFromClause
-SelectColumns                   # closest to entry — goes just above SelectKeyword
-```
+- Concrete chain reordered to terminal-at-top.
+- Mixins interleaved: each `I*` mixin placed just above its first user. `ISelectLimit`, `ISelectOrderBy`, and `ISelectCompound` must stay grouped (they form a dependency chain needed before the first concrete class `SelectValues`); the remaining five (`ISelectWindowClause` → `ISelectFromClause`) each sit just above their first concrete user.
+- `SelectOrderBy` moved above `ISelectOrderBy` (it is a concrete result class, not a mixin) and sits just below `ISelectLimit` (which it directly extends).
 
 ---
 

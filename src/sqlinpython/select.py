@@ -93,7 +93,7 @@ class SelectLimit(ISelectAliasable):
 
 
 # ---------------------------------------------------------------------------
-# Mixin interfaces (define methods only, no _create_query)
+# Concrete SELECT clause chain
 # ---------------------------------------------------------------------------
 
 
@@ -109,6 +109,20 @@ class ISelectLimit(SqlElement, ABC):
             return SelectLimit(self, expr)
         else:
             return SelectLimitComma(self, expr, offset)
+
+
+class SelectOrderBy(ISelectLimit, SelectStatement_[Complete]):
+    """... ORDER BY term, ..."""
+
+    def __init__(self, prev: SqlElement, terms: tuple[OrderingTerm, ...]) -> None:
+        self._prev = prev
+        self._terms = terms
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ORDER BY ")
+        comma_separated(buffer, self._terms)
 
 
 class ISelectOrderBy(ISelectLimit, ABC):
@@ -130,125 +144,45 @@ class ISelectCompound[T: Core | Complete](ISelectOrderBy, SelectStatement_[T], A
         return SelectCompound(self, "EXCEPT", rhs)
 
 
-class ISelectWindowClause[T: Core | Complete](ISelectCompound[T], ABC):
-    def Window(self, *defs: tuple[Name | str, WindowDefn]) -> SelectWindowClause[T]:
-        defs_names = tuple(
-            (Name(name) if isinstance(name, str) else name, defn) for name, defn in defs
-        )
-        return SelectWindowClause(self, defs_names)
+class SelectValues[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
+    """VALUES (expr, ...), ..."""
 
-
-class ISelectHavingClause[T: Core | Complete](ISelectWindowClause[T], ABC):
-    def Having(self, expr: Expression) -> SelectHavingClause[T]:
-        return SelectHavingClause(self, expr)
-
-
-class ISelectGroupByClause[T: Core | Complete](ISelectHavingClause[T], ABC):
-    def GroupBy(self, *exprs: Expression) -> SelectGroupByClause[T]:
-        return SelectGroupByClause(self, exprs)
-
-
-class ISelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], ABC):
-    def Where(self, expr: Expression) -> SelectWhereClause[T]:
-        return SelectWhereClause(self, expr)
-
-
-class ISelectFromClause[T: Core | Complete](ISelectWhereClause[T], ABC):
-    def From(
-        self, *sources: TableOrSubquery | JoinClause | SelectStatement_[Complete]
-    ) -> SelectFromClause[T]:
-        resolved = tuple(
-            Subquery(s) if isinstance(s, SelectStatement_) else s for s in sources
-        )
-        if len(resolved) == 1 and isinstance(resolved[0], JoinClause):
-            return SelectFromClause(self, resolved[0])
-        return SelectFromClause(self, resolved)
-
-
-# ---------------------------------------------------------------------------
-# Concrete SELECT clause chain
-# ---------------------------------------------------------------------------
-
-
-class SelectColumns[T: Core | Complete](ISelectFromClause[T], SelectStatement_[T]):
-    """SELECT [DISTINCT|ALL] col1, col2, ..."""
-
-    def __init__(self, prev: SqlElement, cols: tuple[ResultColumn, ...]) -> None:
+    def __init__(
+        self, prev: SqlElement, rows: tuple[tuple[Expression, ...], ...]
+    ) -> None:
         self._prev = prev
-        self._cols = cols
+        self._rows = rows
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        comma_separated(buffer, self._cols)
+        for i, row in enumerate(self._rows):
+            if i > 0:
+                buffer.append(", ")
+            buffer.append("(")
+            comma_separated(buffer, row)
+            buffer.append(")")
 
 
-class SelectFromClause[T: Core | Complete](ISelectWhereClause[T], SelectStatement_[T]):
-    """... FROM source(s)"""
+class SelectCompound[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
+    """... UNION/INTERSECT/EXCEPT select-stmt"""
 
     def __init__(
-        self, prev: SqlElement, source: JoinClause | tuple[TableOrSubquery, ...]
+        self,
+        prev: SqlElement,
+        op: Literal["UNION", "UNION ALL", "INTERSECT", "EXCEPT"],
+        rhs: SelectStatement_[Core],
     ) -> None:
         self._prev = prev
-        self._source = source
+        self._op = op
+        self._rhs = rhs
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" FROM ")
-        if isinstance(self._source, JoinClause):
-            self._source._create_query(buffer)
-        else:
-            comma_separated(buffer, self._source)
-
-
-class SelectWhereClause[T: Core | Complete](
-    ISelectGroupByClause[T], SelectStatement_[T]
-):
-    """... WHERE expr"""
-
-    def __init__(self, prev: SqlElement, expr: Expression) -> None:
-        self._prev = prev
-        self._expr = expr
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" WHERE ")
-        self._expr._create_query(buffer)
-
-
-class SelectGroupByClause[T: Core | Complete](
-    ISelectHavingClause[T], SelectStatement_[T]
-):
-    """... GROUP BY expr, ..."""
-
-    def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
-        self._prev = prev
-        self._exprs = exprs
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" GROUP BY ")
-        comma_separated(buffer, self._exprs)
-
-
-class SelectHavingClause[T: Core | Complete](
-    ISelectWindowClause[T], SelectStatement_[T]
-):
-    """... HAVING expr"""
-
-    def __init__(self, prev: SqlElement, expr: Expression) -> None:
-        self._prev = prev
-        self._expr = expr
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" HAVING ")
-        self._expr._create_query(buffer)
+        buffer.append(f" {self._op} ")
+        self._rhs._create_query(buffer)
 
 
 class SelectWindowClause[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
@@ -273,59 +207,120 @@ class SelectWindowClause[T: Core | Complete](ISelectCompound[T], SelectStatement
             buffer.append(")")
 
 
-class SelectCompound[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
-    """... UNION/INTERSECT/EXCEPT select-stmt"""
+class ISelectWindowClause[T: Core | Complete](ISelectCompound[T], ABC):
+    def Window(self, *defs: tuple[Name | str, WindowDefn]) -> SelectWindowClause[T]:
+        defs_names = tuple(
+            (Name(name) if isinstance(name, str) else name, defn) for name, defn in defs
+        )
+        return SelectWindowClause(self, defs_names)
 
-    def __init__(
-        self,
-        prev: SqlElement,
-        op: Literal["UNION", "UNION ALL", "INTERSECT", "EXCEPT"],
-        rhs: SelectStatement_[Core],
-    ) -> None:
+
+class SelectHavingClause[T: Core | Complete](
+    ISelectWindowClause[T], SelectStatement_[T]
+):
+    """... HAVING expr"""
+
+    def __init__(self, prev: SqlElement, expr: Expression) -> None:
         self._prev = prev
-        self._op = op
-        self._rhs = rhs
+        self._expr = expr
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(f" {self._op} ")
-        self._rhs._create_query(buffer)
+        buffer.append(" HAVING ")
+        self._expr._create_query(buffer)
 
 
-class SelectOrderBy(ISelectLimit, SelectStatement_[Complete]):
-    """... ORDER BY term, ..."""
+class ISelectHavingClause[T: Core | Complete](ISelectWindowClause[T], ABC):
+    def Having(self, expr: Expression) -> SelectHavingClause[T]:
+        return SelectHavingClause(self, expr)
 
-    def __init__(self, prev: SqlElement, terms: tuple[OrderingTerm, ...]) -> None:
+
+class SelectGroupByClause[T: Core | Complete](
+    ISelectHavingClause[T], SelectStatement_[T]
+):
+    """... GROUP BY expr, ..."""
+
+    def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
         self._prev = prev
-        self._terms = terms
+        self._exprs = exprs
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" ORDER BY ")
-        comma_separated(buffer, self._terms)
+        buffer.append(" GROUP BY ")
+        comma_separated(buffer, self._exprs)
 
 
-class SelectValues[T: Core | Complete](ISelectCompound[T], SelectStatement_[T]):
-    """VALUES (expr, ...), ..."""
+class ISelectGroupByClause[T: Core | Complete](ISelectHavingClause[T], ABC):
+    def GroupBy(self, *exprs: Expression) -> SelectGroupByClause[T]:
+        return SelectGroupByClause(self, exprs)
+
+
+class SelectWhereClause[T: Core | Complete](
+    ISelectGroupByClause[T], SelectStatement_[T]
+):
+    """... WHERE expr"""
+
+    def __init__(self, prev: SqlElement, expr: Expression) -> None:
+        self._prev = prev
+        self._expr = expr
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" WHERE ")
+        self._expr._create_query(buffer)
+
+
+class ISelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], ABC):
+    def Where(self, expr: Expression) -> SelectWhereClause[T]:
+        return SelectWhereClause(self, expr)
+
+
+class SelectFromClause[T: Core | Complete](ISelectWhereClause[T], SelectStatement_[T]):
+    """... FROM source(s)"""
 
     def __init__(
-        self, prev: SqlElement, rows: tuple[tuple[Expression, ...], ...]
+        self, prev: SqlElement, source: JoinClause | tuple[TableOrSubquery, ...]
     ) -> None:
         self._prev = prev
-        self._rows = rows
+        self._source = source
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" FROM ")
+        if isinstance(self._source, JoinClause):
+            self._source._create_query(buffer)
+        else:
+            comma_separated(buffer, self._source)
+
+
+class ISelectFromClause[T: Core | Complete](ISelectWhereClause[T], ABC):
+    def From(
+        self, *sources: TableOrSubquery | JoinClause | SelectStatement_[Complete]
+    ) -> SelectFromClause[T]:
+        resolved = tuple(
+            Subquery(s) if isinstance(s, SelectStatement_) else s for s in sources
+        )
+        if len(resolved) == 1 and isinstance(resolved[0], JoinClause):
+            return SelectFromClause(self, resolved[0])
+        return SelectFromClause(self, resolved)
+
+
+class SelectColumns[T: Core | Complete](ISelectFromClause[T], SelectStatement_[T]):
+    """SELECT [DISTINCT|ALL] col1, col2, ..."""
+
+    def __init__(self, prev: SqlElement, cols: tuple[ResultColumn, ...]) -> None:
+        self._prev = prev
+        self._cols = cols
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" ")
-        for i, row in enumerate(self._rows):
-            if i > 0:
-                buffer.append(", ")
-            buffer.append("(")
-            comma_separated(buffer, row)
-            buffer.append(")")
+        comma_separated(buffer, self._cols)
 
 
 # ---------------------------------------------------------------------------
