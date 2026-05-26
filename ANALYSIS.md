@@ -17,7 +17,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `update.py` | Excellent | Excellent | Same discipline as `delete.py` |
 | `create_trigger.py` | Excellent | Excellent | Four `I*` mixins (`IBeforeBegin`, `IWithWhen`, `IBeforeOnTable`, `IEventClause`), all correctly placed |
 | `column_definition.py` | Excellent | Excellent | Fixed: `ConstraintWithClause` marked `ABC`; `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern |
-| `column_foreign_key_clause.py` | Excellent | Needs Work | `IColumnBeforeDeferrable`/`ColumnBeforeDeferrable` split clean; inner sub-chains ordered top→bottom instead of bottom→top |
+| `column_foreign_key_clause.py` | Excellent | Excellent | Fixed: `ColumnBeforeDeferrable` merged into `IColumnBeforeDeferrable`; ON and DEFERRABLE sub-chains inverted to terminal-at-top |
 | `table_foreign_key_clause.py` | Excellent | Needs Work | Identical to column FK — same strengths and the same ordering issue |
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
 | `common_table_expression.py` | Good | Excellent | No `I*` mixins needed (chain too short); concrete inheritance reuse is appropriate; ordering perfect |
@@ -79,27 +79,16 @@ All mixin and ordering issues resolved:
 
 ---
 
-### `column_foreign_key_clause.py` / `table_foreign_key_clause.py` — Excellent / Needs Work
+### `column_foreign_key_clause.py` — Fixed
 
-**Ordering issue only (identical in both files).**
+- `ColumnBeforeDeferrable` merged into `IColumnBeforeDeferrable(ColumnForeignKeyClause, ABC)` (no independent users; encodes the shared base per CLAUDE.md convention).
+- DEFERRABLE sub-chain (`ColumnInitiallyHow`, `ColumnInitially_`, `ColumnDeferrable_`, `ColumnNot_`) placed above the ON sub-chain and `ColumnMatch_` — these classes extend `ColumnForeignKeyClause` directly (true terminals), whereas `ColumnOnActionDo` and `ColumnMatch_` extend `IColumnBeforeDeferrable` (less terminal).
+- ON sub-chain inverted to `ColumnOnActionDo`, `ColumnOnAction_`, `ColumnOn_` and placed below DEFERRABLE sub-chain.
+- Final order: `ColumnForeignKeyClause` → DEFERRABLE sub-chain → `IColumnBeforeDeferrable` → ON sub-chain → `ColumnMatch_` → `ColumnReferenceWithColumns` → `ColumnReferences_` (entry).
 
-`ColumnForeignKeyClause`, `IColumnBeforeDeferrable`, and `ColumnBeforeDeferrable` are correctly at the top as abstract bases inherited throughout the chain.
+### `table_foreign_key_clause.py` — Excellent / Needs Work
 
-Within the mid-chain section, each sub-chain is ordered top-to-bottom (reading down follows the chain) instead of bottom-to-top. For example:
-
-```
-# Current order (WRONG)
-ColumnOn_          # produced by IColumnBeforeDeferrable.On
-ColumnOnAction_    # produced by ColumnOn_.Delete / .Update
-ColumnOnActionDo   # terminal
-
-# Correct order
-ColumnOnActionDo   # terminal — at top
-ColumnOnAction_    # one step from terminal
-ColumnOn_          # entry of this sub-chain — at bottom
-```
-
-The same inversion applies to `ColumnDeferrable_ → ColumnInitially_ → ColumnInitiallyHow`. The outermost ordering (abstract base at top, `ColumnReferences_` entry at bottom) is correct.
+Identical ordering issue — inner sub-chains ordered top→bottom instead of bottom→top (see original notes above for the pattern).
 
 ---
 

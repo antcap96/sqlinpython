@@ -14,7 +14,64 @@ class ColumnForeignKeyClause(IColumnConstraint, ABC):
     pass
 
 
-class IColumnBeforeDeferrable(SqlElement, ABC):
+class ColumnInitiallyHow(ColumnForeignKeyClause):
+    def __init__(self, prev: SqlElement, how: str) -> None:
+        self._prev = prev
+        self._how = how
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(f" {self._how}")
+
+
+class ColumnInitially_(SqlElement):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    @property
+    def Deferred(self) -> ColumnInitiallyHow:
+        return ColumnInitiallyHow(self, "DEFERRED")
+
+    @property
+    def Immediate(self) -> ColumnInitiallyHow:
+        return ColumnInitiallyHow(self, "IMMEDIATE")
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" INITIALLY")
+
+
+class ColumnDeferrable_(ColumnForeignKeyClause):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    @property
+    def Initially(self) -> ColumnInitially_:
+        return ColumnInitially_(self)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" DEFERRABLE")
+
+
+class ColumnNot_(SqlElement):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
+
+    @property
+    def Deferrable(self) -> ColumnDeferrable_:
+        return ColumnDeferrable_(self)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" NOT")
+
+
+class IColumnBeforeDeferrable(ColumnForeignKeyClause, ABC):
     @property
     def On(self) -> ColumnOn_:
         return ColumnOn_(self)
@@ -33,26 +90,15 @@ class IColumnBeforeDeferrable(SqlElement, ABC):
         return ColumnDeferrable_(self)
 
 
-class ColumnBeforeDeferrable(ColumnForeignKeyClause, IColumnBeforeDeferrable, ABC):
-    pass
-
-
-class ColumnOn_(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
+class ColumnOnActionDo(IColumnBeforeDeferrable):
+    def __init__(self, prev: SqlElement, action: str) -> None:
         self._prev = prev
-
-    @property
-    def Delete(self) -> ColumnOnAction_:
-        return ColumnOnAction_(self, "DELETE")
-
-    @property
-    def Update(self) -> ColumnOnAction_:
-        return ColumnOnAction_(self, "UPDATE")
+        self._action = action
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" ON")
+        buffer.append(f" {self._action}")
 
 
 class ColumnOnAction_(SqlElement):
@@ -86,18 +132,25 @@ class ColumnOnAction_(SqlElement):
         buffer.append(f" {self._event}")
 
 
-class ColumnOnActionDo(ColumnBeforeDeferrable):
-    def __init__(self, prev: SqlElement, action: str) -> None:
+class ColumnOn_(SqlElement):
+    def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
-        self._action = action
+
+    @property
+    def Delete(self) -> ColumnOnAction_:
+        return ColumnOnAction_(self, "DELETE")
+
+    @property
+    def Update(self) -> ColumnOnAction_:
+        return ColumnOnAction_(self, "UPDATE")
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(f" {self._action}")
+        buffer.append(" ON")
 
 
-class ColumnMatch_(ColumnBeforeDeferrable):
+class ColumnMatch_(IColumnBeforeDeferrable):
     def __init__(self, prev: SqlElement, name: Name) -> None:
         self._prev = prev
         self._name = name
@@ -109,64 +162,7 @@ class ColumnMatch_(ColumnBeforeDeferrable):
         self._name._create_query(buffer)
 
 
-class ColumnNot_(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    @property
-    def Deferrable(self) -> ColumnDeferrable_:
-        return ColumnDeferrable_(self)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" NOT")
-
-
-class ColumnDeferrable_(ColumnForeignKeyClause):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    @property
-    def Initially(self) -> ColumnInitially_:
-        return ColumnInitially_(self)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" DEFERRABLE")
-
-
-class ColumnInitially_(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
-    @property
-    def Deferred(self) -> ColumnInitiallyHow:
-        return ColumnInitiallyHow(self, "DEFERRED")
-
-    @property
-    def Immediate(self) -> ColumnInitiallyHow:
-        return ColumnInitiallyHow(self, "IMMEDIATE")
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" INITIALLY")
-
-
-class ColumnInitiallyHow(ColumnForeignKeyClause):
-    def __init__(self, prev: SqlElement, how: str) -> None:
-        self._prev = prev
-        self._how = how
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(f" {self._how}")
-
-
-class ColumnReferenceWithColumns(ColumnBeforeDeferrable):
+class ColumnReferenceWithColumns(IColumnBeforeDeferrable):
     def __init__(self, prev: SqlElement, column_names: tuple[Name, ...]) -> None:
         self._prev = prev
         self._column_names = column_names
@@ -179,7 +175,7 @@ class ColumnReferenceWithColumns(ColumnBeforeDeferrable):
         buffer.append(")")
 
 
-class ColumnReferences_(ColumnBeforeDeferrable):
+class ColumnReferences_(IColumnBeforeDeferrable):
     def __init__(self, prev: SqlElement, table_name: Name) -> None:
         self._prev = prev
         self._table_name = table_name
