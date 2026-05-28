@@ -41,6 +41,7 @@ assert q.get_query() == (
     "WITH cte AS (SELECT 1) "
     + "UPDATE users SET column = 1"
 )
+```
 
 ## Architecture Overview
 
@@ -95,6 +96,8 @@ class WithDefault(IColumnConstraint): ...
 ```
 
 **But** only do this when it is truly universal. `IColumnConstraintWithName` is also implemented by `ColumnConstraintWithName` (the result of `.Constraint("name")`), which is NOT a `ColumnDefinition` on its own — so `ColumnDefinition` belongs on `IColumnConstraint`, not `IColumnConstraintWithName`.
+
+**The encoded base should itself be abstract.** Mixins rarely inherit from concrete classes. If you find yourself encoding a concrete class in a mixin's bases, that is a signal the base class should have been abstract all along. The exception is a pure marker class with no state (no `__init__`, no stored attributes) that exists only as a type tag in a hierarchy; such classes are effectively abstract even without `ABC`.
 
 ### Method Ordering Convention
 

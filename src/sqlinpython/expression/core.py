@@ -16,7 +16,7 @@ class TableFunction(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/lang_expr.html
-class Expression(IndexedColumnWithCollate, OrderingTerm):
+class Expression(IndexedColumnWithCollate, OrderingTerm, ABC):
     @property
     def NullsFirst(self) -> OrderingTermWithNulls:
         return OrderingTermWithNulls(self, True)
@@ -270,7 +270,7 @@ class AliasedExpression(SqlElement):
         self._alias._create_query(buffer)
 
 
-class Expression1(Expression):
+class Expression1(Expression, ABC):
     pass
 
 
@@ -286,7 +286,7 @@ class OrCondition(Expression1):
         self._right._create_query(buffer)
 
 
-class Expression2(Expression1):
+class Expression2(Expression1, ABC):
     pass
 
 
@@ -302,7 +302,7 @@ class AndCondition(Expression2):
         self._right._create_query(buffer)
 
 
-class Expression3(Expression2):
+class Expression3(Expression2, ABC):
     pass
 
 
@@ -325,7 +325,7 @@ class NotExpression(Expression3):
         self._after._create_query(buffer)
 
 
-class Expression4(Expression3):
+class Expression4(Expression3, ABC):
     pass
 
 
@@ -669,7 +669,7 @@ class NegatedOperator(SqlElement):
         buffer.append(" NOT")
 
 
-class Expression5(Expression4):
+class Expression5(Expression4, ABC):
     pass
 
 
@@ -691,11 +691,11 @@ class Comparison(Expression5):
         self._right._create_query(buffer)
 
 
-class Expression6(Expression5):
+class Expression6(Expression5, ABC):
     pass
 
 
-class Expression7(Expression6):
+class Expression7(Expression6, ABC):
     pass
 
 
@@ -717,7 +717,7 @@ class BitOperation(Expression7):
         self._right._create_query(buffer)
 
 
-class Expression8(Expression7):
+class Expression8(Expression7, ABC):
     pass
 
 
@@ -736,7 +736,7 @@ class Summand(Expression8):
         self._right._create_query(buffer)
 
 
-class Expression9(Expression8):
+class Expression9(Expression8, ABC):
     pass
 
 
@@ -758,7 +758,7 @@ class Factor(Expression9):
         self._right._create_query(buffer)
 
 
-class Expression10(Expression9):
+class Expression10(Expression9, ABC):
     pass
 
 
@@ -780,7 +780,7 @@ class ConcatLikeOperator(Expression10):
         self._right._create_query(buffer)
 
 
-class Expression11(Expression10):
+class Expression11(Expression10, ABC):
     pass
 
 
@@ -800,7 +800,7 @@ class CollateOperator(Expression11):
         self._right._create_query(buffer)
 
 
-class Expression12(Expression11):
+class Expression12(Expression11, ABC):
     pass
 
 
@@ -815,7 +815,7 @@ class UnaryOperator(Expression12):
         self._left._create_query(buffer)
 
 
-class Expression13(Expression12):
+class Expression13(Expression12, ABC):
     pass
 
 
