@@ -48,7 +48,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `detach.py` | Excellent | N/A | `IDetachCall` mixin correctly shared by `DetachKeyword` and `DetachDatabaseKeyword` |
 | `pragma.py` | N/A | N/A | Linear two-class chain; no shared behaviour |
 | `reindex.py` | N/A | N/A | All methods on the single entry class; no inheritance chain |
-| `savepoint.py` | Needs Work | N/A | Three concrete-to-concrete inheritance issues (see detail) |
+| `savepoint.py` | Excellent | N/A | Fixed: `ICallableReleaseSavepoint`, `ICallableRollbackSavepoint`, `IRollbackWithTo` mixins added; all three concrete chains broken |
 | `transaction.py` | Needs Work | N/A | `IBeginTransaction`/`ICommitTransaction` don't encode their statement base, forcing redundant concrete inheritance (see detail) |
 | `vacuum.py` | Excellent | N/A | Fixed: `IVacuumInto(VacuumStatement, ABC)` mixin added; `VacuumKeyword` and `VacuumWithSchema` now both extend it directly |
 | `builders.py`, `keywords.py`, `types.py` | N/A | N/A | Utilities / re-export files |
@@ -136,17 +136,11 @@ ConstraintKeyword / Constraint           # entry — bottom
 
 ---
 
-### `savepoint.py` — Needs Work / N/A
+### `savepoint.py` — Fixed
 
-Three concrete-to-concrete inheritance issues:
-
-1. `ReleaseKeyword(ReleaseWithSavepoint)` inherits `__call__(savepoint) -> ReleaseComplete`. Fix: `ICallableReleaseSavepoint(SqlElement, ABC)` mixin; both `ReleaseWithSavepoint` and `ReleaseKeyword` extend it.
-
-2. `RollbackWithTo(RollbackWithToSavepoint)` inherits `__call__(savepoint) -> RollbackComplete`. Fix: `ICallableRollbackSavepoint(SqlElement, ABC)` mixin; both extend it directly.
-
-3. `RollbackWithTransaction(RollbackComplete)` inherits from the concrete result class solely to land in `RollbackStatement`'s hierarchy — it doesn't use any of `RollbackComplete`'s own behaviour. Should extend `RollbackStatement` directly.
-
-   `RollbackKeyword(RollbackWithTransaction)` then inherits `.To` from the concrete class. Fix: `IRollbackWithTo(RollbackStatement, ABC)` mixin providing `.To`; both `RollbackWithTransaction` and `RollbackKeyword` extend it.
+- `ICallableReleaseSavepoint(SqlElement, ABC)` extracts `__call__(savepoint) -> ReleaseComplete` shared by `ReleaseWithSavepoint` and `ReleaseKeyword`; both now extend the mixin directly as siblings.
+- `ICallableRollbackSavepoint(SqlElement, ABC)` extracts `__call__(savepoint) -> RollbackComplete` shared by `RollbackWithToSavepoint` and `RollbackWithTo`; both now extend the mixin directly as siblings.
+- `IRollbackWithTo(RollbackStatement, ABC)` extracts `.To -> RollbackWithTo`; `RollbackWithTransaction` no longer inherits the terminal `RollbackComplete` (it was only doing so to land in `RollbackStatement`'s hierarchy); `RollbackKeyword` no longer inherits `RollbackWithTransaction`. Both become `RollbackStatement` instances via the mixin — correct, since `ROLLBACK` and `ROLLBACK TRANSACTION` are both valid complete SQL.
 
 ---
 

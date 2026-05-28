@@ -58,14 +58,16 @@ class ReleaseComplete(ReleaseStatement):
         self._savepoint._create_query(buffer)
 
 
-class ReleaseWithSavepoint(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
+class ICallableReleaseSavepoint(SqlElement, ABC):
     def __call__(self, savepoint: Name | str) -> ReleaseComplete:
         if isinstance(savepoint, str):
             savepoint = Name(savepoint)
         return ReleaseComplete(self, savepoint)
+
+
+class ReleaseWithSavepoint(ICallableReleaseSavepoint):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -73,7 +75,7 @@ class ReleaseWithSavepoint(SqlElement):
         buffer.append(" SAVEPOINT")
 
 
-class ReleaseKeyword(ReleaseWithSavepoint):
+class ReleaseKeyword(ICallableReleaseSavepoint):
     def __init__(self) -> None:
         pass
 
@@ -105,14 +107,16 @@ class RollbackComplete(RollbackStatement):
         self._savepoint._create_query(buffer)
 
 
-class RollbackWithToSavepoint(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
+class ICallableRollbackSavepoint(SqlElement, ABC):
     def __call__(self, savepoint: Name | str) -> RollbackComplete:
         if isinstance(savepoint, str):
             savepoint = Name(savepoint)
         return RollbackComplete(self, savepoint)
+
+
+class RollbackWithToSavepoint(ICallableRollbackSavepoint):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -120,7 +124,7 @@ class RollbackWithToSavepoint(SqlElement):
         buffer.append(" SAVEPOINT")
 
 
-class RollbackWithTo(RollbackWithToSavepoint):
+class RollbackWithTo(ICallableRollbackSavepoint):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
@@ -134,13 +138,15 @@ class RollbackWithTo(RollbackWithToSavepoint):
         buffer.append(" TO")
 
 
-class RollbackWithTransaction(RollbackComplete):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
+class IRollbackWithTo(RollbackStatement, ABC):
     @property
     def To(self) -> RollbackWithTo:
         return RollbackWithTo(self)
+
+
+class RollbackWithTransaction(IRollbackWithTo):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -148,7 +154,7 @@ class RollbackWithTransaction(RollbackComplete):
         buffer.append(" TRANSACTION")
 
 
-class RollbackKeyword(RollbackWithTransaction):
+class RollbackKeyword(IRollbackWithTo):
     def __init__(self) -> None:
         pass
 
