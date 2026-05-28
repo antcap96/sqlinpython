@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import Literal, override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
@@ -45,10 +46,7 @@ DropTriggerStatement = DropStatement[_Trigger]
 DropIndexStatement = DropStatement[_Index]
 
 
-class DropIfExists[T: (_Table, _View, _Trigger, _Index)](SqlElement):
-    def __init__(self, prev: DropTypeKeyword[T]) -> None:
-        self._prev: DropTypeKeyword[T] = prev
-
+class IDropCallable[T: (_Table, _View, _Trigger, _Index)](SqlElement, ABC):
     def __call__(
         self,
         schema: Name | str,
@@ -60,6 +58,11 @@ class DropIfExists[T: (_Table, _View, _Trigger, _Index)](SqlElement):
         if isinstance(name, str):
             name = Name(name)
         return DropStatement(self, schema, name)
+
+
+class DropIfExists[T: (_Table, _View, _Trigger, _Index)](IDropCallable[T]):
+    def __init__(self, prev: DropTypeKeyword[T]) -> None:
+        self._prev: DropTypeKeyword[T] = prev
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -67,25 +70,13 @@ class DropIfExists[T: (_Table, _View, _Trigger, _Index)](SqlElement):
         buffer.append(" IF EXISTS")
 
 
-class DropTypeKeyword[T: (_Table, _View, _Trigger, _Index)](SqlElement):
+class DropTypeKeyword[T: (_Table, _View, _Trigger, _Index)](IDropCallable[T]):
     def __init__(self, keyword: Literal["TABLE", "VIEW", "TRIGGER", "INDEX"]) -> None:
         self._keyword = keyword
 
     @property
     def IfExists(self) -> DropIfExists[T]:
         return DropIfExists(self)
-
-    def __call__(
-        self,
-        schema: Name | str,
-        name: Name | str | None = None,
-        /,
-    ) -> DropStatement[T]:
-        if isinstance(schema, str):
-            schema = Name(schema)
-        if isinstance(name, str):
-            name = Name(name)
-        return DropStatement(self, schema, name)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

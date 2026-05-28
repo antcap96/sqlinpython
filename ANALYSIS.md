@@ -25,7 +25,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `create_view.py` | Good | Excellent | Minor: `.As()` duplicated in `CreateViewWithColumns` and `CreateViewWithName` — a one-method `IHasAs` mixin would remove it |
 | `create_table.py` | Good | Excellent | `.WithoutRowId`/`.Strict` duplicated across `CreateTableWithDefinitions` and `CreateTableWithOptions`; otherwise clean |
 | `create_index.py` | Good | Excellent | Short, linear chain; `CreateIndex(CreateIndexIfNotExists)` reuse pattern correct |
-| `drop.py` | Good | Excellent | Generics used effectively for the four DROP variants; clean ordering |
+| `drop.py` | Excellent | Excellent | Fixed: `IDropCallable[T]` mixin extracts duplicated `__call__` from `DropTypeKeyword` and `DropIfExists` |
 | `type_name.py` | Good | Excellent | `TypeName(Name, CompleteTypeName)` inherits `__call__` reuse; two-class file, correct ordering |
 | `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
 | `create.py` | Excellent | Excellent | Fixed: `ICreateTemp` and `ICreateUnique` mixins added; `CreateKeyword` extends both directly instead of the concrete classes; `__init__` smell resolved |
