@@ -151,14 +151,16 @@ class WithClause(SqlElement):
         comma_separated(buffer, self._ctes)
 
 
-class WithRecursive(SqlElement):
-    def __init__(self, prev: SqlElement) -> None:
-        self._prev = prev
-
+class IWithCall(SqlElement, ABC):
     def __call__(
         self, *ctes: *tuple[CommonTableExpression, *tuple[CommonTableExpression, ...]]
     ) -> WithClause:
         return WithClause(self, ctes)
+
+
+class WithRecursive(IWithCall):
+    def __init__(self, prev: SqlElement) -> None:
+        self._prev = prev
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -166,7 +168,7 @@ class WithRecursive(SqlElement):
         buffer.append(" RECURSIVE")
 
 
-class WithKeyword(WithRecursive):
+class WithKeyword(IWithCall):
     def __init__(self) -> None:
         pass
 
