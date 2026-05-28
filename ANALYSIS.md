@@ -35,7 +35,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Good | Needs Work | No `I*` mixins; `TableConstraint` (abstract base) buried at line 143 instead of at top; `ConstraintKeyword` (entry) at line 16 instead of bottom |
 | `expression/core.py` | Needs Work | Good | `NegatedOperator` duplicates ~8 methods from `Expression`; `IsExpression` chain uses concrete→concrete inheritance (same anti-pattern as `insert.py`); ordering follows precedence chain top→bottom which is reasonable for this domain |
-| `expression/function.py` | Good | Needs Work | `FunctionCall→FunctionCallWithFilter→FunctionCallWithOver` concrete chain is acceptable; `FunctionName` (entry) at line 27 instead of near the bottom |
+| `expression/function.py` | Excellent | Excellent | Fixed: `IFrameSpecBound` and `IFunctionCallOver` mixins added; `FunctionName` moved to bottom |
 | `returning.py` | N/A | N/A | Single shared base class, no chain to evaluate |
 | `select_base.py` | N/A | N/A | Type-tag markers and abstract base; infrastructure file |
 | `conflict_clause.py` | N/A | N/A | Generic utility (`OnConflict_[T]`), not a builder chain |
@@ -182,8 +182,8 @@ class EndKeyword(ICommitTransaction): ...      # no longer inherits CommitWithTr
 
 ---
 
-### `expression/function.py` — Good / Needs Work
+### `expression/function.py` — Fixed
 
-**Ordering issue only.**
-
-`FunctionName` (line 27) is the entry point for function calls — calling it produces `FunctionCall`. It should be near the bottom of the file, just above the entry singletons `Range`, `Rows`, `Groups`, `PartitionBy`. Currently it sits near the very top, above the entire frame-spec and window-definition machinery that it sits logically "before" in the chain.
+- `IFrameSpecBound(WindowDefn, ABC)` replaces the concrete `FrameSpecBound(FrameSpecWithExclude)`: base changed from `FrameSpecWithExclude` to `WindowDefn` (frame bounds ARE valid window definitions, but are NOT themselves "frame specs with an EXCLUDE clause"); all four concrete frame bound classes now extend `IFrameSpecBound` directly; the `# type: ignore[assignment]` comments on `FrameSpecBetweenEnd` and `FrameSpecSingleBound` are removed (they were only needed due to the conflicting `_kind` Literal type from the old parent).
+- `IFunctionCallOver(Expression13, ABC)` mixin added, providing `.Over()`; `FunctionCall` and `FunctionCallWithFilter` both extend it directly instead of chaining through each other.
+- `FunctionName` moved to the bottom of the file — reading bottom-to-top now follows the builder chain: `FunctionName` → `FunctionCall` → `FunctionCallWithFilter` → `FunctionCallWithOver` (terminal).

@@ -24,53 +24,6 @@ class Star_(SqlElement):
 Star = Star_()
 
 
-class FunctionName(SqlElement):
-    """A SQL function name that can be called with arguments."""
-
-    def __init__(self, name: str) -> None:
-        self._name = Name(name)
-
-    @overload
-    def __call__(self) -> FunctionCall: ...
-
-    @overload
-    def __call__(self, __star: Literal["*"] | Star_) -> FunctionCall: ...
-
-    @overload
-    def __call__(
-        self,
-        __first: Expression,
-        *rest: Expression,
-        distinct: bool = False,
-        order_by: tuple[OrderingTerm, ...] | None = None,
-    ) -> FunctionCall: ...
-
-    def __call__(
-        self,
-        *args: Literal["*"] | Star_ | Expression,
-        distinct: bool = False,
-        order_by: tuple[OrderingTerm, ...] | None = None,
-    ) -> FunctionCall:
-        match args:
-            case ():
-                return FunctionCall(self, (), distinct=distinct, order_by=order_by)
-            case ("*",) | (Star_(),):
-                return FunctionCall(self, (), star=True)
-            case _:
-                # Cast is safe here: the previous cases handle "*" and _Star,
-                # so remaining args can only be Expression instances.
-                return FunctionCall(
-                    self,
-                    cast(tuple[Expression, ...], args),
-                    distinct=distinct,
-                    order_by=order_by,
-                )
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._name._create_query(buffer)
-
-
 # SPEC: https://sqlite.org/syntax/window-defn.html
 class WindowDefn(SqlElement, ABC):
     pass
@@ -246,7 +199,7 @@ class FrameSpecWithExclude(WindowDefn):
         buffer.append(self._kind)
 
 
-class FrameSpecBound(FrameSpecWithExclude):
+class IFrameSpecBound(WindowDefn, ABC):
     @property
     def ExcludeNoOthers(self) -> FrameSpecWithExclude:
         return FrameSpecWithExclude(self, "NO OTHERS")
@@ -264,14 +217,14 @@ class FrameSpecBound(FrameSpecWithExclude):
         return FrameSpecWithExclude(self, "TIES")
 
 
-class FrameSpecBetweenEnd(FrameSpecBound):
+class FrameSpecBetweenEnd(IFrameSpecBound):
     def __init__(
         self,
         prev: FrameSpecBetweenAnd,
         kind: Literal["UNBOUNDED FOLLOWING", "CURRENT ROW"],
     ) -> None:
         self._prev = prev
-        self._kind = kind  # type: ignore[assignment]
+        self._kind = kind
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -280,7 +233,7 @@ class FrameSpecBetweenEnd(FrameSpecBound):
         buffer.append(self._kind)
 
 
-class FrameSpecBetweenExprEnd(FrameSpecBound):
+class FrameSpecBetweenExprEnd(IFrameSpecBound):
     def __init__(
         self,
         prev: FrameSpecBetweenAnd,
@@ -296,7 +249,7 @@ class FrameSpecBetweenExprEnd(FrameSpecBound):
         self._bound._create_query(buffer)
 
 
-class FrameSpecExprBound(FrameSpecBound):
+class FrameSpecExprBound(IFrameSpecBound):
     # Only PrecedingFrameBound is valid for single frame spec (not BETWEEN).
     # Per SQLite syntax, frame-single only allows: UNBOUNDED PRECEDING | expr PRECEDING | CURRENT ROW
     def __init__(self, prev: FrameSpecClause, bound: PrecedingFrameBound) -> None:
@@ -310,14 +263,14 @@ class FrameSpecExprBound(FrameSpecBound):
         self._bound._create_query(buffer)
 
 
-class FrameSpecSingleBound(FrameSpecBound):
+class FrameSpecSingleBound(IFrameSpecBound):
     def __init__(
         self,
         prev: FrameSpecClause,
         kind: Literal["CURRENT ROW", "UNBOUNDED PRECEDING"],
     ) -> None:
         self._prev = prev
-        self._kind = kind  # type: ignore[assignment]
+        self._kind = kind
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -390,15 +343,17 @@ class FunctionCallWithOver(Expression13):
             buffer.append(")")
 
 
-class FunctionCallWithFilter(FunctionCallWithOver):
+class IFunctionCallOver(Expression13, ABC):
+    def Over(self, arg: WindowName | WindowDefn | None = None) -> FunctionCallWithOver:
+        return FunctionCallWithOver(self, arg)
+
+
+class FunctionCallWithFilter(IFunctionCallOver):
     """A function call with a FILTER clause."""
 
     def __init__(self, prev: FunctionCall, filter_expr: Expression) -> None:
         self._prev = prev
         self._filter_expr = filter_expr
-
-    def Over(self, arg: WindowName | WindowDefn | None = None) -> FunctionCallWithOver:
-        return FunctionCallWithOver(self, arg)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -408,7 +363,7 @@ class FunctionCallWithFilter(FunctionCallWithOver):
         buffer.append(")")
 
 
-class FunctionCall(FunctionCallWithFilter):
+class FunctionCall(IFunctionCallOver):
     """A complete function call with arguments."""
 
     def __init__(
@@ -425,6 +380,9 @@ class FunctionCall(FunctionCallWithFilter):
         self._distinct = distinct
         self._order_by = order_by
 
+    def FilterWhere(self, expr: Expression) -> FunctionCallWithFilter:
+        return FunctionCallWithFilter(self, expr)
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._func._create_query(buffer)
@@ -440,5 +398,49 @@ class FunctionCall(FunctionCallWithFilter):
                 comma_separated(buffer, self._order_by)
         buffer.append(")")
 
-    def FilterWhere(self, expr: Expression) -> FunctionCallWithFilter:
-        return FunctionCallWithFilter(self, expr)
+
+class FunctionName(SqlElement):
+    """A SQL function name that can be called with arguments."""
+
+    def __init__(self, name: str) -> None:
+        self._name = Name(name)
+
+    @overload
+    def __call__(self) -> FunctionCall: ...
+
+    @overload
+    def __call__(self, __star: Literal["*"] | Star_) -> FunctionCall: ...
+
+    @overload
+    def __call__(
+        self,
+        __first: Expression,
+        *rest: Expression,
+        distinct: bool = False,
+        order_by: tuple[OrderingTerm, ...] | None = None,
+    ) -> FunctionCall: ...
+
+    def __call__(
+        self,
+        *args: Literal["*"] | Star_ | Expression,
+        distinct: bool = False,
+        order_by: tuple[OrderingTerm, ...] | None = None,
+    ) -> FunctionCall:
+        match args:
+            case ():
+                return FunctionCall(self, (), distinct=distinct, order_by=order_by)
+            case ("*",) | (Star_(),):
+                return FunctionCall(self, (), star=True)
+            case _:
+                # Cast is safe here: the previous cases handle "*" and Star_,
+                # so remaining args can only be Expression instances.
+                return FunctionCall(
+                    self,
+                    cast(tuple[Expression, ...], args),
+                    distinct=distinct,
+                    order_by=order_by,
+                )
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._name._create_query(buffer)
