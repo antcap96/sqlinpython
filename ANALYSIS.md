@@ -50,7 +50,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `reindex.py` | N/A | N/A | All methods on the single entry class; no inheritance chain |
 | `savepoint.py` | Needs Work | N/A | Three concrete-to-concrete inheritance issues (see detail) |
 | `transaction.py` | Needs Work | N/A | `IBeginTransaction`/`ICommitTransaction` don't encode their statement base, forcing redundant concrete inheritance (see detail) |
-| `vacuum.py` | Needs Work | N/A | `VacuumKeyword(VacuumWithSchema(VacuumWithIntoFileName))` concrete chain shares `.Into()` — needs `IVacuumInto` mixin |
+| `vacuum.py` | Excellent | N/A | Fixed: `IVacuumInto(VacuumStatement, ABC)` mixin added; `VacuumKeyword` and `VacuumWithSchema` now both extend it directly |
 | `builders.py`, `keywords.py`, `types.py` | N/A | N/A | Utilities / re-export files |
 
 ---
@@ -174,11 +174,11 @@ class EndKeyword(ICommitTransaction): ...      # no longer inherits CommitWithTr
 
 ---
 
-### `vacuum.py` — Needs Work / N/A
+### `vacuum.py` — Fixed
 
-`VacuumKeyword(VacuumWithSchema(VacuumWithIntoFileName))` is a three-level concrete chain where each level inherits solely to share the `.Into()` method defined on `VacuumWithSchema`.
-
-Fix: `IVacuumInto(VacuumStatement, ABC)` mixin providing `.Into() -> VacuumWithIntoFileName`; both `VacuumWithSchema` and `VacuumKeyword` extend it directly instead of chaining.
+- `IVacuumInto(VacuumStatement, ABC)` mixin added, providing `.Into() -> VacuumWithIntoFileName`.
+- `VacuumWithSchema` and `VacuumKeyword` now both extend `IVacuumInto` directly; neither inherits the other.
+- `VacuumWithSchema` no longer inherits the terminal `VacuumWithIntoFileName` — the concrete chain is gone.
 
 ---
 

@@ -21,13 +21,15 @@ class VacuumWithIntoFileName(VacuumStatement):
         buffer.append(f" INTO {self._file_name}")
 
 
-class VacuumWithSchema(VacuumWithIntoFileName):
+class IVacuumInto(VacuumStatement, ABC):
+    def Into(self, file_name: str) -> VacuumWithIntoFileName:
+        return VacuumWithIntoFileName(self, file_name)
+
+
+class VacuumWithSchema(IVacuumInto):
     def __init__(self, prev: SqlElement, schema: Name) -> None:
         self._prev = prev
         self._schema = schema
-
-    def Into(self, file_name: str) -> VacuumWithIntoFileName:
-        return VacuumWithIntoFileName(self, file_name)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -36,7 +38,7 @@ class VacuumWithSchema(VacuumWithIntoFileName):
         self._schema._create_query(buffer)
 
 
-class VacuumKeyword(VacuumWithSchema):
+class VacuumKeyword(IVacuumInto):
     def __init__(self) -> None:
         pass
 
