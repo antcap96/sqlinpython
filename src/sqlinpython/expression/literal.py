@@ -1,9 +1,10 @@
+from abc import ABC
 from typing import override
 
 from .core import Expression13
 
 
-class Literal(Expression13):
+class Literal(Expression13, ABC):
     pass
 
 

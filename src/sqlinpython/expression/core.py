@@ -5,9 +5,8 @@ from abc import ABC
 from typing import overload, override
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement, comma_separated
-from sqlinpython.indexed_column import IndexedColumnWithCollate
+from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
-from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 
 
@@ -16,15 +15,7 @@ class TableFunction(NotImplementedSqlElement):
 
 
 # SPEC: https://sqlite.org/lang_expr.html
-class Expression(IndexedColumnWithCollate, OrderingTerm, ABC):
-    @property
-    def NullsFirst(self) -> OrderingTermWithNulls:
-        return OrderingTermWithNulls(self, True)
-
-    @property
-    def NullsLast(self) -> OrderingTermWithNulls:
-        return OrderingTermWithNulls(self, False)
-
+class Expression(IHasAscDesc, ABC):
     def As(self, alias: str | Name, /) -> AliasedExpression:
         if isinstance(alias, str):
             alias = Name(alias)

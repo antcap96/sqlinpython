@@ -52,7 +52,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
 | `create.py` | Excellent | Excellent | Fixed: `ICreateTemp` and `ICreateUnique` mixins added; `CreateKeyword` extends both directly instead of the concrete classes; `__init__` smell resolved |
 | `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
-| `indexed_column.py` | Good | Good | `IndexedColumnWithCollate` (produces `ColumnNameWithOrdering`) correctly sits below it in the file |
+| `indexed_column.py` | Excellent | Excellent | Fixed: `IndexedColumn` made abstract; `IHasAscDesc(IndexedColumn, IHasNulls, ABC)` mixin added; `ColumnNameWithOrdering` and `IndexedColumnWithCollate` are siblings extending it |
 | `column_name.py` | Good | Good | `ColumnNameWithCollate` bridges expression and column-def worlds via multiple inheritance; `ColumnName` multi-inheritance is necessary; ordering correct |
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Good | Needs Work | No `I*` mixins; `TableConstraint` (abstract base) buried at line 143 instead of at top; `ConstraintKeyword` (entry) at line 16 instead of bottom |
@@ -61,7 +61,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `returning.py` | N/A | N/A | Single shared base class, no chain to evaluate |
 | `select_base.py` | N/A | N/A | Type-tag markers and abstract base; infrastructure file |
 | `conflict_clause.py` | N/A | N/A | Generic utility (`OnConflict_[T]`), not a builder chain |
-| `ordering_term.py` | N/A | N/A | Two-class leaf file |
+| `ordering_term.py` | Excellent | Excellent | Fixed: `OrderingTerm` made pure type tag; `IHasNulls(OrderingTerm, ABC)` mixin added with `NullsFirst`/`NullsLast`; used by `IHasAscDesc` in `indexed_column.py` |
 | `expression/literal.py` | N/A | N/A | Flat leaf types, no chain |
 | `name.py` | N/A | N/A | Foundation class |
 | `base.py` | N/A | N/A | Foundation class |
@@ -113,6 +113,17 @@ All mixin and ordering issues resolved:
 - `ITableBeforeDeferrable(SqlElement, ABC)` + `TableBeforeDeferrable(TableForeignKeyClause, ITableBeforeDeferrable, ABC)` merged into `ITableBeforeDeferrable(TableForeignKeyClause, ABC)` (same fix as column FK).
 - DEFERRABLE sub-chain (`TableInitiallyHow`, `TableInitially_`, `TableDeferrable_`, `TableNot_`) placed above ON sub-chain and `TableMatch_` — true terminals extending `TableForeignKeyClause` directly.
 - `ITableBeforeDeferrable` mixin placed just above its first user (`TableOnActionDo`).
+
+---
+
+### `indexed_column.py` — Fixed
+
+- `IndexedColumn(SqlElement, ABC)` made a pure abstract type tag; it was never directly instantiated.
+- `IndexedColumnWithCollate` deleted — it was only ever used as a base class for `Expression` to inject `.Asc`/`.Desc`; with `IHasAscDesc` in place, it became dead code.
+- `IHasNulls(OrderingTerm, ABC)` added to `ordering_term.py` — extracts `NullsFirst`/`NullsLast` that were duplicated across `ColumnNameWithOrdering` and `Expression`.
+- `IHasAscDesc(IndexedColumn, IHasNulls, ABC)` added — encodes both `IndexedColumn` and `IHasNulls` (and thus `OrderingTerm`); provides `.Asc`/`.Desc`. `ColumnNameWithOrdering` extends it directly as the only concrete class.
+- `ColumnNameWithOrdering(IHasAscDesc)` — concrete class; inherits all four methods (`Asc`, `Desc`, `NullsFirst`, `NullsLast`) plus both type relationships; holds only `__init__` and `_create_query`.
+- `Expression(IHasAscDesc, ABC)` in `expression/core.py` — no longer depends on any concrete class; `NullsFirst`/`NullsLast` removed (inherited from `IHasNulls`); `OrderingTerm` import removed.
 
 ---
 

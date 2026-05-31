@@ -1,49 +1,19 @@
+from __future__ import annotations
+
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement
-from sqlinpython.name import Name
-from sqlinpython.ordering_term import OrderingTerm, OrderingTermWithNulls
+from sqlinpython.ordering_term import IHasNulls
+
+# SPEC: https://sqlite.org/syntax/indexed-column.html
 
 
-class IndexedColumn(SqlElement):
-    def __init__(self, prev: SqlElement, asc: bool) -> None:
-        self._prev = prev
-        self._asc = asc
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        asc_desc = " ASC" if self._asc else " DESC"
-        buffer.append(asc_desc)
+class IndexedColumn(SqlElement, ABC):
+    pass
 
 
-class ColumnNameWithOrdering(IndexedColumn, OrderingTerm):
-    """IndexedColumn with ASC/DESC that also supports NULLS FIRST/LAST for ordering terms."""
-
-    def __init__(self, prev: SqlElement, asc: bool) -> None:
-        self._prev = prev
-        self._asc = asc
-
-    @property
-    def NullsFirst(self) -> OrderingTermWithNulls:
-        return OrderingTermWithNulls(self, True)
-
-    @property
-    def NullsLast(self) -> OrderingTermWithNulls:
-        return OrderingTermWithNulls(self, False)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        asc_desc = " ASC" if self._asc else " DESC"
-        buffer.append(asc_desc)
-
-
-class IndexedColumnWithCollate(IndexedColumn):
-    def __init__(self, prev: SqlElement, collate_name: Name) -> None:
-        self._prev = prev
-        self._collate_name = collate_name
-
+class IHasAscDesc(IndexedColumn, IHasNulls, ABC):
     @property
     def Asc(self) -> ColumnNameWithOrdering:
         return ColumnNameWithOrdering(self, True)
@@ -52,8 +22,14 @@ class IndexedColumnWithCollate(IndexedColumn):
     def Desc(self) -> ColumnNameWithOrdering:
         return ColumnNameWithOrdering(self, False)
 
+
+class ColumnNameWithOrdering(IHasAscDesc):
+    def __init__(self, prev: SqlElement, asc: bool) -> None:
+        self._prev = prev
+        self._asc = asc
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" COLLATE ")
-        self._collate_name._create_query(buffer)
+        asc_desc = " ASC" if self._asc else " DESC"
+        buffer.append(asc_desc)
