@@ -15,7 +15,6 @@
 | `create_table.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
-| `indexed_column.py` | Good | Good |
 | `column_name.py` | Good | Good |
 
 ---
