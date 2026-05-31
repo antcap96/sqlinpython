@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import typing
+from abc import ABC
 from typing import overload, override
 
 from sqlinpython.column_definition import (
@@ -24,16 +25,13 @@ from sqlinpython.type_name import CompleteTypeName
 # Both indexed-column (https://sqlite.org/syntax/indexed-column.html) and
 # column-def (https://sqlite.org/syntax/column-def.html + https://sqlite.org/syntax/column-constraint.html)
 # allow ColumnName.Collate
-class ColumnNameWithCollate(CollateOperator, WithCollate):
+class IColumnNameAs(Expression, IColumnConstraint, ABC):
     @override
     def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
         if isinstance(collation_name, str):
             collation_name = Name(collation_name)
         return ColumnNameWithCollate(self, collation_name)
 
-    # Override to handle both contexts:
-    # - Expression context: col.Collate("NOCASE").As("alias") -> AliasedExpression
-    # - Column definition context: col.Collate("utf8").As(expr) -> GeneratedAlwaysAs
     @typing.overload
     def As(self, alias: str | Name, /) -> AliasedExpression: ...
 
@@ -51,31 +49,13 @@ class ColumnNameWithCollate(CollateOperator, WithCollate):
         return GeneratedAlwaysAs(self, alias_or_expr)
 
 
-class ColumnName(Name, IColumnConstraint, Expression12):
+class ColumnNameWithCollate(IColumnNameAs, CollateOperator, WithCollate):
+    pass
+
+
+class ColumnName(IColumnNameAs, Name, Expression12):
     def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
         return ColumnNameWithType(self, type_name)
-
-    @override
-    def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
-        if isinstance(collation_name, str):
-            collation_name = Name(collation_name)
-        return ColumnNameWithCollate(self, collation_name)
-
-    @typing.overload
-    def As(self, alias: str | Name, /) -> AliasedExpression: ...
-
-    @typing.overload
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
-
-    @override
-    def As(
-        self, alias_or_expr: str | Name | Expression, /
-    ) -> AliasedExpression | GeneratedAlwaysAs:
-        if isinstance(alias_or_expr, (str, Name)):
-            if isinstance(alias_or_expr, str):
-                alias_or_expr = Name(alias_or_expr)
-            return AliasedExpression(self, alias_or_expr)
-        return GeneratedAlwaysAs(self, alias_or_expr)
 
 
 @overload

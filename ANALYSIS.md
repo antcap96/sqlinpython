@@ -15,7 +15,6 @@
 | `create_table.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
-| `column_name.py` | Good | Good |
 
 ---
 
@@ -52,7 +51,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `create.py` | Excellent | Excellent | Fixed: `ICreateTemp` and `ICreateUnique` mixins added; `CreateKeyword` extends both directly instead of the concrete classes; `__init__` smell resolved |
 | `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
 | `indexed_column.py` | Excellent | Excellent | Fixed: `IndexedColumn` made abstract; `IHasAscDesc(IndexedColumn, IHasNulls, ABC)` mixin added; `ColumnNameWithOrdering` and `IndexedColumnWithCollate` are siblings extending it |
-| `column_name.py` | Good | Good | `ColumnNameWithCollate` bridges expression and column-def worlds via multiple inheritance; `ColumnName` multi-inheritance is necessary; ordering correct |
+| `column_name.py` | Excellent | Excellent | Fixed: `IColumnNameAs(Expression, IColumnConstraint, ABC)` mixin extracts duplicated `Collate` and `As` from both `ColumnNameWithCollate` and `ColumnName`; `ColumnName` drops explicit `IColumnConstraint` base (encoded in mixin) |
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Good | Needs Work | No `I*` mixins; `TableConstraint` (abstract base) buried at line 143 instead of at top; `ConstraintKeyword` (entry) at line 16 instead of bottom |
 | `expression/core.py` | Needs Work | Good | `NegatedOperator` duplicates ~8 methods from `Expression`; `IsExpression` chain uses concrete→concrete inheritance (same anti-pattern as `insert.py`); ordering follows precedence chain top→bottom which is reasonable for this domain |
@@ -146,6 +145,15 @@ UniqueConstraint                         # entry for UNIQUE sub-chain
 ConstraintWithName                       # branches to all of the above
 ConstraintKeyword / Constraint           # entry — bottom
 ```
+
+---
+
+### `column_name.py` — Fixed
+
+- `IColumnNameAs(Expression, IColumnConstraint, ABC)` mixin added, extracting `Collate` and the overloaded `As` that were identically duplicated across `ColumnNameWithCollate` and `ColumnName`.
+- `IColumnNameAs` listed first in both classes so its `Collate` and `As` win the MRO over `Expression.Collate`/`Expression.As` and `ColumnDefinition.Collate`/`ColumnDefinition.As`.
+- `ColumnName` drops the explicit `IColumnConstraint` base — it is now encoded in the mixin (all implementors are always `IColumnConstraint`s).
+- `ColumnNameWithCollate` body becomes empty; `ColumnName` retains only `__call__`.
 
 ---
 

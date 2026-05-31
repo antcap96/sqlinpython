@@ -275,6 +275,14 @@ def test_column_definition_collate_as_generated() -> None:
     assert q.get_query() == 'CREATE TABLE table_name (a COLLATE utf8 AS ("a"))'
 
 
+def test_column_definition_collate_collate_as_generated() -> None:
+    q = Create.Table("table_name")(a.Collate("utf8").Collate("utf16").As(literal("a")))
+    assert (
+        q.get_query()
+        == 'CREATE TABLE table_name (a COLLATE utf8 COLLATE utf16 AS ("a"))'
+    )
+
+
 def test_column_definition_generated_always_as() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")))
     assert q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a"))'
