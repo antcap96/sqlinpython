@@ -1,3 +1,5 @@
+import pytest
+
 from sqlinpython import ColumnName, Create, literal
 
 col1 = ColumnName("col1")
@@ -56,3 +58,9 @@ def test_create_index_main_schema() -> None:
         Create.Index("main", "my_index").On("my_table", col1).get_query()
         == "CREATE INDEX main.my_index ON my_table (col1)"
     )
+
+
+def test_create_index_if_not_exists_rejects_on_without_name() -> None:
+    # .On() must not be accessible before providing an index name
+    with pytest.raises(AttributeError):
+        Create.Index.IfNotExists.On("my_table", col1)  # type: ignore[attr-defined] # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType] # ty: ignore[unresolved-attribute]

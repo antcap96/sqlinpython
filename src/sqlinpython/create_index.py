@@ -76,10 +76,7 @@ class CreateIndexWithName(SqlElement):
             self._index._create_query(buffer)
 
 
-class CreateIndexIfNotExists(CreateIndexWithName):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
+class ICallableCreateIndex(SqlElement, ABC):
     def __call__(
         self, schema: str | Name, index: str | Name | None = None, /
     ) -> CreateIndexWithName:
@@ -89,13 +86,18 @@ class CreateIndexIfNotExists(CreateIndexWithName):
             index = Name(index)
         return CreateIndexWithName(self, schema, index)
 
+
+class CreateIndexIfNotExists(ICallableCreateIndex):
+    def __init__(self, prev: SqlElement):
+        self._prev = prev
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF NOT EXISTS")
 
 
-class CreateIndex(CreateIndexIfNotExists):
+class CreateIndex(ICallableCreateIndex):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 

@@ -13,7 +13,6 @@
 |------|--------|----------|
 | `expression/case.py` | Good | Excellent |
 | `create_table.py` | Good | Excellent |
-| `create_index.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
 | `indexed_column.py` | Good | Good |
@@ -47,7 +46,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `expression/case.py` | Good | Excellent | `CaseKeyword(CaseWithBaseExpr)` for `.When()` reuse; perfect terminal-at-top ordering |
 | `create_view.py` | Excellent | Excellent | Fixed: `IHasAs` mixin extracts duplicated `.As()`; `ICallableCreateView` mixin extracts `__call__` — `CreateView` and `CreateViewIfNotExists` are now siblings |
 | `create_table.py` | Good | Excellent | `.WithoutRowId`/`.Strict` duplicated across `CreateTableWithDefinitions` and `CreateTableWithOptions`; otherwise clean |
-| `create_index.py` | Good | Excellent | Short, linear chain; `CreateIndex(CreateIndexIfNotExists)` reuse pattern correct |
+| `create_index.py` | Excellent | Excellent | Fixed: `ICallableCreateIndex` mixin extracts `__call__`; `CreateIndex` and `CreateIndexIfNotExists` are now siblings; bug removed where `CreateIndexIfNotExists` incorrectly exposed `.On()` |
 | `drop.py` | Excellent | Excellent | Fixed: `IDropCallable[T]` mixin extracts duplicated `__call__` from `DropTypeKeyword` and `DropIfExists` |
 | `type_name.py` | Good | Excellent | `TypeName(Name, CompleteTypeName)` inherits `__call__` reuse; two-class file, correct ordering |
 | `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
