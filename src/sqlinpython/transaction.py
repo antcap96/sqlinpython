@@ -21,13 +21,13 @@ class BeginWithTransaction(BeginStatement):
         buffer.append(" TRANSACTION")
 
 
-class IBeginTransaction(SqlElement, ABC):
+class IBeginTransaction(BeginStatement, ABC):
     @property
     def Transaction(self) -> BeginWithTransaction:
         return BeginWithTransaction(self)
 
 
-class BeginWithType(BeginWithTransaction, IBeginTransaction):
+class BeginWithType(IBeginTransaction):
     def __init__(
         self,
         prev: SqlElement,
@@ -42,7 +42,7 @@ class BeginWithType(BeginWithTransaction, IBeginTransaction):
         buffer.append(f" {self._type}")
 
 
-class BeginKeyword(BeginWithTransaction, IBeginTransaction):
+class BeginKeyword(IBeginTransaction):
     def __init__(self) -> None:
         pass
 
@@ -80,13 +80,13 @@ class CommitWithTransaction(CommitStatement):
         buffer.append(" TRANSACTION")
 
 
-class ICommitTransaction(SqlElement, ABC):
+class ICommitTransaction(CommitStatement, ABC):
     @property
     def Transaction(self) -> CommitWithTransaction:
         return CommitWithTransaction(self)
 
 
-class CommitKeyword(CommitWithTransaction, ICommitTransaction):
+class CommitKeyword(ICommitTransaction):
     def __init__(self) -> None:
         pass
 
@@ -98,7 +98,7 @@ class CommitKeyword(CommitWithTransaction, ICommitTransaction):
 Commit = CommitKeyword()
 
 
-class EndKeyword(CommitWithTransaction, ICommitTransaction):
+class EndKeyword(ICommitTransaction):
     def __init__(self) -> None:
         pass
 

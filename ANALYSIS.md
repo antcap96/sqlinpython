@@ -6,7 +6,6 @@
 |------|--------|----------|
 | `table_constraint.py` | Good | Needs Work |
 | `expression/core.py` | Needs Work | Good |
-| `transaction.py` | Needs Work | N/A |
 
 ## Good (no Needs Work)
 
@@ -74,7 +73,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `pragma.py` | N/A | N/A | Linear two-class chain; no shared behaviour |
 | `reindex.py` | N/A | N/A | All methods on the single entry class; no inheritance chain |
 | `savepoint.py` | Excellent | N/A | Fixed: `ICallableReleaseSavepoint`, `ICallableRollbackSavepoint`, `IRollbackWithTo` mixins added; all three concrete chains broken |
-| `transaction.py` | Needs Work | N/A | `IBeginTransaction`/`ICommitTransaction` don't encode their statement base, forcing redundant concrete inheritance (see detail) |
+| `transaction.py` | Excellent | N/A | Fixed: `IBeginTransaction`/`ICommitTransaction` encode `BeginStatement`/`CommitStatement`; concrete base removed from all four keyword classes |
 | `vacuum.py` | Excellent | N/A | Fixed: `IVacuumInto(VacuumStatement, ABC)` mixin added; `VacuumKeyword` and `VacuumWithSchema` now both extend it directly |
 | `builders.py`, `keywords.py`, `types.py` | N/A | N/A | Utilities / re-export files |
 
@@ -169,27 +168,10 @@ ConstraintKeyword / Constraint           # entry — bottom
 
 ---
 
-### `transaction.py` — Needs Work / N/A
+### `transaction.py` — Fixed
 
-`IBeginTransaction` and `ICommitTransaction` already exist as mixins providing `.Transaction`, but neither encodes `BeginStatement`/`CommitStatement` as a base. As a result, `BeginWithType`, `BeginKeyword`, `CommitKeyword`, and `EndKeyword` must all inherit from the concrete `BeginWithTransaction`/`CommitWithTransaction` classes purely to become `BeginStatement`/`CommitStatement` subtypes.
-
-Fix: encode the statement base in each mixin:
-
-```python
-class IBeginTransaction(BeginStatement, ABC):
-    @property
-    def Transaction(self) -> BeginWithTransaction: ...
-
-class BeginWithType(IBeginTransaction): ...    # no longer inherits BeginWithTransaction
-class BeginKeyword(IBeginTransaction): ...     # no longer inherits BeginWithTransaction
-
-class ICommitTransaction(CommitStatement, ABC):
-    @property
-    def Transaction(self) -> CommitWithTransaction: ...
-
-class CommitKeyword(ICommitTransaction): ...   # no longer inherits CommitWithTransaction
-class EndKeyword(ICommitTransaction): ...      # no longer inherits CommitWithTransaction
-```
+- `IBeginTransaction(BeginStatement, ABC)` now encodes `BeginStatement`; `BeginWithType` and `BeginKeyword` extend it directly, dropping the redundant `BeginWithTransaction` base.
+- `ICommitTransaction(CommitStatement, ABC)` now encodes `CommitStatement`; `CommitKeyword` and `EndKeyword` extend it directly, dropping the redundant `CommitWithTransaction` base.
 
 ---
 
