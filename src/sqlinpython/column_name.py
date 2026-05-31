@@ -14,6 +14,7 @@ from sqlinpython.expression.core import (
     AliasedExpression,
     CollateOperator,
     Expression,
+    Expression11,
     Expression12,
     SchemaTableColumnName,
     TableColumnName,
@@ -25,7 +26,7 @@ from sqlinpython.type_name import CompleteTypeName
 # Both indexed-column (https://sqlite.org/syntax/indexed-column.html) and
 # column-def (https://sqlite.org/syntax/column-def.html + https://sqlite.org/syntax/column-constraint.html)
 # allow ColumnName.Collate
-class IColumnNameAs(Expression, IColumnConstraint, ABC):
+class IColumnNameAs(Expression11, IColumnConstraint, ABC):
     @override
     def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
         if isinstance(collation_name, str):

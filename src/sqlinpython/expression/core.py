@@ -318,13 +318,8 @@ class Expression3(Expression2, ABC):
     pass
 
 
-class NotKeyword:
-    def __call__(self, after: Expression) -> NotExpression:
-        _after = after._wrap_parenthesis_if_not(Expression3)
-        return NotExpression(_after)
-
-
-Not = NotKeyword()
+def Not(after: Expression) -> NotExpression:
+    return NotExpression(after._wrap_parenthesis_if_not(Expression3))
 
 
 class NotExpression(Expression3):
@@ -376,7 +371,7 @@ class NeExpression(Expression4):
 
 
 class IsExpressionComplete(Expression4):
-    def __init__(self, prev: SqlElement, other: Expression4) -> None:
+    def __init__(self, prev: IIsCallable, other: Expression4) -> None:
         self._prev = prev
         self._other = other
 
@@ -394,7 +389,7 @@ class IIsCallable(SqlElement, ABC):
 
 
 class IsDistinctFromExpression(IIsCallable):
-    def __init__(self, prev: SqlElement) -> None:
+    def __init__(self, prev: IIsCallable) -> None:
         self._prev = prev
 
     @override
@@ -404,7 +399,7 @@ class IsDistinctFromExpression(IIsCallable):
 
 
 class IsNotExpression(IIsCallable):
-    def __init__(self, prev: SqlElement) -> None:
+    def __init__(self, prev: IsExpression) -> None:
         self._prev = prev
 
     @property
@@ -436,7 +431,9 @@ class IsExpression(IIsCallable):
 
 
 class BetweenExpression(SqlElement):
-    def __init__(self, prev: SqlElement, lower: Expression5, upper: Expression) -> None:
+    def __init__(
+        self, prev: SqlElement, lower: Expression5, upper: Expression5
+    ) -> None:
         self._prev = prev
         self._lower = lower
         self._upper = upper
@@ -488,32 +485,32 @@ class InExpressionWithExpressions(Expression4):
 
 class InExpressionWithTableName(Expression4):
     def __init__(
-        self, prev: SqlElement, name1: Name, name2: Name | None = None
+        self, prev: SqlElement, schema: Name, name: Name | None = None
     ) -> None:
         self._prev = prev
-        self._name1 = name1
-        self._name2 = name2
+        self._schema = schema
+        self._name = name
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ")
-        self._name1._create_query(buffer)
-        if self._name2 is not None:
+        self._schema._create_query(buffer)
+        if self._name is not None:
             buffer.append(".")
-            self._name2._create_query(buffer)
+            self._name._create_query(buffer)
 
 
 class InExpressionWithTableFunction(SqlElement):
     def __init__(
         self,
         prev: SqlElement,
-        name1: TableFunction | Name,
-        name2: TableFunction | None = None,
+        schema: TableFunction | Name,
+        name: TableFunction | None = None,
     ) -> None:
         self._prev = prev
-        self._name1 = name1
-        self._name2 = name2
+        self._schema = schema
+        self._name = name
 
     def __call__(self, *args: Expression) -> InExpressionWithTableFunctionArgs:
         return InExpressionWithTableFunctionArgs(self, args)
@@ -522,10 +519,10 @@ class InExpressionWithTableFunction(SqlElement):
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ")
-        self._name1._create_query(buffer)
-        if self._name2 is not None:
+        self._schema._create_query(buffer)
+        if self._name is not None:
             buffer.append(".")
-            self._name2._create_query(buffer)
+            self._name._create_query(buffer)
 
 
 class InExpressionWithTableFunctionArgs(Expression4):
@@ -545,7 +542,7 @@ class MatchLikeExpression(Expression4):
     def __init__(
         self,
         prev: SqlElement,
-        pattern: Expression,
+        pattern: Expression5,
         op: typing.Literal["MATCH", "REGEXP", "GLOB"],
     ) -> None:
         self._prev = prev
@@ -562,7 +559,7 @@ class MatchLikeExpression(Expression4):
 # TODO: Maybe this should take prev.prev, pattern and escape, which might allow
 # some expressions to not be parenthesized.
 class LikeExpressionWithEscape(Expression4):
-    def __init__(self, prev: SqlElement, escape: Expression) -> None:
+    def __init__(self, prev: LikeExpression, escape: Expression) -> None:
         self._prev = prev
         self._escape = escape
 
@@ -574,7 +571,7 @@ class LikeExpressionWithEscape(Expression4):
 
 
 class LikeExpression(Expression4):
-    def __init__(self, prev: SqlElement, pattern: Expression) -> None:
+    def __init__(self, prev: SqlElement, pattern: Expression5) -> None:
         self._prev = prev
         self._pattern = pattern
 
@@ -622,8 +619,8 @@ class Expression5(Expression4, ABC):
 class Comparison(Expression5):
     def __init__(
         self,
-        left: Expression,
-        right: Expression,
+        left: Expression5,
+        right: Expression6,
         operator: typing.Literal["<", "<=", ">", ">="],
     ):
         self._left = left
@@ -648,8 +645,8 @@ class Expression7(Expression6, ABC):
 class BitOperation(Expression7):
     def __init__(
         self,
-        left: Expression,
-        right: Expression,
+        left: Expression7,
+        right: Expression8,
         operator: typing.Literal["&", "|", "<<", ">>"],
     ):
         self._left = left
@@ -669,7 +666,7 @@ class Expression8(Expression7, ABC):
 
 class Summand(Expression8):
     def __init__(
-        self, left: Expression, right: Expression, operator: typing.Literal["+", "-"]
+        self, left: Expression8, right: Expression9, operator: typing.Literal["+", "-"]
     ):
         self._left = left
         self._right = right
@@ -689,8 +686,8 @@ class Expression9(Expression8, ABC):
 class Factor(Expression9):
     def __init__(
         self,
-        left: Expression,
-        right: Expression,
+        left: Expression9,
+        right: Expression10,
         operator: typing.Literal["*", "/", "%"],
     ):
         self._left = left
@@ -711,8 +708,8 @@ class Expression10(Expression9, ABC):
 class ConcatLikeOperator(Expression10):
     def __init__(
         self,
-        left: Expression,
-        right: Expression,
+        left: Expression10,
+        right: Expression11,
         operator: typing.Literal["||", "->", "->>"],
     ):
         self._left = left
@@ -733,7 +730,7 @@ class Expression11(Expression10, ABC):
 class CollateOperator(Expression11):
     def __init__(
         self,
-        left: Expression,
+        left: Expression11,
         right: Name,
     ):
         self._left = left
