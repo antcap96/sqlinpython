@@ -7,7 +7,8 @@ from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 
-from .core import Expression, Expression13, FollowingFrameBound, PrecedingFrameBound
+from .core import Expression, Expression13
+from .frame_bound import FollowingFrameBound, PrecedingFrameBound
 
 
 class Star_(SqlElement):

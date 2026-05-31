@@ -5,6 +5,7 @@ from abc import ABC
 from typing import overload, override
 
 from sqlinpython.base import NotImplementedSqlElement, SqlElement, comma_separated
+from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement, SelectStatement_
@@ -113,7 +114,7 @@ class INegatedOperations(SqlElement, ABC):
         return LikeExpression(self_, pattern_)
 
 
-class Expression(IHasAscDesc, INegatedOperations, ABC):
+class Expression(IHasAscDesc, INegatedOperations, IHasFrameBounds, ABC):
     def As(self, alias: str | Name, /) -> AliasedExpression:
         if isinstance(alias, str):
             alias = Name(alias)
@@ -261,14 +262,6 @@ class Expression(IHasAscDesc, INegatedOperations, ABC):
             return ParenthesizedExpression(self)
         else:
             return self
-
-    @property
-    def Preceding(self) -> PrecedingFrameBound:
-        return PrecedingFrameBound(self)
-
-    @property
-    def Following(self) -> FollowingFrameBound:
-        return FollowingFrameBound(self)
 
 
 class AliasedExpression(SqlElement):
@@ -781,36 +774,6 @@ class ParenthesizedExpression(Expression13):
         buffer.append("(")
         self._prev._create_query(buffer)
         buffer.append(")")
-
-
-class FrameBound(SqlElement, ABC):
-    """Base class for frame boundary specifications."""
-
-    pass
-
-
-class PrecedingFrameBound(FrameBound):
-    """Represents 'expr PRECEDING' in a frame specification."""
-
-    def __init__(self, expr: Expression) -> None:
-        self._expr = expr
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._expr._create_query(buffer)
-        buffer.append(" PRECEDING")
-
-
-class FollowingFrameBound(FrameBound):
-    """Represents 'expr FOLLOWING' in a frame specification."""
-
-    def __init__(self, expr: Expression) -> None:
-        self._expr = expr
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._expr._create_query(buffer)
-        buffer.append(" FOLLOWING")
 
 
 class TableColumnName(Expression12):
