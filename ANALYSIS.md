@@ -4,7 +4,6 @@
 
 | File | Mixins | Ordering |
 |------|--------|----------|
-| `expression/case.py` | Good | Excellent |
 | `create_table.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
@@ -34,7 +33,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `table_foreign_key_clause.py` | Excellent | Excellent | Fixed: `TableBeforeDeferrable` merged into `ITableBeforeDeferrable`; DEFERRABLE sub-chain moved above ON sub-chain |
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
 | `common_table_expression.py` | Excellent | Excellent | Fixed: `IWithCall` mixin extracts `__call__` shared by `WithRecursive` and `WithKeyword`; both extend it directly |
-| `expression/case.py` | Good | Excellent | `CaseKeyword(CaseWithBaseExpr)` for `.When()` reuse; perfect terminal-at-top ordering |
+| `expression/case.py` | Excellent | Excellent | Fixed: `IWhenCallable` mixin extracts `.When()` shared by `ThenClause`, `CaseWithBaseExpr`, and `CaseKeyword`; concrete chain broken |
 | `create_view.py` | Excellent | Excellent | Fixed: `IHasAs` mixin extracts duplicated `.As()`; `ICallableCreateView` mixin extracts `__call__` — `CreateView` and `CreateViewIfNotExists` are now siblings |
 | `create_table.py` | Good | Excellent | `.WithoutRowId`/`.Strict` duplicated across `CreateTableWithDefinitions` and `CreateTableWithOptions`; otherwise clean |
 | `create_index.py` | Excellent | Excellent | Fixed: `ICallableCreateIndex` mixin extracts `__call__`; `CreateIndex` and `CreateIndexIfNotExists` are now siblings; bug removed where `CreateIndexIfNotExists` incorrectly exposed `.On()` |
@@ -174,6 +173,14 @@ All mixin and ordering issues resolved:
 - `IVacuumInto(VacuumStatement, ABC)` mixin added, providing `.Into() -> VacuumWithIntoFileName`.
 - `VacuumWithSchema` and `VacuumKeyword` now both extend `IVacuumInto` directly; neither inherits the other.
 - `VacuumWithSchema` no longer inherits the terminal `VacuumWithIntoFileName` — the concrete chain is gone.
+
+---
+
+### `expression/case.py` — Fixed
+
+- `IWhenCallable(SqlElement, ABC)` mixin added, providing `.When(when) -> WhenClause`; the three independent `.When()` implementations on `ThenClause`, `CaseWithBaseExpr`, and `CaseKeyword` collapse into one.
+- `CaseKeyword` no longer inherits from `CaseWithBaseExpr`; it extends `IWhenCallable` directly as a sibling.
+- `IWhenCallable` placed just above `ThenClause` (the first user in file order).
 
 ---
 

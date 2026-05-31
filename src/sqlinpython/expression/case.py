@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement
@@ -32,7 +33,12 @@ class ElseClause(SqlElement):
         self._else._create_query(buffer)
 
 
-class ThenClause(SqlElement):
+class IWhenCallable(SqlElement, ABC):
+    def When(self, when: Expression) -> WhenClause:
+        return WhenClause(self, when)
+
+
+class ThenClause(IWhenCallable):
     def __init__(self, prev: WhenClause, then: Expression):
         self._prev = prev
         self._then = then
@@ -40,9 +46,6 @@ class ThenClause(SqlElement):
     @property
     def End(self) -> CaseExpression:
         return CaseExpression(self)
-
-    def When(self, when: Expression) -> WhenClause:
-        return WhenClause(self, when)
 
     def Else(self, else_: Expression) -> ElseClause:
         return ElseClause(self, else_)
@@ -69,13 +72,10 @@ class WhenClause(SqlElement):
         self._when._create_query(buffer)
 
 
-class CaseWithBaseExpr(SqlElement):
+class CaseWithBaseExpr(IWhenCallable):
     def __init__(self, prev: CaseKeyword, base: Expression):
         self._prev = prev
         self._base = base
-
-    def When(self, when: Expression) -> WhenClause:
-        return WhenClause(self, when)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -84,7 +84,7 @@ class CaseWithBaseExpr(SqlElement):
         self._base._create_query(buffer)
 
 
-class CaseKeyword(CaseWithBaseExpr):
+class CaseKeyword(IWhenCallable):
     def __init__(self) -> None:
         pass
 
