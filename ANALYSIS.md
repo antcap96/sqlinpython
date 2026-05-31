@@ -1,11 +1,5 @@
 # Files Still With Issues
 
-## Needs Work
-
-| File | Mixins | Ordering |
-|------|--------|----------|
-| `expression/core.py` | Needs Work | Good |
-
 ## Good (no Needs Work)
 
 | File | Mixins | Ordering |
@@ -53,7 +47,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `column_name.py` | Excellent | Excellent | Fixed: `IColumnNameAs(Expression, IColumnConstraint, ABC)` mixin extracts duplicated `Collate` and `As` from both `ColumnNameWithCollate` and `ColumnName`; `ColumnName` drops explicit `IColumnConstraint` base (encoded in mixin) |
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Excellent | Excellent | Fixed: `TableConstraint` moved to top; `ConstraintBeforeConflictClause` changed to inherit `TableConstraint` directly (not via `TableConstraintWithConflictClause`); `ConstraintKeyword`/`Constraint` moved to bottom |
-| `expression/core.py` | Needs Work | Good | `NegatedOperator` duplicates ~8 methods from `Expression`; `IsExpression` chain uses concrete→concrete inheritance (same anti-pattern as `insert.py`); ordering follows precedence chain top→bottom which is reasonable for this domain |
+| `expression/core.py` | Excellent | Good | Fixed: `INegatedOperations` mixin extracts `Between`/`In`/`Glob`/`Regexp`/`Match`/`Like` shared by `Expression` and `NegatedOperator`; `IIsCallable` mixin breaks `IsExpression(IsNotExpression(IsDistinctFromExpression))` concrete chain into siblings; ordering follows precedence chain top→bottom (domain-specific exception) |
 | `expression/function.py` | Excellent | Excellent | Fixed: `IFrameSpecBound` and `IFunctionCallOver` mixins added; `FunctionName` moved to bottom |
 | `returning.py` | N/A | N/A | Single shared base class, no chain to evaluate |
 | `select_base.py` | N/A | N/A | Type-tag markers and abstract base; infrastructure file |
@@ -150,15 +144,13 @@ All mixin and ordering issues resolved:
 
 ---
 
-### `expression/core.py` — Needs Work / Good
+### `expression/core.py` — Fixed
 
-**Mixin issue:**
-
-`NegatedOperator` (line 586) re-implements `Between`, `In`, `Glob`, `Regexp`, `Match`, `Like`, and `Null` — nearly the same set of methods as `Expression`. An `INegatedOperations` mixin would let both `Expression` and `NegatedOperator` share these without duplication.
-
-`IsExpression(IsNotExpression(IsDistinctFromExpression))` is concrete-to-concrete inheritance to share `__call__` — the same anti-pattern as `insert.py`'s upsert chain.
-
-**Ordering:** The precedence chain ordered lowest-to-highest (`Expression1` OR → `Expression13` literals) reads naturally top-to-bottom, which is the reverse of the CLAUDE.md convention but is a reasonable domain-specific exception.
+- `INegatedOperations(SqlElement, ABC)` mixin added just above `Expression` (first user), extracting `Between`, `In` (with all overloads), `Glob`, `Regexp`, `Match`, `Like` shared between `Expression` and `NegatedOperator`. Each method uses an `isinstance(self, Expression)` check to decide whether to parenthesize `self` (needed for `Expression`) or pass it directly (correct for `NegatedOperator`). `NegatedOperator` retains `Null` (not shared with `Expression`).
+- `IIsCallable(SqlElement, ABC)` mixin added just above `IsDistinctFromExpression`, providing `__call__(other) -> IsExpressionComplete`. `IsDistinctFromExpression`, `IsNotExpression`, and `IsExpression` are now siblings extending `IIsCallable` directly — the `IsExpression(IsNotExpression(IsDistinctFromExpression))` concrete chain is gone. `IsExpression.DistinctFrom` added explicitly (was previously inherited through the chain).
+- `LikeExpression` changed from `LikeExpression(LikeExpressionWithEscape)` to `LikeExpression(Expression4)` — it completely overrides `__init__` and `_create_query`, so it only needed the `Expression4` type tag, not the concrete base.
+- TODOs pruned: `bind-parameter`, `schema.table.column`, `function-call`, `Case` removed (all implemented); `tuple`, `cast`, `Exists`, `raise-function` remain.
+- Ordering unchanged: precedence chain top→bottom is a domain-specific exception.
 
 ---
 
