@@ -105,4 +105,4 @@ def literal(value: SqlLiteral) -> Literal:
     elif value is None:
         return NullLiteral()
     else:
-        raise ValueError(f"Unsupported literal type: {type(value)}")
+        raise ValueError(f"Unsupported literal type: {type(value)}")  # pyright: ignore[reportUnreachable]
