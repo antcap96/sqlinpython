@@ -62,11 +62,13 @@ All 604 tests must pass. If any fail, fix them before continuing.
 
 ## Step 5 — Update ANALYSIS.md
 
-Make two edits:
+Make three edits:
 
-1. **Summary table row** — update the Mixin and Ordering ratings and the one-line verdict. If the file is now fully fixed, both ratings become `Excellent` and the verdict should start with `Fixed:`.
+1. **"Files Still With Issues" table** (top of file) — if the file's ratings are now both `Excellent`, remove its row entirely. If the file moved from `Needs Work` to `Good`, move it to the "Good (no Needs Work)" section. If it improved but still has issues, update the ratings in place.
 
-2. **Detailed notes section** — if the file had a `— Needs Work` or `— Good / Needs Work` heading, change it to `— Fixed` and replace or extend the bullet points with a concise description of what was done (mirror the style of the `insert.py — Fixed` entry).
+2. **Summary table row** — update the Mixin and Ordering ratings and the one-line verdict. If the file is now fully fixed, both ratings become `Excellent` and the verdict should start with `Fixed:`.
+
+3. **Detailed notes section** — if the file had a `— Needs Work` or `— Good / Needs Work` heading, change it to `— Fixed` and replace or extend the bullet points with a concise description of what was done (mirror the style of the `insert.py — Fixed` entry).
 
 ---
 
