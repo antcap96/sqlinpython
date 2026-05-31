@@ -12,7 +12,6 @@
 | File | Mixins | Ordering |
 |------|--------|----------|
 | `expression/case.py` | Good | Excellent |
-| `create_view.py` | Good | Excellent |
 | `create_table.py` | Good | Excellent |
 | `create_index.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
@@ -46,7 +45,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
 | `common_table_expression.py` | Excellent | Excellent | Fixed: `IWithCall` mixin extracts `__call__` shared by `WithRecursive` and `WithKeyword`; both extend it directly |
 | `expression/case.py` | Good | Excellent | `CaseKeyword(CaseWithBaseExpr)` for `.When()` reuse; perfect terminal-at-top ordering |
-| `create_view.py` | Good | Excellent | Minor: `.As()` duplicated in `CreateViewWithColumns` and `CreateViewWithName` — a one-method `IHasAs` mixin would remove it |
+| `create_view.py` | Excellent | Excellent | Fixed: `IHasAs` mixin extracts duplicated `.As()`; `ICallableCreateView` mixin extracts `__call__` — `CreateView` and `CreateViewIfNotExists` are now siblings |
 | `create_table.py` | Good | Excellent | `.WithoutRowId`/`.Strict` duplicated across `CreateTableWithDefinitions` and `CreateTableWithOptions`; otherwise clean |
 | `create_index.py` | Good | Excellent | Short, linear chain; `CreateIndex(CreateIndexIfNotExists)` reuse pattern correct |
 | `drop.py` | Excellent | Excellent | Fixed: `IDropCallable[T]` mixin extracts duplicated `__call__` from `DropTypeKeyword` and `DropIfExists` |

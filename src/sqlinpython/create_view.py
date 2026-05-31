@@ -26,13 +26,15 @@ class CreateViewAs(CreateViewStatement):
         self._select_stmt._create_query(buffer)
 
 
-class CreateViewWithColumns(SqlElement):
+class IHasAs(SqlElement, ABC):
+    def As(self, select_stmt: SelectStatement) -> CreateViewAs:
+        return CreateViewAs(self, select_stmt)
+
+
+class CreateViewWithColumns(IHasAs):
     def __init__(self, prev: SqlElement, columns: tuple[Name, ...]):
         self._prev = prev
         self._columns = columns
-
-    def As(self, select_stmt: SelectStatement) -> CreateViewAs:
-        return CreateViewAs(self, select_stmt)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -42,14 +44,11 @@ class CreateViewWithColumns(SqlElement):
         buffer.append(")")
 
 
-class CreateViewWithName(SqlElement):
+class CreateViewWithName(IHasAs):
     def __init__(self, prev: SqlElement, schema: Name, view: Name | None):
         self._prev = prev
         self._schema = schema
         self._view = view
-
-    def As(self, select_stmt: SelectStatement) -> CreateViewAs:
-        return CreateViewAs(self, select_stmt)
 
     def __call__(
         self,
@@ -68,10 +67,7 @@ class CreateViewWithName(SqlElement):
             self._view._create_query(buffer)
 
 
-class CreateViewIfNotExists(SqlElement):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
+class ICallableCreateView(SqlElement, ABC):
     def __call__(
         self, schema: str | Name, view: str | Name | None = None, /
     ) -> CreateViewWithName:
@@ -81,13 +77,18 @@ class CreateViewIfNotExists(SqlElement):
             view = Name(view)
         return CreateViewWithName(self, schema, view)
 
+
+class CreateViewIfNotExists(ICallableCreateView):
+    def __init__(self, prev: SqlElement):
+        self._prev = prev
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IF NOT EXISTS")
 
 
-class CreateView(CreateViewIfNotExists):
+class CreateView(ICallableCreateView):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
