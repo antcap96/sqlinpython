@@ -4,7 +4,7 @@ import typing
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
@@ -28,44 +28,7 @@ class CreateTableAs(CreateTableStatement):
         self._select_stmt._create_query(buffer)
 
 
-class AddComma(SqlElement):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(",")
-
-
-class CreateTableWithOptions(CreateTableStatement):
-    def __init__(
-        self, prev: SqlElement, option: typing.Literal["WITHOUT ROWID", "STRICT"]
-    ):
-        self._prev = prev
-        self._option = option
-
-    @property
-    def WithoutRowId(self) -> CreateTableWithOptions:
-        return CreateTableWithOptions(AddComma(self), "WITHOUT ROWID")
-
-    @property
-    def Strict(self) -> CreateTableWithOptions:
-        return CreateTableWithOptions(AddComma(self), "STRICT")
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(f" {self._option}")
-
-
-class CreateTableWithDefinitions(CreateTableStatement):
-    def __init__(
-        self, prev: SqlElement, args: tuple[ColumnDefinition | TableConstraint, ...]
-    ):
-        self._prev = prev
-        self._args = args
-
+class ITableOptions(CreateTableStatement, ABC):
     @property
     def WithoutRowId(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(self, "WITHOUT ROWID")
@@ -74,14 +37,34 @@ class CreateTableWithDefinitions(CreateTableStatement):
     def Strict(self) -> CreateTableWithOptions:
         return CreateTableWithOptions(self, "STRICT")
 
+
+class CreateTableWithOptions(ITableOptions):
+    def __init__(
+        self, prev: SqlElement, option: typing.Literal["WITHOUT ROWID", "STRICT"]
+    ):
+        self._prev = prev
+        self._option = option
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        if isinstance(self._prev, CreateTableWithOptions):
+            buffer.append(",")
+        buffer.append(f" {self._option}")
+
+
+class CreateTableWithDefinitions(ITableOptions):
+    def __init__(
+        self, prev: SqlElement, args: tuple[ColumnDefinition | TableConstraint, ...]
+    ):
+        self._prev = prev
+        self._args = args
+
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" (")
-        for i, col in enumerate(self._args):
-            if i > 0:
-                buffer.append(", ")
-            col._create_query(buffer)
+        comma_separated(buffer, self._args)
         buffer.append(")")
 
 
@@ -100,7 +83,14 @@ class CreateTableWithName(SqlElement):
             ColumnDefinition, *tuple[ColumnDefinition | TableConstraint, ...]
         ],
     ) -> CreateTableWithDefinitions:
-        # TODO: Validate that any table constraints are at the end
+        seen_constraint = False
+        for defn in definitions:
+            if isinstance(defn, TableConstraint):
+                seen_constraint = True
+            elif seen_constraint:
+                raise ValueError(
+                    "column definitions must come before table constraints"
+                )
         return CreateTableWithDefinitions(self, definitions)
 
     @override

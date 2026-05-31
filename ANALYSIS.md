@@ -4,7 +4,6 @@
 
 | File | Mixins | Ordering |
 |------|--------|----------|
-| `create_table.py` | Good | Excellent |
 | `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
 
@@ -35,7 +34,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `common_table_expression.py` | Excellent | Excellent | Fixed: `IWithCall` mixin extracts `__call__` shared by `WithRecursive` and `WithKeyword`; both extend it directly |
 | `expression/case.py` | Excellent | Excellent | Fixed: `IWhenCallable` mixin extracts `.When()` shared by `ThenClause`, `CaseWithBaseExpr`, and `CaseKeyword`; concrete chain broken |
 | `create_view.py` | Excellent | Excellent | Fixed: `IHasAs` mixin extracts duplicated `.As()`; `ICallableCreateView` mixin extracts `__call__` — `CreateView` and `CreateViewIfNotExists` are now siblings |
-| `create_table.py` | Good | Excellent | `.WithoutRowId`/`.Strict` duplicated across `CreateTableWithDefinitions` and `CreateTableWithOptions`; otherwise clean |
+| `create_table.py` | Excellent | Excellent | Fixed: `ITableOptions` mixin extracts `.WithoutRowId`/`.Strict`; `AddComma` removed; ordering validation + test added |
 | `create_index.py` | Excellent | Excellent | Fixed: `ICallableCreateIndex` mixin extracts `__call__`; `CreateIndex` and `CreateIndexIfNotExists` are now siblings; bug removed where `CreateIndexIfNotExists` incorrectly exposed `.On()` |
 | `drop.py` | Excellent | Excellent | Fixed: `IDropCallable[T]` mixin extracts duplicated `__call__` from `DropTypeKeyword` and `DropIfExists` |
 | `type_name.py` | Good | Excellent | `TypeName(Name, CompleteTypeName)` inherits `__call__` reuse; two-class file, correct ordering |
@@ -173,6 +172,15 @@ All mixin and ordering issues resolved:
 - `IVacuumInto(VacuumStatement, ABC)` mixin added, providing `.Into() -> VacuumWithIntoFileName`.
 - `VacuumWithSchema` and `VacuumKeyword` now both extend `IVacuumInto` directly; neither inherits the other.
 - `VacuumWithSchema` no longer inherits the terminal `VacuumWithIntoFileName` — the concrete chain is gone.
+
+---
+
+### `create_table.py` — Fixed
+
+- `ITableOptions(CreateTableStatement, ABC)` mixin added, providing `.WithoutRowId` and `.Strict`; both `CreateTableWithDefinitions` and `CreateTableWithOptions` extend it directly.
+- `AddComma` helper class removed — comma between chained table options is now handled by an `isinstance(self._prev, CreateTableWithOptions)` check in `CreateTableWithOptions._create_query`.
+- `CreateTableWithDefinitions._create_query` simplified to use `comma_separated`.
+- `CreateTableWithName.__call__` now validates that all `TableConstraint` items come after all `ColumnDefinition` items, raising `ValueError` otherwise; a corresponding test added.
 
 ---
 

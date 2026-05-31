@@ -1,3 +1,5 @@
+import pytest
+
 from sqlinpython import (
     Check,
     ColumnName,
@@ -538,3 +540,10 @@ def test_create_table_doesnt_accept_table_constraint() -> None:
         Constraint("a").ForeignKey("b").References("t")  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
         # ty doesn't currently identify this error -ty: ignore[invalid-argument]
     ).WithoutRowId.Strict
+
+
+def test_create_table_column_after_constraint_raises() -> None:
+    with pytest.raises(
+        ValueError, match="column definitions must come before table constraints"
+    ):
+        _ = Create.Table("table_name")(a, PrimaryKey(a), b)
