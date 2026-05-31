@@ -13,83 +13,39 @@ if TYPE_CHECKING:
     from sqlinpython.table_foreign_key_clause import TableReferences_
 
 
-class ConstraintKeyword(SqlElement):
-    def __call__(self, name: Name | str) -> ConstraintWithName:
-        if isinstance(name, str):
-            name = Name(name)
-        return ConstraintWithName(self, name)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        buffer.append("CONSTRAINT")
+# https://sqlite.org/syntax/table-constraint.html
 
 
-Constraint = ConstraintKeyword()
+class TableConstraint(SqlElement, ABC):
+    pass
 
 
-class ConstraintWithName(SqlElement):
-    def __init__(self, prev: SqlElement, name: Name) -> None:
+class TableConstraintWithConflictClause(OnConflictAction, TableConstraint):
+    pass
+
+
+class ConstraintBeforeConflictClause(TableConstraint):
+    def __init__(
+        self,
+        prev: SqlElement,
+        columns: tuple[IndexedColumn, ...],
+        autoincrement: bool = False,
+    ) -> None:
         self._prev = prev
-        self._name = name
+        self._columns = columns
+        self._autoincrement = autoincrement
 
-    @property
-    def PrimaryKey(self) -> PrimaryKeyConstraint:
-        return PrimaryKeyConstraint(self)
-
-    @property
-    def Unique(self) -> UniqueConstraint:
-        return UniqueConstraint(self)
-
-    def Check(self, expr: Expression) -> CheckConstraint:
-        return CheckConstraint(self, expr)
-
-    def ForeignKey(self, *column_names: str | Name) -> ForeignKeyConstraint:
-        names = tuple(
-            column_name if isinstance(column_name, Name) else Name(column_name)
-            for column_name in column_names
-        )
-        return ForeignKeyConstraint(self, names)
+    def OnConflict(self) -> OnConflict_[TableConstraintWithConflictClause]:
+        return OnConflict_(TableConstraintWithConflictClause, self)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
-        buffer.append(" ")
-        self._name._create_query(buffer)
-
-
-class ForeignKeyConstraint(SqlElement):
-    def __init__(
-        self, prev: ConstraintWithName | None, column_names: tuple[Name, ...]
-    ) -> None:
-        self._prev = prev
-        self._column_names = column_names
-
-    def References(self, foreign_table_name: Name | str) -> TableReferences_:
-        from sqlinpython.table_foreign_key_clause import TableReferences_
-
-        if isinstance(foreign_table_name, str):
-            foreign_table_name = Name(foreign_table_name)
-
-        return TableReferences_(self, foreign_table_name)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        if self._prev is not None:
-            self._prev._create_query(buffer)
-            buffer.append(" FOREIGN KEY(")
-        else:
-            buffer.append("FOREIGN KEY(")
-
-        comma_separated(buffer, self._column_names)
+        buffer.append(" (")
+        comma_separated(buffer, self._columns)
+        if self._autoincrement:
+            buffer.append(" AUTOINCREMENT")
         buffer.append(")")
-
-
-def ForeignKey(*column_names: Name | str) -> ForeignKeyConstraint:
-    names = tuple(
-        Name(column_name) if isinstance(column_name, str) else column_name
-        for column_name in column_names
-    )
-    return ForeignKeyConstraint(None, names)
 
 
 class PrimaryKeyConstraint(SqlElement):
@@ -140,38 +96,6 @@ class UniqueConstraint(SqlElement):
 Unique = UniqueConstraint(None)
 
 
-class TableConstraint(SqlElement, ABC):
-    pass
-
-
-class TableConstraintWithConflictClause(OnConflictAction, TableConstraint):
-    pass
-
-
-class ConstraintBeforeConflictClause(TableConstraintWithConflictClause):
-    def __init__(
-        self,
-        prev: SqlElement,
-        columns: tuple[IndexedColumn, ...],
-        autoincrement: bool = False,
-    ) -> None:
-        self._prev = prev
-        self._columns = columns
-        self._autoincrement = autoincrement
-
-    def OnConflict(self) -> OnConflict_[TableConstraintWithConflictClause]:
-        return OnConflict_(TableConstraintWithConflictClause, self)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" (")
-        comma_separated(buffer, self._columns)
-        if self._autoincrement:
-            buffer.append(" AUTOINCREMENT")
-        buffer.append(")")
-
-
 class CheckConstraint(TableConstraint):
     def __init__(self, prev: ConstraintWithName | None, expr: Expression) -> None:
         self._prev = prev
@@ -192,3 +116,82 @@ class CheckConstraint(TableConstraint):
 
 def Check(expr: Expression) -> CheckConstraint:
     return CheckConstraint(None, expr)
+
+
+class ForeignKeyConstraint(SqlElement):
+    def __init__(
+        self, prev: ConstraintWithName | None, column_names: tuple[Name, ...]
+    ) -> None:
+        self._prev = prev
+        self._column_names = column_names
+
+    def References(self, foreign_table_name: Name | str) -> TableReferences_:
+        from sqlinpython.table_foreign_key_clause import TableReferences_
+
+        if isinstance(foreign_table_name, str):
+            foreign_table_name = Name(foreign_table_name)
+
+        return TableReferences_(self, foreign_table_name)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        if self._prev is not None:
+            self._prev._create_query(buffer)
+            buffer.append(" FOREIGN KEY(")
+        else:
+            buffer.append("FOREIGN KEY(")
+
+        comma_separated(buffer, self._column_names)
+        buffer.append(")")
+
+
+def ForeignKey(*column_names: Name | str) -> ForeignKeyConstraint:
+    names = tuple(
+        Name(column_name) if isinstance(column_name, str) else column_name
+        for column_name in column_names
+    )
+    return ForeignKeyConstraint(None, names)
+
+
+class ConstraintWithName(SqlElement):
+    def __init__(self, prev: SqlElement, name: Name) -> None:
+        self._prev = prev
+        self._name = name
+
+    @property
+    def PrimaryKey(self) -> PrimaryKeyConstraint:
+        return PrimaryKeyConstraint(self)
+
+    @property
+    def Unique(self) -> UniqueConstraint:
+        return UniqueConstraint(self)
+
+    def Check(self, expr: Expression) -> CheckConstraint:
+        return CheckConstraint(self, expr)
+
+    def ForeignKey(self, *column_names: str | Name) -> ForeignKeyConstraint:
+        names = tuple(
+            column_name if isinstance(column_name, Name) else Name(column_name)
+            for column_name in column_names
+        )
+        return ForeignKeyConstraint(self, names)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" ")
+        self._name._create_query(buffer)
+
+
+class ConstraintKeyword(SqlElement):
+    def __call__(self, name: Name | str) -> ConstraintWithName:
+        if isinstance(name, str):
+            name = Name(name)
+        return ConstraintWithName(self, name)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("CONSTRAINT")
+
+
+Constraint = ConstraintKeyword()

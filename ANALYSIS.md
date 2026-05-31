@@ -4,7 +4,6 @@
 
 | File | Mixins | Ordering |
 |------|--------|----------|
-| `table_constraint.py` | Good | Needs Work |
 | `expression/core.py` | Needs Work | Good |
 
 ## Good (no Needs Work)
@@ -53,7 +52,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `indexed_column.py` | Excellent | Excellent | Fixed: `IndexedColumn` made abstract; `IHasAscDesc(IndexedColumn, IHasNulls, ABC)` mixin added; `ColumnNameWithOrdering` and `IndexedColumnWithCollate` are siblings extending it |
 | `column_name.py` | Excellent | Excellent | Fixed: `IColumnNameAs(Expression, IColumnConstraint, ABC)` mixin extracts duplicated `Collate` and `As` from both `ColumnNameWithCollate` and `ColumnName`; `ColumnName` drops explicit `IColumnConstraint` base (encoded in mixin) |
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
-| `table_constraint.py` | Good | Needs Work | No `I*` mixins; `TableConstraint` (abstract base) buried at line 143 instead of at top; `ConstraintKeyword` (entry) at line 16 instead of bottom |
+| `table_constraint.py` | Excellent | Excellent | Fixed: `TableConstraint` moved to top; `ConstraintBeforeConflictClause` changed to inherit `TableConstraint` directly (not via `TableConstraintWithConflictClause`); `ConstraintKeyword`/`Constraint` moved to bottom |
 | `expression/core.py` | Needs Work | Good | `NegatedOperator` duplicates ~8 methods from `Expression`; `IsExpression` chain uses concrete→concrete inheritance (same anti-pattern as `insert.py`); ordering follows precedence chain top→bottom which is reasonable for this domain |
 | `expression/function.py` | Excellent | Excellent | Fixed: `IFrameSpecBound` and `IFunctionCallOver` mixins added; `FunctionName` moved to bottom |
 | `returning.py` | N/A | N/A | Single shared base class, no chain to evaluate |
@@ -125,26 +124,13 @@ All mixin and ordering issues resolved:
 
 ---
 
-### `table_constraint.py` — Good / Needs Work
+### `table_constraint.py` — Fixed
 
-**Ordering issue only.**
-
-`TableConstraint` (the abstract base that `ConstraintBeforeConflictClause`, `CheckConstraint`, and `TableForeignKeyClause` all inherit from) is defined at line 143, well below `PrimaryKeyConstraint` (line 95), `UniqueConstraint` (line 124), `ConstraintWithName` (line 30), and `ConstraintKeyword` (line 16). Python allows this because none of those earlier classes inherit from `TableConstraint`, but it violates the "abstract base at the top" rule.
-
-`ConstraintKeyword` and its singleton `Constraint = ConstraintKeyword()` are the entry points and should be at the bottom.
-
-Correct file structure:
-```
-TableConstraint                          # abstract base — very top
-TableConstraintWithConflictClause
-ConstraintBeforeConflictClause           # terminal
-CheckConstraint                          # terminal
-ForeignKeyConstraint                     # entry for FK sub-chain
-PrimaryKeyConstraint                     # entry for PK sub-chain
-UniqueConstraint                         # entry for UNIQUE sub-chain
-ConstraintWithName                       # branches to all of the above
-ConstraintKeyword / Constraint           # entry — bottom
-```
+- `TableConstraint(SqlElement, ABC)` moved to the top of the file (was buried at line 143).
+- `ConstraintBeforeConflictClause` changed to inherit `TableConstraint` directly instead of `TableConstraintWithConflictClause` — it overrides both `__init__` and `_create_query` so gained nothing from the concrete base, and is not conceptually a conflict-action result.
+- `TableConstraintWithConflictClause` remains as the factory passed to `OnConflict_[T]`; `ConstraintBeforeConflictClause.OnConflict()` is unchanged.
+- Terminal classes (`ConstraintBeforeConflictClause`, `CheckConstraint`) moved above mid-chain entries (`ForeignKeyConstraint`, `PrimaryKeyConstraint`, `UniqueConstraint`).
+- `ConstraintWithName` and `ConstraintKeyword`/`Constraint` moved to the bottom as the branching hub and entry point.
 
 ---
 
