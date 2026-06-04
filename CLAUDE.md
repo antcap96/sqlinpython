@@ -184,10 +184,12 @@ FunctionName("SUM")(a).Over(PartitionBy(b))   # SUM(a) OVER (PARTITION BY b)
 ```
 
 **Window function hierarchy:**
-- `WindowDefn` → base class for window definitions
-- `OrderByClause` → has `Range`, `Rows`, `Groups` properties
-- `PartitionByClause(OrderByClause)` → inherits frame spec access, has `OrderBy`
-- `WindowName(Name, PartitionByClause)` → inherits both PARTITION BY and frame spec
+- `WindowDefn` → abstract base for window definitions
+- `IHasFrameSpec(WindowDefn, ABC)` → mixin providing `Range`, `Rows`, `Groups`
+- `IHasOrderBy(IHasFrameSpec, ABC)` → mixin adding `OrderBy` (encodes `IHasFrameSpec`)
+- `OrderByClause(IHasFrameSpec)` → concrete `ORDER BY ...` form
+- `PartitionByClause(IHasOrderBy)` → concrete `PARTITION BY ...` form — sibling of `OrderByClause`, not a subclass
+- `WindowName(Name, IHasOrderBy)` → adds `PartitionBy` on top of the mixin chain
 
 **Frame spec pattern** uses chained properties/calls:
 ```python
@@ -202,7 +204,7 @@ Rows.CurrentRow.ExcludeTies                        # ROWS CURRENT ROW EXCLUDE TI
 **Key patterns learned:**
 1. Use `Literal` types to differentiate similar keywords (e.g., `Literal["RANGE", "ROWS", "GROUPS"]`)
 2. Use `# type: ignore[assignment]` when subclasses reuse attribute names with different Literal types
-3. Inheritance can share properties across related clauses (e.g., `PartitionByClause` inherits from `OrderByClause` to get `Range`/`Rows`/`Groups`)
+3. Layered `I*` mixins share properties across related clauses (e.g., `IHasFrameSpec` provides `Range`/`Rows`/`Groups`; `IHasOrderBy` adds `OrderBy` on top)
 4. Expression properties like `expr.Preceding` and `expr.Following` create frame bound objects
 
 ### Common Table Expressions (`common_table_expression.py`)

@@ -43,11 +43,7 @@ class OrderByKeyword:
 OrderBy = OrderByKeyword(None)
 
 
-class OrderByClause(WindowDefn):
-    def __init__(self, prev: SqlElement | None, terms: tuple[OrderingTerm, ...]):
-        self._prev = prev
-        self._terms = terms
-
+class IHasFrameSpec(WindowDefn, ABC):
     @property
     def Range(self) -> FrameSpecClause:
         return FrameSpecClause(self, "RANGE")
@@ -59,6 +55,12 @@ class OrderByClause(WindowDefn):
     @property
     def Groups(self) -> FrameSpecClause:
         return FrameSpecClause(self, "GROUPS")
+
+
+class OrderByClause(IHasFrameSpec):
+    def __init__(self, prev: SqlElement | None, terms: tuple[OrderingTerm, ...]):
+        self._prev = prev
+        self._terms = terms
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -298,14 +300,16 @@ class PartitionByKeyword:
 PartitionBy = PartitionByKeyword(None)
 
 
-class PartitionByClause(OrderByClause):
-    def __init__(self, prev: SqlElement | None, exprs: tuple[Expression, ...]):
-        self._prev = prev
-        self._exprs = exprs
-
+class IHasOrderBy(IHasFrameSpec, ABC):
     @property
     def OrderBy(self) -> OrderByKeyword:
         return OrderByKeyword(self)
+
+
+class PartitionByClause(IHasOrderBy):
+    def __init__(self, prev: SqlElement | None, exprs: tuple[Expression, ...]):
+        self._prev = prev
+        self._exprs = exprs
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -316,7 +320,7 @@ class PartitionByClause(OrderByClause):
         comma_separated(buffer, self._exprs)
 
 
-class WindowName(Name, PartitionByClause):
+class WindowName(Name, IHasOrderBy):
     @property
     def PartitionBy(self) -> PartitionByKeyword:
         return PartitionByKeyword(self)

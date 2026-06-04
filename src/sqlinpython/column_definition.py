@@ -88,14 +88,16 @@ class ConflictClauseMaybeAutoIncrement(OnConflictAction, IColumnConstraint):
         return ConflictClauseAutoIncrement(self)
 
 
-class ColumnConstraintPrimaryKeyOrdered(ConflictClauseMaybeAutoIncrement):
-    def __init__(self, prev: SqlElement, ascending: bool):
-        self._prev = prev
-        self._ascending = ascending
-
+class IPrimaryKeyConflict(ConflictClauseMaybeAutoIncrement, ABC):
     @property
     def OnConflict(self) -> OnConflict_[ConflictClauseMaybeAutoIncrement]:
         return OnConflict_(ConflictClauseMaybeAutoIncrement, self)
+
+
+class ColumnConstraintPrimaryKeyOrdered(IPrimaryKeyConflict):
+    def __init__(self, prev: SqlElement, ascending: bool):
+        self._prev = prev
+        self._ascending = ascending
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -106,7 +108,7 @@ class ColumnConstraintPrimaryKeyOrdered(ConflictClauseMaybeAutoIncrement):
             buffer.append(" DESC")
 
 
-class ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered):
+class ColumnConstraintPrimaryKey(IPrimaryKeyConflict):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
@@ -128,20 +130,13 @@ class ConstraintWithClause(OnConflictAction, IColumnConstraint, ABC):
     pass
 
 
-class ConflictClause(ConstraintWithClause):
-    def __init__(self, prev: SqlElement):
-        self._prev = prev
-
+class IConflictClause(ConstraintWithClause, ABC):
     @property
     def OnConflict(self) -> OnConflict_[ConstraintWithClause]:
         return OnConflict_(ConstraintWithClause, self)
 
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
 
-
-class WithNotNull(ConflictClause):
+class WithNotNull(IConflictClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
@@ -151,7 +146,7 @@ class WithNotNull(ConflictClause):
         buffer.append(" NOT NULL")
 
 
-class WithUnique(ConflictClause):
+class WithUnique(IConflictClause):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 

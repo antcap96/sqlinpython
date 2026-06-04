@@ -22,7 +22,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `delete.py` | Excellent | Excellent | Textbook — five `I*` mixins, each placed just above first user |
 | `update.py` | Excellent | Excellent | Same discipline as `delete.py` |
 | `create_trigger.py` | Excellent | Excellent | Four `I*` mixins (`IBeforeBegin`, `IWithWhen`, `IBeforeOnTable`, `IEventClause`), all correctly placed |
-| `column_definition.py` | Excellent | Excellent | Fixed: `ConstraintWithClause` marked `ABC`; `IColumnConstraint`/`IColumnConstraintWithName` split is the canonical pattern |
+| `column_definition.py` | Excellent | Excellent | Fixed: `IPrimaryKeyConflict` mixin breaks `ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered)` concrete chain; `IConflictClause` replaces concrete `ConflictClause` pass-through used by `WithNotNull`/`WithUnique` |
 | `column_foreign_key_clause.py` | Excellent | Excellent | Fixed: `ColumnBeforeDeferrable` merged into `IColumnBeforeDeferrable`; ON and DEFERRABLE sub-chains inverted to terminal-at-top |
 | `table_foreign_key_clause.py` | Excellent | Excellent | Fixed: `TableBeforeDeferrable` merged into `ITableBeforeDeferrable`; DEFERRABLE sub-chain moved above ON sub-chain |
 | `select.py` | Excellent | Excellent | Fixed: concrete chain reordered and mixins interleaved — each `I*` mixin placed just above its first user; `SelectOrderBy` sits just below `ISelectLimit` |
@@ -41,7 +41,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
 | `table_constraint.py` | Excellent | Excellent | Fixed: `TableConstraint` moved to top; `ConstraintBeforeConflictClause` changed to inherit `TableConstraint` directly (not via `TableConstraintWithConflictClause`); `ConstraintKeyword`/`Constraint` moved to bottom |
 | `expression/core.py` | Excellent | Good | Fixed: `INegatedOperations` mixin extracts `Between`/`In`/`Glob`/`Regexp`/`Match`/`Like` shared by `Expression` and `NegatedOperator`; `IIsCallable` mixin breaks `IsExpression(IsNotExpression(IsDistinctFromExpression))` concrete chain into siblings; ordering follows precedence chain top→bottom (domain-specific exception) |
-| `expression/function.py` | Excellent | Excellent | Fixed: `IFrameSpecBound` and `IFunctionCallOver` mixins added; `FunctionName` moved to bottom |
+| `expression/function.py` | Excellent | Excellent | Fixed: `IFrameSpecBound` and `IFunctionCallOver` mixins added; `FunctionName` moved to bottom; `IHasFrameSpec`/`IHasOrderBy` mixin layer replaces concrete `PartitionByClause(OrderByClause)` and `WindowName(Name, PartitionByClause)` chains |
 | `returning.py` | N/A | N/A | Single shared base class, no chain to evaluate |
 | `select_base.py` | N/A | N/A | Type-tag markers and abstract base; infrastructure file |
 | `conflict_clause.py` | N/A | N/A | Generic utility (`OnConflict_[T]`), not a builder chain |
@@ -195,6 +195,13 @@ All mixin and ordering issues resolved:
 
 ---
 
+### `column_definition.py` — Fixed (concrete-chain cleanup)
+
+- `IPrimaryKeyConflict(ConflictClauseMaybeAutoIncrement, ABC)` mixin added — extracts `.OnConflict` previously defined on `ColumnConstraintPrimaryKeyOrdered`. `ColumnConstraintPrimaryKey` and `ColumnConstraintPrimaryKeyOrdered` now both extend the mixin directly as siblings; the previous `ColumnConstraintPrimaryKey(ColumnConstraintPrimaryKeyOrdered)` concrete inheritance only existed because the child overrode `__init__` AND `_create_query`, gaining nothing from the parent except `.OnConflict` and type-hierarchy placement.
+- `IConflictClause(ConstraintWithClause, ABC)` replaces the concrete `ConflictClause` class — its body was a pass-through `_create_query` that did nothing, so the class was effectively abstract. `WithNotNull` and `WithUnique` now extend the mixin directly.
+
+---
+
 ### `table_or_subquery.py` — Fixed
 
 - `Aliased(TableOrSubquery, ABC)` base added, holding the shared `__init__(prev, alias, explicit_as)` and ` [AS] alias` render. `TableFunctionRefAliased` and `SubqueryAliased` collapse to empty subclasses; `TableRefAliased` extends it and adds `.Star`/`__getitem__` (the only behaviour that wasn't shared).
@@ -209,3 +216,4 @@ All mixin and ordering issues resolved:
 - `IFrameSpecBound(WindowDefn, ABC)` replaces the concrete `FrameSpecBound(FrameSpecWithExclude)`: base changed from `FrameSpecWithExclude` to `WindowDefn` (frame bounds ARE valid window definitions, but are NOT themselves "frame specs with an EXCLUDE clause"); all four concrete frame bound classes now extend `IFrameSpecBound` directly; the `# type: ignore[assignment]` comments on `FrameSpecBetweenEnd` and `FrameSpecSingleBound` are removed (they were only needed due to the conflicting `_kind` Literal type from the old parent).
 - `IFunctionCallOver(Expression13, ABC)` mixin added, providing `.Over()`; `FunctionCall` and `FunctionCallWithFilter` both extend it directly instead of chaining through each other.
 - `FunctionName` moved to the bottom of the file — reading bottom-to-top now follows the builder chain: `FunctionName` → `FunctionCall` → `FunctionCallWithFilter` → `FunctionCallWithOver` (terminal).
+- `IHasFrameSpec(WindowDefn, ABC)` mixin added providing `Range`/`Rows`/`Groups`; `IHasOrderBy(IHasFrameSpec, ABC)` mixin layered on top adds `OrderBy`. `OrderByClause(IHasFrameSpec)`, `PartitionByClause(IHasOrderBy)`, and `WindowName(Name, IHasOrderBy)` are now siblings — the previous concrete chains `PartitionByClause(OrderByClause)` and `WindowName(Name, PartitionByClause)` (both overrode `__init__` and `_create_query`, inheriting only the property accessors) are gone. CLAUDE.md's "Window function hierarchy" section updated to reflect the layered-mixin shape.
