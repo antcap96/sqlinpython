@@ -39,10 +39,10 @@ def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
 class ISelectAliasable(SelectStatement_[Complete], ABC):
     """Mixin for SELECT statements that can be aliased as subqueries."""
 
-    def As(self, alias: Name | str) -> SubqueryAliased:
+    def As(self, alias: Name | str, *, explicit_as: bool = True) -> SubqueryAliased:
         if isinstance(alias, str):
             alias = Name(alias)
-        return SubqueryAliased(self, alias)
+        return SubqueryAliased(self, alias, explicit_as)
 
 
 # ---------------------------------------------------------------------------

@@ -4,12 +4,28 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement, comma_separated
-from sqlinpython.expression.core import SchemaTableColumnName, TableColumnName
+from sqlinpython.expression.core import (
+    Expression,
+    SchemaTableColumnName,
+    TableColumnName,
+)
 from sqlinpython.name import Name
 from sqlinpython.select_base import Complete, SelectStatement_
 
 # SPEC: https://sqlite.org/syntax/table-or-subquery.html
 # SPEC: https://sqlite.org/syntax/join-clause.html
+
+
+class TableStarResultColumn(SqlElement):
+    """Represents table-name.* in result columns."""
+
+    def __init__(self, table_name: Name) -> None:
+        self._table_name = table_name
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._table_name._create_query(buffer)
+        buffer.append(".*")
 
 
 class TableOrSubquery(SqlElement, ABC):
@@ -67,39 +83,28 @@ class TableOrSubquery(SqlElement, ABC):
         return JoinRhs(self, "NATURAL INNER JOIN", rhs)
 
 
-class TableStarResultColumn(SqlElement):
-    """Represents table-name.* in result columns."""
+class Aliased(TableOrSubquery, ABC):
+    """`<prev> [AS] <alias>` — shared base for all aliased table-or-subquery forms."""
 
-    def __init__(self, table_name: Name) -> None:
-        self._table_name = table_name
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._table_name._create_query(buffer)
-        buffer.append(".*")
-
-
-class TableRefAliased(TableOrSubquery):
     def __init__(self, prev: SqlElement, alias: Name, explicit_as: bool) -> None:
         self._prev = prev
         self._alias = alias
         self._explicit_as = explicit_as
 
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._prev._create_query(buffer)
+        buffer.append(" AS " if self._explicit_as else " ")
+        self._alias._create_query(buffer)
+
+
+class TableRefAliased(Aliased):
     @property
     def Star(self) -> TableStarResultColumn:
         return TableStarResultColumn(self._alias)
 
     def __getitem__(self, column: str) -> TableColumnName:
         return TableColumnName(self._alias, column)
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        if self._explicit_as:
-            buffer.append(" AS ")
-        else:
-            buffer.append(" ")
-        self._alias._create_query(buffer)
 
 
 class TableRefIndexedBy(TableOrSubquery):
@@ -168,27 +173,21 @@ class TableRef(TableOrSubquery):
             self._table._create_query(buffer)
 
 
-class TableFunctionRefAliased(TableOrSubquery):
-    def __init__(self, prev: SqlElement, alias: Name) -> None:
-        self._prev = prev
-        self._alias = alias
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" AS ")
-        self._alias._create_query(buffer)
+class TableFunctionRefAliased(Aliased):
+    pass
 
 
 class TableFunctionRefCall(TableOrSubquery):
-    def __init__(self, prev: SqlElement, args: tuple[SqlElement, ...]) -> None:
+    def __init__(self, prev: SqlElement, args: tuple[Expression, ...]) -> None:
         self._prev = prev
         self._args = args
 
-    def As(self, alias: Name | str) -> TableFunctionRefAliased:
+    def As(
+        self, alias: Name | str, *, explicit_as: bool = True
+    ) -> TableFunctionRefAliased:
         if isinstance(alias, str):
             alias = Name(alias)
-        return TableFunctionRefAliased(self, alias)
+        return TableFunctionRefAliased(self, alias, explicit_as)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -209,7 +208,7 @@ class TableFunctionRef(SqlElement):
         self._schema = schema
         self._name = name
 
-    def __call__(self, *args: SqlElement) -> TableFunctionRefCall:
+    def __call__(self, *args: Expression) -> TableFunctionRefCall:
         return TableFunctionRefCall(self, args)
 
     @override
@@ -220,16 +219,8 @@ class TableFunctionRef(SqlElement):
             self._name._create_query(buffer)
 
 
-class SubqueryAliased(TableOrSubquery):
-    def __init__(self, prev: SqlElement, alias: Name) -> None:
-        self._prev = prev
-        self._alias = alias
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append(" AS ")
-        self._alias._create_query(buffer)
+class SubqueryAliased(Aliased):
+    pass
 
 
 class Subquery(TableOrSubquery):
@@ -238,10 +229,10 @@ class Subquery(TableOrSubquery):
     def __init__(self, select_stmt: SelectStatement_[Complete]) -> None:
         self._select_stmt = select_stmt
 
-    def As(self, alias: Name | str) -> SubqueryAliased:
+    def As(self, alias: Name | str, *, explicit_as: bool = True) -> SubqueryAliased:
         if isinstance(alias, str):
             alias = Name(alias)
-        return SubqueryAliased(self, alias)
+        return SubqueryAliased(self, alias, explicit_as)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

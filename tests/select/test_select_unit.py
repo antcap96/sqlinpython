@@ -32,6 +32,10 @@ def test_table_ref_aliased() -> None:
     assert to_str(TableRef("users").As("u")) == "users AS u"
 
 
+def test_table_ref_aliased_implicit_as() -> None:
+    assert to_str(TableRef("users").As("u", explicit_as=False)) == "users u"
+
+
 def test_table_ref_indexed_by() -> None:
     assert (
         to_str(TableRef("users").IndexedBy("idx_name")) == "users INDEXED BY idx_name"
@@ -73,6 +77,11 @@ def test_table_function_ref_aliased() -> None:
     assert to_str(f) == 'schema.json_each("[]") AS j'
 
 
+def test_table_function_ref_aliased_implicit_as() -> None:
+    f = TableFunctionRef("json_each")(literal("[]")).As("j", explicit_as=False)
+    assert to_str(f) == 'json_each("[]") j'
+
+
 # ---------------------------------------------------------------------------
 # Subquery
 # ---------------------------------------------------------------------------
@@ -86,6 +95,11 @@ def test_subquery() -> None:
 def test_subquery_aliased() -> None:
     inner = Select("*").From(TableRef("t"))
     assert to_str(Subquery(inner).As("s")) == "(SELECT * FROM t) AS s"
+
+
+def test_subquery_aliased_implicit_as() -> None:
+    inner = Select("*").From(TableRef("t"))
+    assert to_str(Subquery(inner).As("s", explicit_as=False)) == "(SELECT * FROM t) s"
 
 
 # ---------------------------------------------------------------------------

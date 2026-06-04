@@ -1,10 +1,6 @@
 # Files Still With Issues
 
-## Good (no Needs Work)
-
-| File | Mixins | Ordering |
-|------|--------|----------|
-| `table_or_subquery.py` | Good | Good |
+_None — all files now rated Excellent on both criteria (or N/A)._
 
 ---
 
@@ -39,7 +35,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `type_name.py` | Excellent | Excellent | Fixed: `CompleteTypeName` made abstract; `TypeNameWithArgs` added as concrete "with numbers" variant |
 | `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
 | `create.py` | Excellent | Excellent | Fixed: `ICreateTemp` and `ICreateUnique` mixins added; `CreateKeyword` extends both directly instead of the concrete classes; `__init__` smell resolved |
-| `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
+| `table_or_subquery.py` | Excellent | Excellent | Fixed: `Aliased(TableOrSubquery, ABC)` base unifies the three `*Aliased` classes; `explicit_as` extended to subquery/table-function per SQLite spec; `TableFunctionRef.__call__` narrowed to `Expression`; `TableStarResultColumn` lifted to top as a leaf helper |
 | `indexed_column.py` | Excellent | Excellent | Fixed: `IndexedColumn` made abstract; `IHasAscDesc(IndexedColumn, IHasNulls, ABC)` mixin added; `ColumnNameWithOrdering` and `IndexedColumnWithCollate` are siblings extending it |
 | `column_name.py` | Excellent | Excellent | Fixed: `IColumnNameAs(Expression, IColumnConstraint, ABC)` mixin extracts duplicated `Collate` and `As` from both `ColumnNameWithCollate` and `ColumnName`; `ColumnName` drops explicit `IColumnConstraint` base (encoded in mixin) |
 | `insert.py` | Excellent | Excellent | Fixed: `IOnConflictDo`, `IBeforeUpsertClause`, `IInsertBody`, `ICallableWithColumnNames` mixins added; ordering corrected; `UpdateSet` API aligned with `Set` |
@@ -196,6 +192,15 @@ All mixin and ordering issues resolved:
 - `IWhenCallable(SqlElement, ABC)` mixin added, providing `.When(when) -> WhenClause`; the three independent `.When()` implementations on `ThenClause`, `CaseWithBaseExpr`, and `CaseKeyword` collapse into one.
 - `CaseKeyword` no longer inherits from `CaseWithBaseExpr`; it extends `IWhenCallable` directly as a sibling.
 - `IWhenCallable` placed just above `ThenClause` (the first user in file order).
+
+---
+
+### `table_or_subquery.py` — Fixed
+
+- `Aliased(TableOrSubquery, ABC)` base added, holding the shared `__init__(prev, alias, explicit_as)` and ` [AS] alias` render. `TableFunctionRefAliased` and `SubqueryAliased` collapse to empty subclasses; `TableRefAliased` extends it and adds `.Star`/`__getitem__` (the only behaviour that wasn't shared).
+- `explicit_as: bool = True` kwarg added to `TableFunctionRefCall.As`, `Subquery.As`, and `ISelectAliasable.As` (`select.py`) — the optional `AS` is part of the SQLite grammar for all three forms, not just table-name refs. Tests added for each.
+- `TableFunctionRef.__call__` and `TableFunctionRefCall._args` narrowed from `SqlElement` to `Expression` (table-function arguments are `expr` per the spec).
+- `TableStarResultColumn` moved to the top of the file (just below imports) — it's a leaf helper, not a `TableOrSubquery`, so it no longer sits inside the chain hierarchy.
 
 ---
 
