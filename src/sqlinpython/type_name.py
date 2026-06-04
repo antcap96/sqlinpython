@@ -1,3 +1,4 @@
+from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement
@@ -5,7 +6,11 @@ from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/syntax/type-name.html
-class CompleteTypeName(SqlElement):
+class CompleteTypeName(SqlElement, ABC):
+    pass
+
+
+class TypeNameWithArgs(CompleteTypeName):
     def __init__(self, prev: SqlElement, num1: int, num2: int | None = None):
         self._prev = prev
         self._num1 = num1
@@ -21,5 +26,5 @@ class CompleteTypeName(SqlElement):
 
 
 class TypeName(Name, CompleteTypeName):
-    def __call__(self, num1: int, num2: int | None = None) -> CompleteTypeName:
-        return CompleteTypeName(self, num1, num2)
+    def __call__(self, num1: int, num2: int | None = None) -> TypeNameWithArgs:
+        return TypeNameWithArgs(self, num1, num2)

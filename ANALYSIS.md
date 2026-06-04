@@ -4,7 +4,6 @@
 
 | File | Mixins | Ordering |
 |------|--------|----------|
-| `type_name.py` | Good | Excellent |
 | `table_or_subquery.py` | Good | Good |
 
 ---
@@ -37,7 +36,7 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 | `create_table.py` | Excellent | Excellent | Fixed: `ITableOptions` mixin extracts `.WithoutRowId`/`.Strict`; `AddComma` removed; ordering validation + test added |
 | `create_index.py` | Excellent | Excellent | Fixed: `ICallableCreateIndex` mixin extracts `__call__`; `CreateIndex` and `CreateIndexIfNotExists` are now siblings; bug removed where `CreateIndexIfNotExists` incorrectly exposed `.On()` |
 | `drop.py` | Excellent | Excellent | Fixed: `IDropCallable[T]` mixin extracts duplicated `__call__` from `DropTypeKeyword` and `DropIfExists` |
-| `type_name.py` | Good | Excellent | `TypeName(Name, CompleteTypeName)` inherits `__call__` reuse; two-class file, correct ordering |
+| `type_name.py` | Excellent | Excellent | Fixed: `CompleteTypeName` made abstract; `TypeNameWithArgs` added as concrete "with numbers" variant |
 | `alter_table.py` | Excellent | Excellent | Fixed: `IAlterTableOnConflict` mixin extracts shared `.OnConflict` from `AlterTableAddCheck` and `AlterTableAlterColumnSetNotNull`; `AlterTableAddConstraintCheck` moved above `AlterTableAddConstraintWithName` |
 | `create.py` | Excellent | Excellent | Fixed: `ICreateTemp` and `ICreateUnique` mixins added; `CreateKeyword` extends both directly instead of the concrete classes; `__init__` smell resolved |
 | `table_or_subquery.py` | Good | Good | All JOIN methods in `TableOrSubquery` base class (appropriate — every subclass needs them); each sub-chain (`TableRef`, `TableFunctionRef`, `Subquery`, join) correctly ordered internally |
@@ -67,6 +66,14 @@ Ratings: **Excellent** / **Good** / **Needs Work** / **N/A**
 ---
 
 ## Detailed Notes for Files with Issues
+
+### `type_name.py` — Fixed
+
+- `CompleteTypeName(SqlElement, ABC)` made abstract — it was concrete but only ever used as a type tag; per CLAUDE.md, the encoded base should itself be abstract.
+- `TypeNameWithArgs(CompleteTypeName)` added as the concrete "with numbers" variant, holding `__init__` and `_create_query` (previously on `CompleteTypeName`).
+- `TypeName(Name, CompleteTypeName)` now inherits from the abstract base; `__call__` return type narrowed to `TypeNameWithArgs`.
+
+---
 
 ### `insert.py` — Fixed
 
