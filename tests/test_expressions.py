@@ -1,4 +1,4 @@
-from sqlinpython import Name
+from sqlinpython import Name, TypeName
 from sqlinpython import expression as expr
 
 true = expr.literal(True)
@@ -642,3 +642,47 @@ def test_row_too_few_elements_fails_type_check() -> None:
     # ty doesn't currently identify this error -ty: ignore[missing-argument]
     _ = expr.Row()  # type: ignore[call-arg] # pyright: ignore[reportCallIssue]
     # ty doesn't currently identify this error -ty: ignore[missing-argument]
+
+
+# ---------------------------------------------------------------------------
+# CAST(expr AS type-name)
+# ---------------------------------------------------------------------------
+
+
+def test_cast_basic() -> None:
+    assert to_str(expr.Cast(one, TypeName("INTEGER"))) == "CAST(1 AS INTEGER)"
+
+
+def test_cast_inner_expression_not_wrapped() -> None:
+    assert to_str(expr.Cast(one + two, TypeName("INTEGER"))) == "CAST(1 + 2 AS INTEGER)"
+
+
+def test_cast_type_with_one_arg() -> None:
+    assert to_str(expr.Cast(a, TypeName("VARCHAR")(10))) == 'CAST("a" AS VARCHAR(10))'
+
+
+def test_cast_type_with_two_args() -> None:
+    assert (
+        to_str(expr.Cast(a, TypeName("DECIMAL")(10, 2)))
+        == 'CAST("a" AS DECIMAL(10, 2))'
+    )
+
+
+def test_cast_nested() -> None:
+    assert (
+        to_str(expr.Cast(expr.Cast(one, TypeName("FLOAT")), TypeName("INTEGER")))
+        == "CAST(CAST(1 AS FLOAT) AS INTEGER)"
+    )
+
+
+def test_cast_inside_comparison_not_parenthesized() -> None:
+    assert (
+        to_str(expr.Cast(one, TypeName("INTEGER")).eq(two)) == "CAST(1 AS INTEGER) = 2"
+    )
+
+
+def test_cast_inside_in() -> None:
+    assert (
+        to_str(one.In(expr.Cast(a, TypeName("INTEGER"))))
+        == '1 IN (CAST("a" AS INTEGER))'
+    )

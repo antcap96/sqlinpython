@@ -9,6 +9,7 @@ from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement, SelectStatement_
+from sqlinpython.type_name import CompleteTypeName
 
 
 class TableFunction(NotImplementedSqlElement):
@@ -786,6 +787,20 @@ class Row(Expression13):
         buffer.append(")")
 
 
+class Cast(Expression13):
+    def __init__(self, expr: Expression, type_name: CompleteTypeName) -> None:
+        self._expr = expr
+        self._type_name = type_name
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("CAST(")
+        self._expr._create_query(buffer)
+        buffer.append(" AS ")
+        self._type_name._create_query(buffer)
+        buffer.append(")")
+
+
 class TableColumnName(Expression12):
     def __init__(self, table: Name | str, column: Name | str) -> None:
         if isinstance(table, str):
@@ -826,6 +841,5 @@ class SchemaTableColumnName(Expression12):
 
 
 # TODOs:
-# cast
 # Exists
 # raise-function

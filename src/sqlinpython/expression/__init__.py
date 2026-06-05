@@ -1,5 +1,6 @@
 from .bind_parameter import BindParameter as BindParameter
 from .case import Case as Case
+from .core import Cast as Cast
 from .core import Expression as Expression
 from .core import Not as Not
 from .core import Row as Row
