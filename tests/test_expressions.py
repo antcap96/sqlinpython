@@ -1,4 +1,4 @@
-from sqlinpython import Name, TypeName
+from sqlinpython import Name, Select, TableRef, TypeName
 from sqlinpython import expression as expr
 
 true = expr.literal(True)
@@ -686,3 +686,42 @@ def test_cast_inside_in() -> None:
         to_str(one.In(expr.Cast(a, TypeName("INTEGER"))))
         == '1 IN (CAST("a" AS INTEGER))'
     )
+
+
+# ---------------------------------------------------------------------------
+# EXISTS / NOT EXISTS / bare subquery
+# ---------------------------------------------------------------------------
+
+_subselect = Select("*").From(TableRef("t"))
+_subselect_sql = "SELECT * FROM t"
+
+
+def test_exists_basic() -> None:
+    assert to_str(expr.Exists(_subselect)) == f"EXISTS ({_subselect_sql})"
+
+
+def test_not_exists() -> None:
+    assert to_str(expr.Not(expr.Exists(_subselect))) == f"NOT EXISTS ({_subselect_sql})"
+
+
+def test_not_exists_via_method() -> None:
+    assert to_str(expr.Not.Exists(_subselect)) == f"NOT EXISTS ({_subselect_sql})"
+
+
+def test_exists_in_and() -> None:
+    assert (
+        to_str(expr.Exists(_subselect).And(true))
+        == f"EXISTS ({_subselect_sql}) AND TRUE"
+    )
+
+
+def test_subquery_basic() -> None:
+    assert to_str(expr.Subquery(_subselect)) == f"({_subselect_sql})"
+
+
+def test_subquery_in_comparison() -> None:
+    assert to_str(expr.Subquery(_subselect).eq(one)) == f"({_subselect_sql}) = 1"
+
+
+def test_subquery_in_arithmetic() -> None:
+    assert to_str(expr.Subquery(_subselect) + one) == f"({_subselect_sql}) + 1"

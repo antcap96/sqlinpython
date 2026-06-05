@@ -9,7 +9,7 @@ From the TODO at the bottom of `src/sqlinpython/expression/core.py`:
 
 - [x] **tuple** — `(expr, expr, ...)` parenthesized expression list (row value, used in `(a, b) IN (...)`, `(a, b) = (SELECT x, y ...)`, etc.) — implemented as `expr.Row(first, second, *rest)`
 - [x] **cast** — `CAST(expr AS type-name)` — implemented as `expr.Cast(expression, type_name)` where `type_name` is a `CompleteTypeName` (e.g. `TypeName("INTEGER")` or `TypeName("DECIMAL")(10, 2)`)
-- [ ] **Exists** — `[NOT] EXISTS (select-stmt)`, plus the related bare subquery-as-expression `(select-stmt)`
+- [x] **Exists** — `[NOT] EXISTS (select-stmt)`, plus the related bare subquery-as-expression `(select-stmt)` — implemented as `expr.Exists(select_stmt)`, `expr.Not.Exists(select_stmt)` (or `expr.Not(expr.Exists(select_stmt))`), and `expr.Subquery(select_stmt)`. The expression-position `Subquery` is a distinct class from the FROM-clause `Subquery` (`sqlinpython.table_or_subquery.Subquery`) — same SQL output, separate types so FROM-clause subqueries don't accidentally pick up expression methods.
 - [ ] **raise-function** — `RAISE(IGNORE)` and `RAISE(ROLLBACK|ABORT|FAIL, error-message)`
 
 ## Missing `literal-value` variants

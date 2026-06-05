@@ -319,8 +319,15 @@ class Expression3(Expression2, ABC):
     pass
 
 
-def Not(after: Expression) -> NotExpression:
-    return NotExpression(after._wrap_parenthesis_if_not(Expression3))
+class NotKeyword:
+    def __call__(self, after: Expression) -> NotExpression:
+        return NotExpression(after._wrap_parenthesis_if_not(Expression3))
+
+    def Exists(self, select_stmt: SelectStatement) -> NotExpression:
+        return NotExpression(Exists(select_stmt))
+
+
+Not = NotKeyword()
 
 
 class NotExpression(Expression3):
@@ -801,6 +808,28 @@ class Cast(Expression13):
         buffer.append(")")
 
 
+class Subquery(Expression13):
+    def __init__(self, select_stmt: SelectStatement) -> None:
+        self._select_stmt = select_stmt
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("(")
+        self._select_stmt._create_query(buffer)
+        buffer.append(")")
+
+
+class Exists(Expression13):
+    def __init__(self, select_stmt: SelectStatement) -> None:
+        self._select_stmt = select_stmt
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("EXISTS (")
+        self._select_stmt._create_query(buffer)
+        buffer.append(")")
+
+
 class TableColumnName(Expression12):
     def __init__(self, table: Name | str, column: Name | str) -> None:
         if isinstance(table, str):
@@ -841,5 +870,4 @@ class SchemaTableColumnName(Expression12):
 
 
 # TODOs:
-# Exists
 # raise-function
