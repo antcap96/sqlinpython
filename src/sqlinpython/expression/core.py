@@ -773,6 +773,19 @@ class ParenthesizedExpression(Expression13):
         buffer.append(")")
 
 
+class Row(Expression13):
+    def __init__(
+        self, *exprs: *tuple[Expression, Expression, *tuple[Expression, ...]]
+    ) -> None:
+        self._exprs = exprs
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append("(")
+        comma_separated(buffer, self._exprs)
+        buffer.append(")")
+
+
 class TableColumnName(Expression12):
     def __init__(self, table: Name | str, column: Name | str) -> None:
         if isinstance(table, str):
@@ -813,7 +826,6 @@ class SchemaTableColumnName(Expression12):
 
 
 # TODOs:
-# tuple
 # cast
 # Exists
 # raise-function

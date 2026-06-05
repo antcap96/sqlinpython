@@ -2,6 +2,7 @@ from .bind_parameter import BindParameter as BindParameter
 from .case import Case as Case
 from .core import Expression as Expression
 from .core import Not as Not
+from .core import Row as Row
 from .function import FunctionCall as FunctionCall
 from .function import FunctionCallWithFilter as FunctionCallWithFilter
 from .function import FunctionName as FunctionName

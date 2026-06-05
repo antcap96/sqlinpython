@@ -602,3 +602,43 @@ def test_case_multiple_when_then_else() -> None:
         )
         == "CASE WHEN 1 THEN 2 WHEN 3 THEN 4 ELSE 5 END"
     )
+
+
+# ---------------------------------------------------------------------------
+# Row value (parenthesized expression list / tuple)
+# ---------------------------------------------------------------------------
+
+
+def test_row_two_elements() -> None:
+    assert to_str(expr.Row(one, two)) == "(1, 2)"
+
+
+def test_row_three_elements() -> None:
+    assert to_str(expr.Row(one, two, a)) == '(1, 2, "a")'
+
+
+def test_row_mixed_operators_not_wrapped() -> None:
+    # Inside parens, low-precedence sub-expressions need no extra wrapping.
+    assert to_str(expr.Row(true.Or(false), one + two)) == "(TRUE OR FALSE, 1 + 2)"
+
+
+def test_row_nested() -> None:
+    assert to_str(expr.Row(expr.Row(one, two), a)) == '((1, 2), "a")'
+
+
+def test_row_in_values() -> None:
+    assert (
+        to_str(expr.Row(one, two).In(expr.Row(one, two), expr.Row(a, b)))
+        == '(1, 2) IN ((1, 2), ("a", "b"))'
+    )
+
+
+def test_row_eq_row() -> None:
+    assert to_str(expr.Row(one, two).eq(expr.Row(a, b))) == '(1, 2) = ("a", "b")'
+
+
+def test_row_too_few_elements_fails_type_check() -> None:
+    _ = expr.Row(one)  # type: ignore[call-arg] # pyright: ignore[reportCallIssue]
+    # ty doesn't currently identify this error -ty: ignore[missing-argument]
+    _ = expr.Row()  # type: ignore[call-arg] # pyright: ignore[reportCallIssue]
+    # ty doesn't currently identify this error -ty: ignore[missing-argument]
