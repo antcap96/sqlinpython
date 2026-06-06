@@ -1,3 +1,5 @@
+import pytest
+
 from sqlinpython import Name, Rollback, Select, TableRef, TypeName
 from sqlinpython import expression as expr
 
@@ -54,6 +56,183 @@ def test_literal_current_time() -> None:
 
 def test_literal_current_timestamp() -> None:
     assert to_str(expr.CurrentTimestamp) == "CURRENT_TIMESTAMP"
+
+
+# ---------------------------------------------------------------------------
+# NumericLiteral
+# ---------------------------------------------------------------------------
+
+
+def test_numeric_literal_zero() -> None:
+    assert to_str(expr.NumericLiteral("0")) == "0"
+
+
+def test_numeric_literal_int() -> None:
+    assert to_str(expr.NumericLiteral("123")) == "123"
+
+
+def test_numeric_literal_leading_zero() -> None:
+    assert to_str(expr.NumericLiteral("01")) == "01"
+
+
+def test_numeric_literal_underscore_separator() -> None:
+    assert to_str(expr.NumericLiteral("12_34")) == "12_34"
+
+
+def test_numeric_literal_decimal() -> None:
+    assert to_str(expr.NumericLiteral("1.5")) == "1.5"
+
+
+def test_numeric_literal_zero_decimal() -> None:
+    assert to_str(expr.NumericLiteral("0.5")) == "0.5"
+
+
+def test_numeric_literal_trailing_dot() -> None:
+    assert to_str(expr.NumericLiteral("1.")) == "1."
+
+
+def test_numeric_literal_leading_dot() -> None:
+    assert to_str(expr.NumericLiteral(".5")) == ".5"
+
+
+def test_numeric_literal_decimal_with_underscore() -> None:
+    assert to_str(expr.NumericLiteral("1.2_3")) == "1.2_3"
+
+
+def test_numeric_literal_exponent() -> None:
+    assert to_str(expr.NumericLiteral("1e10")) == "1e10"
+
+
+def test_numeric_literal_exponent_uppercase() -> None:
+    assert to_str(expr.NumericLiteral("1E10")) == "1E10"
+
+
+def test_numeric_literal_exponent_positive_sign() -> None:
+    assert to_str(expr.NumericLiteral("1e+10")) == "1e+10"
+
+
+def test_numeric_literal_exponent_negative_sign() -> None:
+    assert to_str(expr.NumericLiteral("1e-10")) == "1e-10"
+
+
+def test_numeric_literal_exponent_underscore() -> None:
+    assert to_str(expr.NumericLiteral("1e1_0")) == "1e1_0"
+
+
+def test_numeric_literal_float_with_exponent() -> None:
+    assert to_str(expr.NumericLiteral("1.5e10")) == "1.5e10"
+
+
+def test_numeric_literal_leading_dot_with_exponent() -> None:
+    assert to_str(expr.NumericLiteral(".5e10")) == ".5e10"
+
+
+def test_numeric_literal_hex() -> None:
+    assert to_str(expr.NumericLiteral("0xFF")) == "0xFF"
+
+
+def test_numeric_literal_hex_uppercase_prefix() -> None:
+    assert to_str(expr.NumericLiteral("0X1A")) == "0X1A"
+
+
+def test_numeric_literal_hex_with_underscore() -> None:
+    assert to_str(expr.NumericLiteral("0xFF_FF")) == "0xFF_FF"
+
+
+def test_numeric_literal_in_comparison() -> None:
+    assert (
+        to_str(expr.NumericLiteral("0xFF").eq(expr.NumericLiteral("255")))
+        == "0xFF = 255"
+    )
+
+
+def test_numeric_literal_empty_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("")
+
+
+def test_numeric_literal_only_dot_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral(".")
+
+
+def test_numeric_literal_trailing_underscore_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("1_")
+
+
+def test_numeric_literal_incomplete_exponent_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("1e")
+
+
+def test_numeric_literal_incomplete_exponent_sign_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("1e+")
+
+
+def test_numeric_literal_incomplete_hex_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("0x")
+
+
+def test_numeric_literal_hex_trailing_underscore_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("0xFF_")
+
+
+def test_numeric_literal_double_dot_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("1.2_3.4")
+
+
+def test_numeric_literal_double_underscore_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("1.2__3")
+
+
+def test_numeric_literal_invalid_char_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("abc")
+
+
+def test_numeric_literal_non_ascii_digit_raises() -> None:
+    with pytest.raises(ValueError, match="Numeric literal"):
+        _ = expr.NumericLiteral("١")
+
+
+# ---------------------------------------------------------------------------
+# HexLiteral
+# ---------------------------------------------------------------------------
+
+
+def test_hex_literal_basic() -> None:
+    assert to_str(expr.HexLiteral(0xFF)) == "0xFF"
+
+
+def test_hex_literal_zero() -> None:
+    assert to_str(expr.HexLiteral(0)) == "0x0"
+
+
+def test_hex_literal_decimal_input() -> None:
+    assert to_str(expr.HexLiteral(255)) == "0xFF"
+
+
+def test_hex_literal_uppercase_output() -> None:
+    assert to_str(expr.HexLiteral(0xDEADBEEF)) == "0xDEADBEEF"
+
+
+def test_hex_literal_large() -> None:
+    assert to_str(expr.HexLiteral(0xFFFFFFFFFFFFFFFF)) == "0xFFFFFFFFFFFFFFFF"
+
+
+def test_hex_literal_in_comparison() -> None:
+    assert to_str(expr.HexLiteral(0xFF).eq(expr.HexLiteral(0xFF))) == "0xFF = 0xFF"
+
+
+def test_hex_literal_negative_raises() -> None:
+    with pytest.raises(ValueError, match="negative"):
+        _ = expr.HexLiteral(-1)
 
 
 # ---------------------------------------------------------------------------

@@ -23,5 +23,7 @@ from .function import WindowName as WindowName
 from .literal import CurrentDate as CurrentDate
 from .literal import CurrentTime as CurrentTime
 from .literal import CurrentTimestamp as CurrentTimestamp
+from .literal import HexLiteral as HexLiteral
 from .literal import Literal as Literal
+from .literal import NumericLiteral as NumericLiteral
 from .literal import literal as literal
