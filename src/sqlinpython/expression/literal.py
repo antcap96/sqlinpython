@@ -47,17 +47,17 @@ CurrentTimestamp = CurrentTimestampKeyword()
 
 class _State(enum.Enum):
     Start = enum.auto()
-    BeginsWithDigit = enum.auto()
-    BeforeDigit = enum.auto()
-    AfterDecimalPoint = enum.auto()
-    BeginsWithDot = enum.auto()
-    DotDigit = enum.auto()
-    Exponent = enum.auto()
-    ExponentSign = enum.auto()
-    ExponentDigit = enum.auto()
-    BeginsWith0 = enum.auto()
-    BeforeHexdigit = enum.auto()
-    AfterHexdigit = enum.auto()
+    IntZero = enum.auto()
+    IntDigit = enum.auto()
+    IntExpectDigit = enum.auto()
+    FracStart = enum.auto()
+    FracExpectDigit = enum.auto()
+    FracDigit = enum.auto()
+    ExpStart = enum.auto()
+    ExpExpectDigit = enum.auto()
+    ExpDigit = enum.auto()
+    HexExpectDigit = enum.auto()
+    HexDigit = enum.auto()
 
 
 def _is_digit(c: str) -> bool:
@@ -81,107 +81,107 @@ class NumericLiteral(Literal):
             match state:
                 case _State.Start:
                     if c == "0":
-                        state = _State.BeginsWith0
+                        state = _State.IntZero
                         continue
                     elif _is_digit(c):
-                        state = _State.BeginsWithDigit
+                        state = _State.IntDigit
                         continue
                     elif c == ".":
-                        state = _State.BeginsWithDot
+                        state = _State.FracExpectDigit
                         continue
                     else:
                         raise_message(f"Invalid first character '{c}'")
-                case _State.BeginsWith0:
+                case _State.IntZero:
                     if c in "xX":
-                        state = _State.BeforeHexdigit
+                        state = _State.HexExpectDigit
                     elif _is_digit(c):
-                        state = _State.BeginsWithDigit
+                        state = _State.IntDigit
                     elif c == "_":
-                        state = _State.BeforeDigit
+                        state = _State.IntExpectDigit
                     elif c == ".":
-                        state = _State.AfterDecimalPoint
+                        state = _State.FracStart
                     elif c in "eE":
-                        state = _State.Exponent
+                        state = _State.ExpStart
                     else:
                         raise_message(f"After character after leading 0, got '{c}'")
-                case _State.BeforeHexdigit:
+                case _State.HexExpectDigit:
                     if _is_hexdigit(c):
-                        state = _State.AfterHexdigit
+                        state = _State.HexDigit
                     else:
                         raise_message(f"Expected hexdigit, got '{c}'")
-                case _State.AfterHexdigit:
+                case _State.HexDigit:
                     if _is_hexdigit(c):
                         continue
                     if c == "_":
-                        state = _State.BeforeHexdigit
+                        state = _State.HexExpectDigit
                     else:
                         raise_message(f"Expected hexdigit or '_', got '{c}'")
-                case _State.BeginsWithDigit:
+                case _State.IntDigit:
                     if _is_digit(c):
                         continue
                     if c == "_":
-                        state = _State.BeforeDigit
+                        state = _State.IntExpectDigit
                     elif c == ".":
-                        state = _State.AfterDecimalPoint
+                        state = _State.FracStart
                     elif c in "eE":
-                        state = _State.Exponent
+                        state = _State.ExpStart
                     else:
                         raise_message(f"Expected digit or '_', got '{c}'")
-                case _State.BeforeDigit:
+                case _State.IntExpectDigit:
                     if _is_digit(c):
-                        state = _State.BeginsWithDigit
+                        state = _State.IntDigit
                     else:
                         raise_message(f"Expected digit, got '{c}'")
-                case _State.BeginsWithDot:
+                case _State.FracExpectDigit:
                     if _is_digit(c):
-                        state = _State.DotDigit
+                        state = _State.FracDigit
                     else:
                         raise_message(f"Expected digit, got '{c}'")
-                case _State.AfterDecimalPoint:
+                case _State.FracStart:
                     if _is_digit(c):
-                        state = _State.DotDigit
+                        state = _State.FracDigit
                     elif c in "eE":
-                        state = _State.Exponent
+                        state = _State.ExpStart
                     else:
                         raise_message(f"Unexpected character after '.', got '{c}'")
-                case _State.DotDigit:
+                case _State.FracDigit:
                     if _is_digit(c):
                         continue
                     elif c == "_":
-                        state = _State.BeginsWithDot
+                        state = _State.FracExpectDigit
                     elif c in "eE":
-                        state = _State.Exponent
+                        state = _State.ExpStart
                     else:
                         raise_message(
                             f"Unexpected character in decimal part, got '{c}'"
                         )
-                case _State.Exponent:
+                case _State.ExpStart:
                     if _is_digit(c):
-                        state = _State.ExponentDigit
+                        state = _State.ExpDigit
                     elif c in "+-":
-                        state = _State.ExponentSign
+                        state = _State.ExpExpectDigit
                     else:
                         raise_message(f"Unexpected character in exponent, got '{c}'")
-                case _State.ExponentSign:
+                case _State.ExpExpectDigit:
                     if _is_digit(c):
-                        state = _State.ExponentDigit
+                        state = _State.ExpDigit
                     else:
                         raise_message(f"Expected digit in exponent, got '{c}'")
-                case _State.ExponentDigit:
+                case _State.ExpDigit:
                     if _is_digit(c):
                         continue
                     elif c == "_":
-                        state = _State.ExponentSign
+                        state = _State.ExpExpectDigit
                     else:
                         raise_message(f"Expected digit or '_' in exponent, got '{c}'")
 
         if state not in (
-            _State.AfterDecimalPoint,
-            _State.AfterHexdigit,
-            _State.BeginsWith0,
-            _State.BeginsWithDigit,
-            _State.DotDigit,
-            _State.ExponentDigit,
+            _State.FracStart,
+            _State.HexDigit,
+            _State.IntZero,
+            _State.IntDigit,
+            _State.FracDigit,
+            _State.ExpDigit,
         ):
             raise_message(f"Invalid terminal State {state}")
 
