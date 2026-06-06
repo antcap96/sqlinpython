@@ -1,4 +1,4 @@
-from sqlinpython import Name, Select, TableRef, TypeName
+from sqlinpython import Name, Rollback, Select, TableRef, TypeName
 from sqlinpython import expression as expr
 
 true = expr.literal(True)
@@ -725,3 +725,50 @@ def test_subquery_in_comparison() -> None:
 
 def test_subquery_in_arithmetic() -> None:
     assert to_str(expr.Subquery(_subselect) + one) == f"({_subselect_sql}) + 1"
+
+
+# ---------------------------------------------------------------------------
+# RAISE(...) function
+# ---------------------------------------------------------------------------
+
+
+def test_raise_ignore() -> None:
+    expected = "RAISE(IGNORE)"
+    assert to_str(expr.Raise.Ignore) == expected
+    assert to_str(expr.Raise("IGNORE")) == expected
+    assert to_str(expr.Raise(expr.Ignore)) == expected
+
+
+def test_raise_rollback() -> None:
+    expected = 'RAISE(ROLLBACK, "oops")'
+    assert to_str(expr.Raise.Rollback("oops")) == expected
+    assert to_str(expr.Raise("ROLLBACK", "oops")) == expected
+    assert to_str(expr.Raise(Rollback, "oops")) == expected
+
+
+def test_raise_abort() -> None:
+    expected = 'RAISE(ABORT, "constraint failed")'
+    assert to_str(expr.Raise.Abort("constraint failed")) == expected
+    assert to_str(expr.Raise("ABORT", "constraint failed")) == expected
+    assert to_str(expr.Raise(expr.Abort, "constraint failed")) == expected
+
+
+def test_raise_fail() -> None:
+    expected = 'RAISE(FAIL, "nope")'
+    assert to_str(expr.Raise.Fail("nope")) == expected
+    assert to_str(expr.Raise("FAIL", "nope")) == expected
+    assert to_str(expr.Raise(expr.Fail, "nope")) == expected
+
+
+def test_raise_inside_case() -> None:
+    assert (
+        to_str(expr.Case.When(one.eq(two)).Then(expr.Raise.Ignore).End)
+        == "CASE WHEN 1 = 2 THEN RAISE(IGNORE) END"
+    )
+
+
+def test_raise_inside_or() -> None:
+    assert (
+        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail("x")))
+        == 'RAISE(IGNORE) OR RAISE(FAIL, "x")'
+    )

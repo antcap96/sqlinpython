@@ -8,6 +8,7 @@ from sqlinpython.base import NotImplementedSqlElement, SqlElement, comma_separat
 from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
+from sqlinpython.savepoint import RollbackKeyword
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 from sqlinpython.type_name import CompleteTypeName
 
@@ -830,6 +831,111 @@ class Exists(Expression13):
         buffer.append(")")
 
 
+class IgnoreKeyword:
+    pass
+
+
+Ignore = IgnoreKeyword()
+
+
+class AbortKeyword:
+    pass
+
+
+Abort = AbortKeyword()
+
+
+class FailKeyword:
+    pass
+
+
+Fail = FailKeyword()
+
+
+class RaiseExpression(Expression13):
+    def __init__(
+        self,
+        mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"],
+        message: str | None,
+    ) -> None:
+        from .literal import StringLiteral
+
+        self._mode = mode
+        self._message = StringLiteral(message) if message is not None else None
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append(f"RAISE({self._mode}")
+        if self._message is not None:
+            buffer.append(", ")
+            self._message._create_query(buffer)
+        buffer.append(")")
+
+
+class RaiseKeyword:
+    @property
+    def Ignore(self) -> RaiseExpression:
+        return RaiseExpression("IGNORE", None)
+
+    def Rollback(self, message: str) -> RaiseExpression:
+        return RaiseExpression("ROLLBACK", message)
+
+    def Abort(self, message: str) -> RaiseExpression:
+        return RaiseExpression("ABORT", message)
+
+    def Fail(self, message: str) -> RaiseExpression:
+        return RaiseExpression("FAIL", message)
+
+    @overload
+    def __call__(
+        self, mode: typing.Literal["IGNORE"] | IgnoreKeyword, /
+    ) -> RaiseExpression: ...
+    @overload
+    def __call__(
+        self,
+        mode: typing.Literal["ROLLBACK"] | RollbackKeyword,
+        message: str,
+        /,
+    ) -> RaiseExpression: ...
+    @overload
+    def __call__(
+        self,
+        mode: typing.Literal["ABORT"] | AbortKeyword,
+        message: str,
+        /,
+    ) -> RaiseExpression: ...
+    @overload
+    def __call__(
+        self,
+        mode: typing.Literal["FAIL"] | FailKeyword,
+        message: str,
+        /,
+    ) -> RaiseExpression: ...
+    def __call__(
+        self,
+        mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"]
+        | IgnoreKeyword
+        | RollbackKeyword
+        | AbortKeyword
+        | FailKeyword,
+        message: str | None = None,
+        /,
+    ) -> RaiseExpression:
+        if isinstance(mode, IgnoreKeyword):
+            return RaiseExpression("IGNORE", message)
+        elif isinstance(mode, RollbackKeyword):
+            return RaiseExpression("ROLLBACK", message)
+        elif isinstance(mode, AbortKeyword):
+            return RaiseExpression("ABORT", message)
+        elif isinstance(mode, FailKeyword):
+            return RaiseExpression("FAIL", message)
+        else:
+            return RaiseExpression(mode, message)
+
+
+Raise = RaiseKeyword()
+
+
 class TableColumnName(Expression12):
     def __init__(self, table: Name | str, column: Name | str) -> None:
         if isinstance(table, str):
@@ -867,7 +973,3 @@ class SchemaTableColumnName(Expression12):
         self._table._create_query(buffer)
         buffer.append(".")
         self._column._create_query(buffer)
-
-
-# TODOs:
-# raise-function
