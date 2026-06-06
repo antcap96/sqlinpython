@@ -222,6 +222,15 @@ class HexLiteral(Literal):
         buffer.append(f"0x{self._value:X}")
 
 
+class BlobLiteral(Literal):
+    def __init__(self, value: bytes) -> None:
+        self._value = value
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        buffer.append(f"X'{self._value.hex().upper()}'")
+
+
 class StringLiteral(Literal):
     def __init__(self, value: str) -> None:
         self._value = value
@@ -249,7 +258,7 @@ class NullLiteral(Literal):
         buffer.append("NULL")
 
 
-type SqlLiteral = float | str | None | bool
+type SqlLiteral = float | str | bytes | None | bool
 
 
 def literal(value: SqlLiteral) -> Literal:
@@ -262,6 +271,8 @@ def literal(value: SqlLiteral) -> Literal:
         return FloatLiteral(value)
     elif isinstance(value, str):
         return StringLiteral(value)
+    elif isinstance(value, bytes):
+        return BlobLiteral(value)
     elif value is None:
         return NullLiteral()
     else:

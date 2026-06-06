@@ -20,6 +20,7 @@ from .function import Range as Range
 from .function import Rows as Rows
 from .function import Star as Star
 from .function import WindowName as WindowName
+from .literal import BlobLiteral as BlobLiteral
 from .literal import CurrentDate as CurrentDate
 from .literal import CurrentTime as CurrentTime
 from .literal import CurrentTimestamp as CurrentTimestamp

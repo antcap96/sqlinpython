@@ -17,7 +17,7 @@ From the TODO at the bottom of `src/sqlinpython/expression/core.py`:
 Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.html); see `# TODO: All this` at `src/sqlinpython/expression/literal.py:51`.
 
 - [ ] **Hexadecimal integer literals** — `0xFF` form. `IntLiteral` always emits decimal; there is no way to produce hex.
-- [ ] **BLOB literals** — `X'53514C697465'` / `x'...'`. No `BlobLiteral` class exists.
+- [x] **BLOB literals** — `X'53514C697465'` / `x'...'` — implemented as `BlobLiteral(bytes)`, also reachable via `literal(b"...")` since `bytes` has an unambiguous SQL form. Emits uppercase `X'<HEX>'`.
 
 ### Broken / limited (not strictly missing)
 

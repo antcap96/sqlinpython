@@ -34,6 +34,10 @@ def test_literal_string() -> None:
     assert to_str(expr.literal("hello")) == '"hello"'
 
 
+def test_literal_bytes() -> None:
+    assert to_str(expr.literal(b"\xff")) == "X'FF'"
+
+
 def test_literal_none() -> None:
     assert to_str(expr.literal(None)) == "NULL"
 
@@ -233,6 +237,38 @@ def test_hex_literal_in_comparison() -> None:
 def test_hex_literal_negative_raises() -> None:
     with pytest.raises(ValueError, match="negative"):
         _ = expr.HexLiteral(-1)
+
+
+# ---------------------------------------------------------------------------
+# BlobLiteral
+# ---------------------------------------------------------------------------
+
+
+def test_blob_literal_basic() -> None:
+    assert to_str(expr.BlobLiteral(b"\xff")) == "X'FF'"
+
+
+def test_blob_literal_multiple_bytes() -> None:
+    assert to_str(expr.BlobLiteral(b"SQLite")) == "X'53514C697465'"
+
+
+def test_blob_literal_empty() -> None:
+    assert to_str(expr.BlobLiteral(b"")) == "X''"
+
+
+def test_blob_literal_zero_byte() -> None:
+    assert to_str(expr.BlobLiteral(b"\x00")) == "X'00'"
+
+
+def test_blob_literal_uppercase_output() -> None:
+    assert to_str(expr.BlobLiteral(b"\xab\xcd")) == "X'ABCD'"
+
+
+def test_blob_literal_in_comparison() -> None:
+    assert (
+        to_str(expr.BlobLiteral(b"\xff").eq(expr.BlobLiteral(b"\xff")))
+        == "X'FF' = X'FF'"
+    )
 
 
 # ---------------------------------------------------------------------------
