@@ -237,7 +237,8 @@ class StringLiteral(Literal):
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
-        buffer.append(f'"{self._value}"')
+        escaped = self._value.replace("'", "''")
+        buffer.append(f"'{escaped}'")
 
 
 class BooleanLiteral(Literal):

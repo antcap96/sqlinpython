@@ -221,7 +221,7 @@ def test_column_definition_default_literal_unique() -> None:
 
 def test_column_definition_default_string_unique() -> None:
     q = Create.Table("table_name")(a.Default(literal("a")).Unique)
-    assert q.get_query() == 'CREATE TABLE table_name (a DEFAULT "a" UNIQUE)'
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT 'a' UNIQUE)"
 
 
 def test_column_definition_default_current_date_not_null_unique() -> None:
@@ -239,7 +239,7 @@ def test_column_definition_default_force_parenthesis_int() -> None:
 
 def test_column_definition_default_force_parenthesis_literal() -> None:
     q = Create.Table("table_name")(a.Default(literal("a"), force_parenthesis=True))
-    assert q.get_query() == 'CREATE TABLE table_name (a DEFAULT ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT ('a'))"
 
 
 def test_column_definition_default_expression() -> None:
@@ -269,38 +269,38 @@ def test_column_definition_collate() -> None:
 
 def test_column_definition_as_generated() -> None:
     q = Create.Table("table_name")(a.As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a AS ('a'))"
 
 
 def test_column_definition_collate_as_generated() -> None:
     q = Create.Table("table_name")(a.Collate("utf8").As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a COLLATE utf8 AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a COLLATE utf8 AS ('a'))"
 
 
 def test_column_definition_collate_collate_as_generated() -> None:
     q = Create.Table("table_name")(a.Collate("utf8").Collate("utf16").As(literal("a")))
     assert (
         q.get_query()
-        == 'CREATE TABLE table_name (a COLLATE utf8 COLLATE utf16 AS ("a"))'
+        == "CREATE TABLE table_name (a COLLATE utf8 COLLATE utf16 AS ('a'))"
     )
 
 
 def test_column_definition_generated_always_as() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a'))"
 
 
 def test_column_definition_generated_always_as_stored() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")).Stored)
     assert (
-        q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") STORED)'
+        q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a') STORED)"
     )
 
 
 def test_column_definition_generated_always_as_virtual() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")).Virtual)
     assert (
-        q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") VIRTUAL)'
+        q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a') VIRTUAL)"
     )
 
 

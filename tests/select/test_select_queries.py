@@ -366,7 +366,7 @@ def test_where_in_subquery() -> None:
     )
     assert q.get_query() == (
         "SELECT name FROM employees "
-        'WHERE department_id IN (SELECT id FROM departments WHERE location = "NYC")'
+        "WHERE department_id IN (SELECT id FROM departments WHERE location = 'NYC')"
     )
 
 

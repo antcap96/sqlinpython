@@ -74,7 +74,7 @@ def test_insert_values_multiple_columns() -> None:
         Insert.Into("users")("id", "name")
         .Values((literal(1), literal("Alice")))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice")'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice')"
     )
 
 
@@ -95,7 +95,7 @@ def test_insert_values_multiple_rows_multiple_columns() -> None:
             (literal(2), literal("Bob")),
         )
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice"), (2, "Bob")'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob')"
     )
 
 
@@ -112,7 +112,7 @@ def test_insert_values_various_types() -> None:
             )
         )
         .get_query()
-        == 'INSERT INTO t (a, b, c, d) VALUES (1, "text", 3.14, TRUE)'
+        == "INSERT INTO t (a, b, c, d) VALUES (1, 'text', 3.14, TRUE)"
     )
 
 
@@ -202,7 +202,7 @@ def test_insert_with_name_objects() -> None:
         Insert.Into("users")(Name("id"), Name("name"))
         .Values((literal(1), literal("Alice")))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice")'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice')"
     )
 
 
@@ -341,7 +341,7 @@ def test_on_conflict_do_nothing_simple() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO NOTHING"
     )
 
 
@@ -354,7 +354,7 @@ def test_on_conflict_do_nothing_multiple_columns() -> None:
         .Values((literal(1), literal("a@b.com"), literal("Alice")))
         .OnConflict(col1, col2)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, email, name) VALUES (1, "a@b.com", "Alice") ON CONFLICT(id, email) DO NOTHING'
+        == "INSERT INTO users (id, email, name) VALUES (1, 'a@b.com', 'Alice') ON CONFLICT(id, email) DO NOTHING"
     )
 
 
@@ -367,7 +367,7 @@ def test_on_conflict_with_where() -> None:
         .OnConflict(col)
         .Where(col > literal(0))
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) WHERE id > 0 DO NOTHING"
     )
 
 
@@ -379,7 +379,7 @@ def test_on_conflict_column_with_collate() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(name COLLATE NOCASE) DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(name COLLATE NOCASE) DO NOTHING"
     )
 
 
@@ -391,7 +391,7 @@ def test_on_conflict_column_with_asc() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id ASC) DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id ASC) DO NOTHING"
     )
 
 
@@ -403,7 +403,7 @@ def test_on_conflict_column_with_desc() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id DESC) DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id DESC) DO NOTHING"
     )
 
 
@@ -415,7 +415,7 @@ def test_on_conflict_column_with_collate_and_asc() -> None:
         .Values((literal(1), literal("Alice")))
         .OnConflict(col)
         .Do.Nothing.get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(name COLLATE NOCASE ASC) DO NOTHING'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(name COLLATE NOCASE ASC) DO NOTHING"
     )
 
 
@@ -444,7 +444,7 @@ def test_on_conflict_do_update_set_single_column() -> None:
         .OnConflict(col)
         .Do.UpdateSet(name=literal("Updated"))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO UPDATE SET name = 'Updated'"
     )
 
 
@@ -457,7 +457,7 @@ def test_on_conflict_do_update_set_string_column() -> None:
         .OnConflict(col)
         .Do.UpdateSet(name=literal("Updated"))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated"'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO UPDATE SET name = 'Updated'"
     )
 
 
@@ -470,7 +470,7 @@ def test_on_conflict_do_update_set_multiple_assignments() -> None:
         .OnConflict(col)
         .Do.UpdateSet(name=literal("Updated"), email=literal("new@email.com"))
         .get_query()
-        == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET name = "Updated", email = "new@email.com"'
+        == "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'a@b.com') ON CONFLICT(id) DO UPDATE SET name = 'Updated', email = 'new@email.com'"
     )
 
 
@@ -484,7 +484,7 @@ def test_on_conflict_do_update_set_column_list() -> None:
         .OnConflict(col)
         .Do.UpdateSet({("name", "email"): literal("some_expr")})
         .get_query()
-        == 'INSERT INTO users (id, name, email) VALUES (1, "Alice", "a@b.com") ON CONFLICT(id) DO UPDATE SET (name, email) = "some_expr"'
+        == "INSERT INTO users (id, name, email) VALUES (1, 'Alice', 'a@b.com') ON CONFLICT(id) DO UPDATE SET (name, email) = 'some_expr'"
     )
 
 
@@ -499,7 +499,7 @@ def test_on_conflict_do_update_set_with_where() -> None:
         .Do.UpdateSet(name=literal("Updated"))
         .Where(name_col.ne(literal("Admin")))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO UPDATE SET name = "Updated" WHERE name != "Admin"'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO UPDATE SET name = 'Updated' WHERE name != 'Admin'"
     )
 
 
@@ -513,7 +513,7 @@ def test_on_conflict_do_update_set_with_conflict_where() -> None:
         .Where(col > literal(0))
         .Do.UpdateSet(name=literal("Updated"))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) WHERE id > 0 DO UPDATE SET name = "Updated"'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) WHERE id > 0 DO UPDATE SET name = 'Updated'"
     )
 
 
@@ -530,7 +530,7 @@ def test_returning_star() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning("*")
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING *'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING *"
     )
 
 
@@ -542,7 +542,7 @@ def test_returning_single_column() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning(col)
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id"
     )
 
 
@@ -554,7 +554,7 @@ def test_returning_expression() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning(col + literal(1))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id + 1'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id + 1"
     )
 
 
@@ -566,7 +566,7 @@ def test_returning_with_alias() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning(col.As("user_id"))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id AS user_id"
     )
 
 
@@ -579,7 +579,7 @@ def test_returning_multiple_columns() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning(id_col, name_col)
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id, name'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id, name"
     )
 
 
@@ -592,7 +592,7 @@ def test_returning_multiple_with_aliases() -> None:
         .Values((literal(1), literal("Alice")))
         .Returning(id_col.As("user_id"), name_col.As("user_name"))
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") RETURNING id AS user_id, name AS user_name'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') RETURNING id AS user_id, name AS user_name"
     )
 
 
@@ -613,7 +613,7 @@ def test_returning_with_on_conflict() -> None:
         .OnConflict(col)
         .Do.Nothing.Returning("*")
         .get_query()
-        == 'INSERT INTO users (id, name) VALUES (1, "Alice") ON CONFLICT(id) DO NOTHING RETURNING *'
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO NOTHING RETURNING *"
     )
 
 

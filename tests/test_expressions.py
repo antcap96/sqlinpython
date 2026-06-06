@@ -31,7 +31,27 @@ def test_literal_int() -> None:
 
 
 def test_literal_string() -> None:
-    assert to_str(expr.literal("hello")) == '"hello"'
+    assert to_str(expr.literal("hello")) == "'hello'"
+
+
+def test_literal_string_empty() -> None:
+    assert to_str(expr.literal("")) == "''"
+
+
+def test_literal_string_with_single_quote() -> None:
+    assert to_str(expr.literal("O'Reilly")) == "'O''Reilly'"
+
+
+def test_literal_string_with_multiple_single_quotes() -> None:
+    assert to_str(expr.literal("it's 'that'")) == "'it''s ''that'''"
+
+
+def test_literal_string_with_double_quote() -> None:
+    assert to_str(expr.literal('say "hi"')) == "'say \"hi\"'"
+
+
+def test_literal_string_in_comparison() -> None:
+    assert to_str(expr.literal("a").eq(expr.literal("b"))) == "'a' = 'b'"
 
 
 def test_literal_bytes() -> None:
@@ -653,39 +673,39 @@ def test_mixed_add_mul_sub() -> None:
 
 
 def test_concat_basic() -> None:
-    assert to_str(a.Concat(b)) == '"a" || "b"'
+    assert to_str(a.Concat(b)) == "'a' || 'b'"
 
 
 def test_concat_chained() -> None:
-    assert to_str(a.Concat(b).Concat(a)) == '"a" || "b" || "a"'
+    assert to_str(a.Concat(b).Concat(a)) == "'a' || 'b' || 'a'"
 
 
 def test_concat_rhs_parenthesized() -> None:
-    assert to_str(a.Concat(b.Concat(a))) == '"a" || ("b" || "a")'
+    assert to_str(a.Concat(b.Concat(a))) == "'a' || ('b' || 'a')"
 
 
 def test_extract_basic() -> None:
-    assert to_str(a.Extract(b)) == '"a" -> "b"'
+    assert to_str(a.Extract(b)) == "'a' -> 'b'"
 
 
 def test_extract_chained() -> None:
-    assert to_str(a.Extract(b).Extract(a)) == '"a" -> "b" -> "a"'
+    assert to_str(a.Extract(b).Extract(a)) == "'a' -> 'b' -> 'a'"
 
 
 def test_extract_rhs_parenthesized() -> None:
-    assert to_str(a.Extract(b.Extract(a))) == '"a" -> ("b" -> "a")'
+    assert to_str(a.Extract(b.Extract(a))) == "'a' -> ('b' -> 'a')"
 
 
 def test_extract2_basic() -> None:
-    assert to_str(a.Extract2(b)) == '"a" ->> "b"'
+    assert to_str(a.Extract2(b)) == "'a' ->> 'b'"
 
 
 def test_extract2_chained_extract() -> None:
-    assert to_str(a.Extract2(b).Extract(a)) == '"a" ->> "b" -> "a"'
+    assert to_str(a.Extract2(b).Extract(a)) == "'a' ->> 'b' -> 'a'"
 
 
 def test_extract_chained_extract2() -> None:
-    assert to_str(a.Extract(b.Extract2(a))) == '"a" -> ("b" ->> "a")'
+    assert to_str(a.Extract(b.Extract2(a))) == "'a' -> ('b' ->> 'a')"
 
 
 # ---------------------------------------------------------------------------
@@ -775,7 +795,7 @@ def test_case_operand_when_then_end() -> None:
         to_str(
             expr.Case(expr.literal("a")).When(expr.literal(1)).Then(expr.literal(2)).End
         )
-        == 'CASE "a" WHEN 1 THEN 2 END'
+        == "CASE 'a' WHEN 1 THEN 2 END"
     )
 
 
@@ -788,7 +808,7 @@ def test_case_operand_when_then_else_end() -> None:
             .Else(expr.literal(3))
             .End
         )
-        == 'CASE "a" WHEN 1 THEN 2 ELSE 3 END'
+        == "CASE 'a' WHEN 1 THEN 2 ELSE 3 END"
     )
 
 
@@ -829,7 +849,7 @@ def test_row_two_elements() -> None:
 
 
 def test_row_three_elements() -> None:
-    assert to_str(expr.Row(one, two, a)) == '(1, 2, "a")'
+    assert to_str(expr.Row(one, two, a)) == "(1, 2, 'a')"
 
 
 def test_row_mixed_operators_not_wrapped() -> None:
@@ -838,18 +858,18 @@ def test_row_mixed_operators_not_wrapped() -> None:
 
 
 def test_row_nested() -> None:
-    assert to_str(expr.Row(expr.Row(one, two), a)) == '((1, 2), "a")'
+    assert to_str(expr.Row(expr.Row(one, two), a)) == "((1, 2), 'a')"
 
 
 def test_row_in_values() -> None:
     assert (
         to_str(expr.Row(one, two).In(expr.Row(one, two), expr.Row(a, b)))
-        == '(1, 2) IN ((1, 2), ("a", "b"))'
+        == "(1, 2) IN ((1, 2), ('a', 'b'))"
     )
 
 
 def test_row_eq_row() -> None:
-    assert to_str(expr.Row(one, two).eq(expr.Row(a, b))) == '(1, 2) = ("a", "b")'
+    assert to_str(expr.Row(one, two).eq(expr.Row(a, b))) == "(1, 2) = ('a', 'b')"
 
 
 def test_row_too_few_elements_fails_type_check() -> None:
@@ -873,13 +893,13 @@ def test_cast_inner_expression_not_wrapped() -> None:
 
 
 def test_cast_type_with_one_arg() -> None:
-    assert to_str(expr.Cast(a, TypeName("VARCHAR")(10))) == 'CAST("a" AS VARCHAR(10))'
+    assert to_str(expr.Cast(a, TypeName("VARCHAR")(10))) == "CAST('a' AS VARCHAR(10))"
 
 
 def test_cast_type_with_two_args() -> None:
     assert (
         to_str(expr.Cast(a, TypeName("DECIMAL")(10, 2)))
-        == 'CAST("a" AS DECIMAL(10, 2))'
+        == "CAST('a' AS DECIMAL(10, 2))"
     )
 
 
@@ -899,7 +919,7 @@ def test_cast_inside_comparison_not_parenthesized() -> None:
 def test_cast_inside_in() -> None:
     assert (
         to_str(one.In(expr.Cast(a, TypeName("INTEGER"))))
-        == '1 IN (CAST("a" AS INTEGER))'
+        == "1 IN (CAST('a' AS INTEGER))"
     )
 
 
@@ -955,21 +975,21 @@ def test_raise_ignore() -> None:
 
 
 def test_raise_rollback() -> None:
-    expected = 'RAISE(ROLLBACK, "oops")'
+    expected = "RAISE(ROLLBACK, 'oops')"
     assert to_str(expr.Raise.Rollback("oops")) == expected
     assert to_str(expr.Raise("ROLLBACK", "oops")) == expected
     assert to_str(expr.Raise(Rollback, "oops")) == expected
 
 
 def test_raise_abort() -> None:
-    expected = 'RAISE(ABORT, "constraint failed")'
+    expected = "RAISE(ABORT, 'constraint failed')"
     assert to_str(expr.Raise.Abort("constraint failed")) == expected
     assert to_str(expr.Raise("ABORT", "constraint failed")) == expected
     assert to_str(expr.Raise(expr.Abort, "constraint failed")) == expected
 
 
 def test_raise_fail() -> None:
-    expected = 'RAISE(FAIL, "nope")'
+    expected = "RAISE(FAIL, 'nope')"
     assert to_str(expr.Raise.Fail("nope")) == expected
     assert to_str(expr.Raise("FAIL", "nope")) == expected
     assert to_str(expr.Raise(expr.Fail, "nope")) == expected
@@ -985,5 +1005,5 @@ def test_raise_inside_case() -> None:
 def test_raise_inside_or() -> None:
     assert (
         to_str(expr.Raise.Ignore.Or(expr.Raise.Fail("x")))
-        == 'RAISE(IGNORE) OR RAISE(FAIL, "x")'
+        == "RAISE(IGNORE) OR RAISE(FAIL, 'x')"
     )

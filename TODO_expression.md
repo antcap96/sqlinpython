@@ -21,7 +21,7 @@ Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.ht
 
 ### Broken / limited (not strictly missing)
 
-- [ ] `StringLiteral` uses **double quotes** (`literal.py:72`: `f'"{self._value}"'`). SQLite string literals are single-quoted; double-quoted tokens are identifiers (with a legacy fallback). It also performs no escaping — a value containing `"` produces broken SQL.
+- [x] `StringLiteral` uses **double quotes** — fixed: now emits single-quoted form `'...'` and escapes embedded single quotes by doubling (`O'Reilly` → `'O''Reilly'`). Matches SQLite's literal-value grammar; identifier double-quoting (via `Name`) is unaffected.
 - [ ] `FloatLiteral` relies on `str(float)`, which silently turns `1.5e10` into `15000000000.0`, can emit `inf`/`nan`, and loses control over precision/notation.
 
 ## Other notes in the expression package

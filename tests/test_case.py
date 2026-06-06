@@ -21,13 +21,13 @@ def test_case_with_else_end() -> None:
 def test_case_with_base_expr_end() -> None:
     base = literal("a")
     expr = Case(base).When(literal(1)).Then(literal(2)).End
-    assert to_str(expr) == 'CASE "a" WHEN 1 THEN 2 END'
+    assert to_str(expr) == "CASE 'a' WHEN 1 THEN 2 END"
 
 
 def test_case_with_base_expr_and_else_end() -> None:
     base = literal("a")
     expr = Case(base).When(literal(1)).Then(literal(2)).Else(literal(3)).End
-    assert to_str(expr) == 'CASE "a" WHEN 1 THEN 2 ELSE 3 END'
+    assert to_str(expr) == "CASE 'a' WHEN 1 THEN 2 ELSE 3 END"
 
 
 def test_multiple_when_end() -> None:

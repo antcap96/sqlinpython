@@ -69,17 +69,17 @@ def test_table_column_schema_qualified() -> None:
 
 def test_table_function_ref() -> None:
     f = TableFunctionRef("json_each")(literal("[]"))
-    assert to_str(f) == 'json_each("[]")'
+    assert to_str(f) == "json_each('[]')"
 
 
 def test_table_function_ref_aliased() -> None:
     f = TableFunctionRef("schema", "json_each")(literal("[]")).As("j")
-    assert to_str(f) == 'schema.json_each("[]") AS j'
+    assert to_str(f) == "schema.json_each('[]') AS j"
 
 
 def test_table_function_ref_aliased_implicit_as() -> None:
     f = TableFunctionRef("json_each")(literal("[]")).As("j", explicit_as=False)
-    assert to_str(f) == 'json_each("[]") j'
+    assert to_str(f) == "json_each('[]') j"
 
 
 # ---------------------------------------------------------------------------
