@@ -879,6 +879,11 @@ def test_row_too_few_elements_fails_type_check() -> None:
     # ty doesn't currently identify this error -ty: ignore[missing-argument]
 
 
+def test_row_accepts_python_literals() -> None:
+    assert to_str(expr.Row(1, 2)) == "(1, 2)"
+    assert to_str(expr.Row(1, "a", 2)) == "(1, 'a', 2)"
+
+
 # ---------------------------------------------------------------------------
 # CAST(expr AS type-name)
 # ---------------------------------------------------------------------------

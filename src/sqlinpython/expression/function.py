@@ -293,9 +293,10 @@ class PartitionByKeyword:
         self._prev = prev
 
     def __call__(
-        self, *exprs: *tuple[Expression, *tuple[Expression, ...]]
+        self,
+        *exprs: *tuple[ExpressionOrLiteral, *tuple[ExpressionOrLiteral, ...]],
     ) -> PartitionByClause:
-        return PartitionByClause(self._prev, exprs)
+        return PartitionByClause(self._prev, tuple(to_expr(e) for e in exprs))
 
 
 PartitionBy = PartitionByKeyword(None)

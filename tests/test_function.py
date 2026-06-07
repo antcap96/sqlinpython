@@ -117,6 +117,15 @@ def test_over_partition_by_multiple() -> None:
     )
 
 
+def test_over_partition_by_accepts_python_literals() -> None:
+    assert to_str(SUM(one).Over(PartitionBy(1, 2))) == "SUM(1) OVER (PARTITION BY 1, 2)"
+
+
+def test_partition_by_no_args_fails_type_check() -> None:
+    PartitionBy()  # type: ignore[call-arg] # pyright: ignore[reportCallIssue]
+    # ty doesn't currently identify this error -ty: ignore[missing-argument]
+
+
 def test_over_order_by_single() -> None:
     assert to_str(SUM(one).Over(OrderBy(one))) == "SUM(1) OVER (ORDER BY 1)"
 

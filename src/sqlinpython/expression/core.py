@@ -855,9 +855,14 @@ class ParenthesizedExpression(Expression13):
 
 class Row(Expression13):
     def __init__(
-        self, *exprs: *tuple[Expression, Expression, *tuple[Expression, ...]]
+        self,
+        *exprs: *tuple[
+            ExpressionOrLiteral,
+            ExpressionOrLiteral,
+            *tuple[ExpressionOrLiteral, ...],
+        ],
     ) -> None:
-        self._exprs = exprs
+        self._exprs = tuple(_to_expr(e) for e in exprs)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
