@@ -307,6 +307,16 @@ def test_column_definition_generated_always_as_virtual() -> None:
     )
 
 
+def test_column_definition_as_generated_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.As("a"))
+    assert q.get_query() == "CREATE TABLE table_name (a AS ('a'))"
+
+
+def test_column_definition_generated_always_as_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.GeneratedAlways.As(1))
+    assert q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS (1))"
+
+
 # ---------------------------------------------------------------------------
 # Type names
 # ---------------------------------------------------------------------------

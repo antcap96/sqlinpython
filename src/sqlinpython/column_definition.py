@@ -62,8 +62,8 @@ class IColumnConstraintWithName(SqlElement, ABC):
 
     # SPEC: https://sqlite.org/syntax/column-constraint.html
     # GENERATED ALWAYS is optional; this shortcut omits it
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs:
-        return GeneratedAlwaysAs(self, expression)
+    def As(self, expression: ExpressionOrLiteral, /) -> GeneratedAlwaysAs:
+        return GeneratedAlwaysAs(self, to_expr(expression))
 
 
 class IColumnConstraint(ColumnDefinition, IColumnConstraintWithName, ABC):
