@@ -1,5 +1,9 @@
 from .bind_parameter import BindParameter as BindParameter
 from .case import Case as Case
+from .column import ColumnName as ColumnName
+from .column import SchemaTableColumnName as SchemaTableColumnName
+from .column import TableColumnName as TableColumnName
+from .column import col as col
 from .core import Abort as Abort
 from .core import AliasedExpression as AliasedExpression
 from .core import Cast as Cast
@@ -10,9 +14,7 @@ from .core import Ignore as Ignore
 from .core import Not as Not
 from .core import Raise as Raise
 from .core import Row as Row
-from .core import SchemaTableColumnName as SchemaTableColumnName
 from .core import Subquery as Subquery
-from .core import TableColumnName as TableColumnName
 from .function import FunctionCall as FunctionCall
 from .function import FunctionCallWithFilter as FunctionCallWithFilter
 from .function import FunctionName as FunctionName
