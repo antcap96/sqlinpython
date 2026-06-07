@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, overload, override
 from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
@@ -114,8 +115,8 @@ class CheckConstraint(TableConstraint):
             buffer.append(")")
 
 
-def Check(expr: Expression) -> CheckConstraint:
-    return CheckConstraint(None, expr)
+def Check(expr: ExpressionOrLiteral) -> CheckConstraint:
+    return CheckConstraint(None, to_expr(expr))
 
 
 class ForeignKeyConstraint(SqlElement):
@@ -166,8 +167,8 @@ class ConstraintWithName(SqlElement):
     def Unique(self) -> UniqueConstraint:
         return UniqueConstraint(self)
 
-    def Check(self, expr: Expression) -> CheckConstraint:
-        return CheckConstraint(self, expr)
+    def Check(self, expr: ExpressionOrLiteral) -> CheckConstraint:
+        return CheckConstraint(self, to_expr(expr))
 
     def ForeignKey(self, *column_names: str | Name) -> ForeignKeyConstraint:
         names = tuple(

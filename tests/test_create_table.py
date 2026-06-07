@@ -402,6 +402,16 @@ def test_table_constraint_check() -> None:
     assert q.get_query() == "CREATE TABLE table_name (a, CHECK (1 > 0))"
 
 
+def test_table_constraint_check_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a, Check(1))
+    assert q.get_query() == "CREATE TABLE table_name (a, CHECK (1))"
+
+
+def test_column_check_constraint_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.Check(1))
+    assert q.get_query() == "CREATE TABLE table_name (a CHECK (1))"
+
+
 def test_table_constraint_named_foreign_key() -> None:
     q = Create.Table("table_name")(a, Constraint("fk").ForeignKey("b").References("c"))
     assert (

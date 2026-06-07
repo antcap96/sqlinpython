@@ -142,6 +142,17 @@ def test_create_trigger_for_each_row_when() -> None:
     )
 
 
+def test_create_trigger_when_accepts_python_literal() -> None:
+    assert (
+        Create.Trigger("my_trigger")
+        .Before.Delete.On("my_table")
+        .When(1)
+        .Begin(Delete.From("my_table"))
+        .End.get_query()
+        == "CREATE TRIGGER my_trigger BEFORE DELETE ON my_table WHEN 1 BEGIN DELETE FROM my_table; END"
+    )
+
+
 def test_create_trigger_multiple_stmts() -> None:
     assert (
         Create.Trigger("my_trigger")

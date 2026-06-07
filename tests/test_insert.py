@@ -371,6 +371,18 @@ def test_on_conflict_with_where() -> None:
     )
 
 
+def test_on_conflict_where_accepts_python_literal() -> None:
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((literal(1), literal("Alice")))
+        .OnConflict(col)
+        .Where(1)
+        .Do.Nothing.get_query()
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) WHERE 1 DO NOTHING"
+    )
+
+
 def test_on_conflict_column_with_collate() -> None:
     # ON CONFLICT (col COLLATE NOCASE) DO NOTHING
     col = ColumnName("name").Collate("NOCASE")

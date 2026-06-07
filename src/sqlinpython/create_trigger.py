@@ -6,6 +6,7 @@ from typing import Literal, override
 from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.delete import DeleteStatement
 from sqlinpython.expression import Expression
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.insert import InsertStatement
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
@@ -68,8 +69,8 @@ class CreateTriggerWhen(IBeforeBegin):
 
 
 class IWithWhen(IBeforeBegin, ABC):
-    def When(self, expr: Expression) -> CreateTriggerWhen:
-        return CreateTriggerWhen(self, expr)
+    def When(self, expr: ExpressionOrLiteral) -> CreateTriggerWhen:
+        return CreateTriggerWhen(self, to_expr(expr))
 
 
 class CreateTriggerForEachRow(IWithWhen):

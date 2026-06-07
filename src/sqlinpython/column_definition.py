@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, override
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression, Literal
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.name import Name
 from sqlinpython.type_name import CompleteTypeName
 
@@ -33,8 +34,8 @@ class IColumnConstraintWithName(SqlElement, ABC):
     def Unique(self) -> WithUnique:
         return WithUnique(self)
 
-    def Check(self, expression: Expression) -> WithCheck:
-        return WithCheck(self, expression)
+    def Check(self, expression: ExpressionOrLiteral) -> WithCheck:
+        return WithCheck(self, to_expr(expression))
 
     def Default(
         self, value: int | Literal | Expression, *, force_parenthesis: bool = False
@@ -245,8 +246,8 @@ class WithGeneratedAlways(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs:
-        return GeneratedAlwaysAs(self, expression)
+    def As(self, expression: ExpressionOrLiteral, /) -> GeneratedAlwaysAs:
+        return GeneratedAlwaysAs(self, to_expr(expression))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

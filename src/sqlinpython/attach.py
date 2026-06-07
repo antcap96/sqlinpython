@@ -5,6 +5,7 @@ from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.expression import Expression
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.name import Name
 
 
@@ -43,8 +44,8 @@ class AttachWithExpr(SqlElement):
 
 
 class IAttachCall(SqlElement, ABC):
-    def __call__(self, file_expr: Expression) -> AttachWithExpr:
-        return AttachWithExpr(self, file_expr)
+    def __call__(self, file_expr: ExpressionOrLiteral) -> AttachWithExpr:
+        return AttachWithExpr(self, to_expr(file_expr))
 
 
 class AttachDatabaseKeyword(IAttachCall):

@@ -10,6 +10,7 @@ from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import Expression, Star
 from sqlinpython.expression.core import AliasedExpression
 from sqlinpython.expression.function import Star_
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 from sqlinpython.returning import ReturningBase
@@ -59,8 +60,8 @@ class OnConflictDoUpdateSet(IBeforeReturningClause):
         self._prev = prev
         self._assignments = assignments
 
-    def Where(self, condition: Expression) -> OnConflictUpdateWhere:
-        return OnConflictUpdateWhere(self, condition)
+    def Where(self, condition: ExpressionOrLiteral) -> OnConflictUpdateWhere:
+        return OnConflictUpdateWhere(self, to_expr(condition))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -157,8 +158,8 @@ class OnConflictCall(IOnConflictDo):
         self._prev = prev
         self._args = args
 
-    def Where(self, expr: Expression) -> OnConflictWhere:
-        return OnConflictWhere(self, expr)
+    def Where(self, expr: ExpressionOrLiteral) -> OnConflictWhere:
+        return OnConflictWhere(self, to_expr(expr))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

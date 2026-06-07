@@ -42,6 +42,16 @@ def test_add_constraint2() -> None:
     assert q.get_query() == "ALTER TABLE t ADD CHECK (1) ON CONFLICT ABORT"
 
 
+def test_add_constraint_check_accepts_python_literal() -> None:
+    q = AlterTable("t").Add.Check(1)
+    assert q.get_query() == "ALTER TABLE t ADD CHECK (1)"
+
+
+def test_add_named_constraint_check_accepts_python_literal() -> None:
+    q = AlterTable("t").Add.Constraint("x").Check(1)
+    assert q.get_query() == "ALTER TABLE t ADD CONSTRAINT x CHECK (1)"
+
+
 def test_drop_column1() -> None:
     q = AlterTable("t").Drop("c")
     assert q.get_query() == "ALTER TABLE t DROP c"

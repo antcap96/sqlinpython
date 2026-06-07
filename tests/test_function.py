@@ -349,3 +349,11 @@ def test_frame_spec_partition_by_rows_current_row() -> None:
         to_str(SUM(one).Over(PartitionBy(one).Rows.CurrentRow))
         == "SUM(1) OVER (PARTITION BY 1 ROWS CURRENT ROW)"
     )
+
+
+def test_function_call_accepts_python_literals() -> None:
+    assert to_str(SUM(1, 2, 3)) == "SUM(1, 2, 3)"
+
+
+def test_function_filter_where_accepts_python_literal() -> None:
+    assert to_str(SUM(one).FilterWhere(1)) == "SUM(1) FILTER (WHERE 1)"

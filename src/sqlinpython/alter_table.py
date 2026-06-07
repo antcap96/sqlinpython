@@ -7,6 +7,7 @@ from sqlinpython.base import CompleteSqlQuery, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.name import Name
 
 # SPEC: https://www.sqlite.org/lang_altertable.html
@@ -163,8 +164,8 @@ class AlterTableAddConstraintWithName(SqlElement):
         self._prev = prev
         self._name = name
 
-    def Check(self, expr: Expression) -> AlterTableAddConstraintCheck:
-        return AlterTableAddConstraintCheck(self, expr)
+    def Check(self, expr: ExpressionOrLiteral) -> AlterTableAddConstraintCheck:
+        return AlterTableAddConstraintCheck(self, to_expr(expr))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -188,8 +189,8 @@ class AlterTableAdd(SqlElement):
             name = Name(name)
         return AlterTableAddConstraintWithName(self, name)
 
-    def Check(self, expr: Expression) -> AlterTableAddCheck:
-        return AlterTableAddCheck(self, expr)
+    def Check(self, expr: ExpressionOrLiteral) -> AlterTableAddCheck:
+        return AlterTableAddCheck(self, to_expr(expr))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
