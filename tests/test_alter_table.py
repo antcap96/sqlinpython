@@ -1,4 +1,4 @@
-from sqlinpython import AlterTable, ColumnName, TypeName
+from sqlinpython import AlterTable, ColumnDef, TypeName
 from sqlinpython import expression as expr
 
 
@@ -23,12 +23,12 @@ def test_rename_column2() -> None:
 
 
 def test_add_column1() -> None:
-    q = AlterTable("t").Add.Column(ColumnName("c")(TypeName("INT")))
+    q = AlterTable("t").Add.Column(ColumnDef("c")(TypeName("INT")))
     assert q.get_query() == "ALTER TABLE t ADD COLUMN c INT"
 
 
 def test_add_column2() -> None:
-    q = AlterTable("t").Add(ColumnName("c")(TypeName("INT")))
+    q = AlterTable("t").Add(ColumnDef("c")(TypeName("INT")))
     assert q.get_query() == "ALTER TABLE t ADD c INT"
 
 

@@ -1,3 +1,4 @@
+from sqlinpython.column_definition import ColumnDef as ColumnDef
 from sqlinpython.column_name import ColumnName as ColumnName
 from sqlinpython.column_name import col as col
 from sqlinpython.common_table_expression import TableName as TableName

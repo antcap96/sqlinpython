@@ -2,7 +2,7 @@ import pytest
 
 from sqlinpython import (
     Check,
-    ColumnName,
+    ColumnDef,
     Constraint,
     Create,
     CurrentDate,
@@ -11,11 +11,14 @@ from sqlinpython import (
     Select,
     TypeName,
     Unique,
+    col,
     literal,
 )
 
-a = ColumnName("a")
-b = ColumnName("b")
+a = ColumnDef("a")
+b = ColumnDef("b")
+ca = col("a")
+cb = col("b")
 select_stmt = Select(literal(1))
 
 
@@ -243,22 +246,22 @@ def test_column_definition_default_force_parenthesis_literal() -> None:
 
 
 def test_column_definition_default_expression() -> None:
-    q = Create.Table("table_name")(a.Default(b + literal(1)))
+    q = Create.Table("table_name")(a.Default(cb + literal(1)))
     assert q.get_query() == "CREATE TABLE table_name (a DEFAULT (b + 1))"
 
 
 def test_column_definition_check() -> None:
-    q = Create.Table("table_name")(a.Check(b > literal(0)))
+    q = Create.Table("table_name")(a.Check(cb > literal(0)))
     assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0))"
 
 
 def test_column_definition_check_not_null() -> None:
-    q = Create.Table("table_name")(a.Check(b > literal(0)).NotNull)
+    q = Create.Table("table_name")(a.Check(cb > literal(0)).NotNull)
     assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0) NOT NULL)"
 
 
 def test_column_definition_named_check() -> None:
-    q = Create.Table("table_name")(a.Constraint("c").Check(b > literal(0)))
+    q = Create.Table("table_name")(a.Constraint("c").Check(cb > literal(0)))
     assert q.get_query() == "CREATE TABLE table_name (a CONSTRAINT c CHECK (b > 0))"
 
 
@@ -335,54 +338,54 @@ def test_type_name_with_constraint() -> None:
 
 
 def test_table_constraint_named_primary_key() -> None:
-    q = Create.Table("table_name")(a, Constraint("pk").PrimaryKey(a))
+    q = Create.Table("table_name")(a, Constraint("pk").PrimaryKey(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, CONSTRAINT pk PRIMARY KEY (a))"
 
 
 def test_table_constraint_primary_key_single() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a))
+    q = Create.Table("table_name")(a, PrimaryKey(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a))"
 
 
 def test_table_constraint_primary_key_multiple() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a, b))
+    q = Create.Table("table_name")(a, PrimaryKey(ca, cb))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a, b))"
 
 
 def test_table_constraint_primary_key_autoincrement() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a, autoincrement=True))
+    q = Create.Table("table_name")(a, PrimaryKey(ca, autoincrement=True))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a AUTOINCREMENT))"
 
 
 def test_table_constraint_primary_key_on_conflict_fail() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a).OnConflict().Fail)
+    q = Create.Table("table_name")(a, PrimaryKey(ca).OnConflict().Fail)
     assert (
         q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a) ON CONFLICT FAIL)"
     )
 
 
 def test_table_constraint_named_unique() -> None:
-    q = Create.Table("table_name")(a, Constraint("uq").Unique(a))
+    q = Create.Table("table_name")(a, Constraint("uq").Unique(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, CONSTRAINT uq UNIQUE (a))"
 
 
 def test_table_constraint_unique_single() -> None:
-    q = Create.Table("table_name")(a, Unique(a))
+    q = Create.Table("table_name")(a, Unique(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a))"
 
 
 def test_table_constraint_unique_multiple() -> None:
-    q = Create.Table("table_name")(a, Unique(a, b))
+    q = Create.Table("table_name")(a, Unique(ca, cb))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a, b))"
 
 
 def test_table_constraint_unique_asc_desc() -> None:
-    q = Create.Table("table_name")(a, Unique(a.Asc, b.Desc))
+    q = Create.Table("table_name")(a, Unique(ca.Asc, cb.Desc))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a ASC, b DESC))"
 
 
 def test_table_constraint_unique_on_conflict_rollback() -> None:
-    q = Create.Table("table_name")(a, Unique(a).OnConflict().Rollback)
+    q = Create.Table("table_name")(a, Unique(ca).OnConflict().Rollback)
     assert (
         q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a) ON CONFLICT ROLLBACK)"
     )
@@ -556,4 +559,4 @@ def test_create_table_column_after_constraint_raises() -> None:
     with pytest.raises(
         ValueError, match="column definitions must come before table constraints"
     ):
-        _ = Create.Table("table_name")(a, PrimaryKey(a), b)
+        _ = Create.Table("table_name")(a, PrimaryKey(ca), b)

@@ -1,62 +1,17 @@
 from __future__ import annotations
 
-import typing
-from abc import ABC
-from typing import overload, override
+from typing import overload
 
-from sqlinpython.column_definition import (
-    ColumnNameWithType,
-    GeneratedAlwaysAs,
-    IColumnConstraint,
-    WithCollate,
-)
 from sqlinpython.expression.core import (
-    AliasedExpression,
-    CollateOperator,
-    Expression,
-    Expression11,
     Expression12,
     SchemaTableColumnName,
     TableColumnName,
 )
 from sqlinpython.name import Name
-from sqlinpython.type_name import CompleteTypeName
 
 
-# Both indexed-column (https://sqlite.org/syntax/indexed-column.html) and
-# column-def (https://sqlite.org/syntax/column-def.html + https://sqlite.org/syntax/column-constraint.html)
-# allow ColumnName.Collate
-class IColumnNameAs(Expression11, IColumnConstraint, ABC):
-    @override
-    def Collate(self, collation_name: str | Name, /) -> ColumnNameWithCollate:
-        if isinstance(collation_name, str):
-            collation_name = Name(collation_name)
-        return ColumnNameWithCollate(self, collation_name)
-
-    @typing.overload
-    def As(self, alias: str | Name, /) -> AliasedExpression: ...
-
-    @typing.overload
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs: ...
-
-    @override
-    def As(
-        self, alias_or_expr: str | Name | Expression, /
-    ) -> AliasedExpression | GeneratedAlwaysAs:
-        if isinstance(alias_or_expr, (str, Name)):
-            if isinstance(alias_or_expr, str):
-                alias_or_expr = Name(alias_or_expr)
-            return AliasedExpression(self, alias_or_expr)
-        return GeneratedAlwaysAs(self, alias_or_expr)
-
-
-class ColumnNameWithCollate(IColumnNameAs, CollateOperator, WithCollate):
-    pass
-
-
-class ColumnName(IColumnNameAs, Name, Expression12):
-    def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
-        return ColumnNameWithType(self, type_name)
+class ColumnName(Name, Expression12):
+    """Expression atom referring to a column. Use ColumnDef for column definitions."""
 
 
 @overload

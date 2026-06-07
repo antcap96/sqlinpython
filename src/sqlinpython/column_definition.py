@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
 # SPEC: https://sqlite.org/syntax/column-def.html
 class ColumnDefinition(SqlElement, ABC):
-    """To construct a ColumnDefinition, start from a ColumnName"""
+    """To construct a ColumnDefinition, start from a ColumnDef"""
 
     pass
 
@@ -277,3 +277,19 @@ class ColumnNameWithType(IColumnConstraint):
         self._prev._create_query(buffer)
         buffer.append(" ")
         self._type_name._create_query(buffer)
+
+
+class ColumnDef(IColumnConstraint):
+    """DDL entry point for a column definition: ColumnDef('a')(TypeName('INT'))."""
+
+    def __init__(self, name: Name | str, /) -> None:
+        if isinstance(name, str):
+            name = Name(name)
+        self._name = name
+
+    def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
+        return ColumnNameWithType(self, type_name)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._name._create_query(buffer)
