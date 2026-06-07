@@ -24,6 +24,7 @@ from .literal import BlobLiteral as BlobLiteral
 from .literal import CurrentDate as CurrentDate
 from .literal import CurrentTime as CurrentTime
 from .literal import CurrentTimestamp as CurrentTimestamp
+from .literal import ExpressionOrLiteral as ExpressionOrLiteral
 from .literal import HexLiteral as HexLiteral
 from .literal import Literal as Literal
 from .literal import NumericLiteral as NumericLiteral

@@ -50,3 +50,18 @@ def test_multiple_when_with_else_end() -> None:
 # Note: Calling .End without at least one .When clause is now a compile-time
 # error, so a runtime test is no longer needed.
 # e.g. `Case(literal(1)).End` will be caught by a static type checker.
+
+
+def test_case_accepts_python_literals() -> None:
+    expr = Case.When(1).Then(2).Else(3).End
+    assert to_str(expr) == "CASE WHEN 1 THEN 2 ELSE 3 END"
+
+
+def test_case_base_accepts_python_literal() -> None:
+    expr = Case("a").When(1).Then(2).End
+    assert to_str(expr) == "CASE 'a' WHEN 1 THEN 2 END"
+
+
+def test_case_mixes_literal_and_expression() -> None:
+    expr = Case.When(literal(1).eq(literal(2))).Then("yes").Else("no").End
+    assert to_str(expr) == "CASE WHEN 1 = 2 THEN 'yes' ELSE 'no' END"

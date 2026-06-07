@@ -2,7 +2,7 @@ import enum
 from abc import ABC
 from typing import NoReturn, override
 
-from .core import Expression13
+from .core import Expression, Expression13
 
 
 class Literal(Expression13, ABC):
@@ -278,3 +278,12 @@ def literal(value: SqlLiteral) -> Literal:
         return NullLiteral()
     else:
         raise ValueError(f"Unsupported literal type: {type(value)}")  # pyright: ignore[reportUnreachable]
+
+
+type ExpressionOrLiteral = Expression | SqlLiteral
+
+
+def to_expr(value: ExpressionOrLiteral) -> Expression:
+    if isinstance(value, Expression):
+        return value
+    return literal(value)
