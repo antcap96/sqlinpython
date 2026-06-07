@@ -4,9 +4,10 @@ import typing
 from abc import ABC
 from typing import Literal, override
 
-from sqlinpython.base import SqlElement, comma_separated
+from sqlinpython.base import NoArg, SqlElement, comma_separated
 from sqlinpython.expression.core import AliasedExpression, Expression
 from sqlinpython.expression.function import Star_, WindowDefn
+from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.select_base import Complete, Core, SelectStatement_
@@ -82,8 +83,8 @@ class SelectLimit(ISelectAliasable):
         self._prev = prev
         self._limit = limit
 
-    def Offset(self, offset: Expression) -> SelectLimitOffset:
-        return SelectLimitOffset(self, offset)
+    def Offset(self, offset: ExpressionOrLiteral) -> SelectLimitOffset:
+        return SelectLimitOffset(self, to_expr(offset))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -99,16 +100,19 @@ class SelectLimit(ISelectAliasable):
 
 class ISelectLimit(SqlElement, ABC):
     @typing.overload
-    def Limit(self, expr: Expression) -> SelectLimit: ...
+    def Limit(self, expr: ExpressionOrLiteral) -> SelectLimit: ...
     @typing.overload
-    def Limit(self, expr: Expression, offset: Expression) -> SelectLimitComma: ...
     def Limit(
-        self, expr: Expression, offset: Expression | None = None
+        self, expr: ExpressionOrLiteral, offset: ExpressionOrLiteral
+    ) -> SelectLimitComma: ...
+    def Limit(
+        self,
+        expr: ExpressionOrLiteral,
+        offset: ExpressionOrLiteral | NoArg = NoArg.NO_ARG,
     ) -> SelectLimit | SelectLimitComma:
-        if offset is None:
-            return SelectLimit(self, expr)
-        else:
-            return SelectLimitComma(self, expr, offset)
+        if offset is NoArg.NO_ARG:
+            return SelectLimit(self, to_expr(expr))
+        return SelectLimitComma(self, to_expr(expr), to_expr(offset))
 
 
 class SelectOrderBy(ISelectLimit, SelectStatement_[Complete]):
@@ -232,8 +236,8 @@ class SelectHavingClause[T: Core | Complete](
 
 
 class ISelectHavingClause[T: Core | Complete](ISelectWindowClause[T], ABC):
-    def Having(self, expr: Expression) -> SelectHavingClause[T]:
-        return SelectHavingClause(self, expr)
+    def Having(self, expr: ExpressionOrLiteral) -> SelectHavingClause[T]:
+        return SelectHavingClause(self, to_expr(expr))
 
 
 class SelectGroupByClause[T: Core | Complete](
@@ -253,8 +257,8 @@ class SelectGroupByClause[T: Core | Complete](
 
 
 class ISelectGroupByClause[T: Core | Complete](ISelectHavingClause[T], ABC):
-    def GroupBy(self, *exprs: Expression) -> SelectGroupByClause[T]:
-        return SelectGroupByClause(self, exprs)
+    def GroupBy(self, *exprs: ExpressionOrLiteral) -> SelectGroupByClause[T]:
+        return SelectGroupByClause(self, tuple(to_expr(e) for e in exprs))
 
 
 class SelectWhereClause[T: Core | Complete](
@@ -274,8 +278,8 @@ class SelectWhereClause[T: Core | Complete](
 
 
 class ISelectWhereClause[T: Core | Complete](ISelectGroupByClause[T], ABC):
-    def Where(self, expr: Expression) -> SelectWhereClause[T]:
-        return SelectWhereClause(self, expr)
+    def Where(self, expr: ExpressionOrLiteral) -> SelectWhereClause[T]:
+        return SelectWhereClause(self, to_expr(expr))
 
 
 class SelectFromClause[T: Core | Complete](ISelectWhereClause[T], SelectStatement_[T]):

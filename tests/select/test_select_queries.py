@@ -161,6 +161,41 @@ def test_select_limit_comma_offset() -> None:
     assert q.get_query() == "SELECT * FROM t LIMIT 10, 5"
 
 
+def test_select_where_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).Where(1)
+    assert q.get_query() == "SELECT * FROM t WHERE 1"
+
+
+def test_select_group_by_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).GroupBy(1, 2)
+    assert q.get_query() == "SELECT * FROM t GROUP BY 1, 2"
+
+
+def test_select_having_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).GroupBy(1).Having(1)
+    assert q.get_query() == "SELECT * FROM t GROUP BY 1 HAVING 1"
+
+
+def test_select_limit_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10"
+
+
+def test_select_limit_offset_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10).Offset(5)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10 OFFSET 5"
+
+
+def test_select_limit_comma_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10, 5)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10, 5"
+
+
+def test_select_limit_offset_none_is_sql_null() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10, None)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10, NULL"
+
+
 # ---------------------------------------------------------------------------
 # Compound selects
 # ---------------------------------------------------------------------------

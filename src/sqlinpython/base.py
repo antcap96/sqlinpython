@@ -1,6 +1,11 @@
+import enum
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
 from typing import Protocol, override
+
+
+class NoArg(enum.Enum):
+    NO_ARG = enum.auto()
 
 
 class ISqlElement(Protocol):
