@@ -282,6 +282,11 @@ def test_values_order_by() -> None:
     assert q.get_query() == "VALUES (1) ORDER BY 1 ASC"
 
 
+def test_values_accepts_python_literals() -> None:
+    q = Values((1, "a"), (2, "b"))
+    assert q.get_query() == "VALUES (1, 'a'), (2, 'b')"
+
+
 # ---------------------------------------------------------------------------
 # WITH ... SELECT
 # ---------------------------------------------------------------------------

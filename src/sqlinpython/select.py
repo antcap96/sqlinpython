@@ -404,8 +404,8 @@ class ValuesKeyword[T: Core | Complete](SqlElement):
     def __init__(self, prev: SqlElement | None = None) -> None:
         self._prev = prev
 
-    def __call__(self, *rows: tuple[Expression, ...]) -> SelectValues[T]:
-        return SelectValues(self, rows)
+    def __call__(self, *rows: tuple[ExpressionOrLiteral, ...]) -> SelectValues[T]:
+        return SelectValues(self, tuple(tuple(to_expr(e) for e in row) for row in rows))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

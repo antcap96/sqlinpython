@@ -99,6 +99,13 @@ def test_insert_values_multiple_rows_multiple_columns() -> None:
     )
 
 
+def test_insert_values_accepts_python_literals() -> None:
+    assert (
+        Insert.Into("users")("id", "name").Values((1, "Alice"), (2, "Bob")).get_query()
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice'), (2, 'Bob')"
+    )
+
+
 def test_insert_values_various_types() -> None:
     # VALUES with various expression types
     assert (

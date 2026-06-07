@@ -224,8 +224,10 @@ class InsertValues(IBeforeUpsertClause):
 
 
 class IInsertBody(SqlElement, ABC):
-    def Values(self, *values: tuple[Expression, ...]) -> InsertValues:
-        return InsertValues(self, values)
+    def Values(self, *values: tuple[ExpressionOrLiteral, ...]) -> InsertValues:
+        return InsertValues(
+            self, tuple(tuple(to_expr(e) for e in row) for row in values)
+        )
 
     def __call__(self, select_stm: SelectStatement, /) -> InsertSelect:
         return InsertSelect(self, select_stm)
