@@ -856,12 +856,10 @@ class RaiseExpression(Expression13):
     def __init__(
         self,
         mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"],
-        message: str | None,
+        message: Expression | None,
     ) -> None:
-        from .literal import StringLiteral
-
         self._mode = mode
-        self._message = StringLiteral(message) if message is not None else None
+        self._message = message
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -877,13 +875,13 @@ class RaiseKeyword:
     def Ignore(self) -> RaiseExpression:
         return RaiseExpression("IGNORE", None)
 
-    def Rollback(self, message: str) -> RaiseExpression:
+    def Rollback(self, message: Expression) -> RaiseExpression:
         return RaiseExpression("ROLLBACK", message)
 
-    def Abort(self, message: str) -> RaiseExpression:
+    def Abort(self, message: Expression) -> RaiseExpression:
         return RaiseExpression("ABORT", message)
 
-    def Fail(self, message: str) -> RaiseExpression:
+    def Fail(self, message: Expression) -> RaiseExpression:
         return RaiseExpression("FAIL", message)
 
     @overload
@@ -894,21 +892,21 @@ class RaiseKeyword:
     def __call__(
         self,
         mode: typing.Literal["ROLLBACK"] | RollbackKeyword,
-        message: str,
+        message: Expression,
         /,
     ) -> RaiseExpression: ...
     @overload
     def __call__(
         self,
         mode: typing.Literal["ABORT"] | AbortKeyword,
-        message: str,
+        message: Expression,
         /,
     ) -> RaiseExpression: ...
     @overload
     def __call__(
         self,
         mode: typing.Literal["FAIL"] | FailKeyword,
-        message: str,
+        message: Expression,
         /,
     ) -> RaiseExpression: ...
     def __call__(
@@ -918,7 +916,7 @@ class RaiseKeyword:
         | RollbackKeyword
         | AbortKeyword
         | FailKeyword,
-        message: str | None = None,
+        message: Expression | None = None,
         /,
     ) -> RaiseExpression:
         if isinstance(mode, IgnoreKeyword):

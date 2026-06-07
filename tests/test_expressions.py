@@ -975,24 +975,31 @@ def test_raise_ignore() -> None:
 
 
 def test_raise_rollback() -> None:
+    msg = expr.literal("oops")
     expected = "RAISE(ROLLBACK, 'oops')"
-    assert to_str(expr.Raise.Rollback("oops")) == expected
-    assert to_str(expr.Raise("ROLLBACK", "oops")) == expected
-    assert to_str(expr.Raise(Rollback, "oops")) == expected
+    assert to_str(expr.Raise.Rollback(msg)) == expected
+    assert to_str(expr.Raise("ROLLBACK", msg)) == expected
+    assert to_str(expr.Raise(Rollback, msg)) == expected
 
 
 def test_raise_abort() -> None:
+    msg = expr.literal("constraint failed")
     expected = "RAISE(ABORT, 'constraint failed')"
-    assert to_str(expr.Raise.Abort("constraint failed")) == expected
-    assert to_str(expr.Raise("ABORT", "constraint failed")) == expected
-    assert to_str(expr.Raise(expr.Abort, "constraint failed")) == expected
+    assert to_str(expr.Raise.Abort(msg)) == expected
+    assert to_str(expr.Raise("ABORT", msg)) == expected
+    assert to_str(expr.Raise(expr.Abort, msg)) == expected
 
 
 def test_raise_fail() -> None:
+    msg = expr.literal("nope")
     expected = "RAISE(FAIL, 'nope')"
-    assert to_str(expr.Raise.Fail("nope")) == expected
-    assert to_str(expr.Raise("FAIL", "nope")) == expected
-    assert to_str(expr.Raise(expr.Fail, "nope")) == expected
+    assert to_str(expr.Raise.Fail(msg)) == expected
+    assert to_str(expr.Raise("FAIL", msg)) == expected
+    assert to_str(expr.Raise(expr.Fail, msg)) == expected
+
+
+def test_raise_message_is_expression() -> None:
+    assert to_str(expr.Raise.Fail(a.Concat(b))) == "RAISE(FAIL, 'a' || 'b')"
 
 
 def test_raise_inside_case() -> None:
@@ -1004,6 +1011,6 @@ def test_raise_inside_case() -> None:
 
 def test_raise_inside_or() -> None:
     assert (
-        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail("x")))
+        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail(expr.literal("x"))))
         == "RAISE(IGNORE) OR RAISE(FAIL, 'x')"
     )
