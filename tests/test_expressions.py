@@ -975,27 +975,24 @@ def test_raise_ignore() -> None:
 
 
 def test_raise_rollback() -> None:
-    msg = expr.literal("oops")
     expected = "RAISE(ROLLBACK, 'oops')"
-    assert to_str(expr.Raise.Rollback(msg)) == expected
-    assert to_str(expr.Raise("ROLLBACK", msg)) == expected
-    assert to_str(expr.Raise(Rollback, msg)) == expected
+    assert to_str(expr.Raise.Rollback("oops")) == expected
+    assert to_str(expr.Raise("ROLLBACK", "oops")) == expected
+    assert to_str(expr.Raise(Rollback, "oops")) == expected
 
 
 def test_raise_abort() -> None:
-    msg = expr.literal("constraint failed")
     expected = "RAISE(ABORT, 'constraint failed')"
-    assert to_str(expr.Raise.Abort(msg)) == expected
-    assert to_str(expr.Raise("ABORT", msg)) == expected
-    assert to_str(expr.Raise(expr.Abort, msg)) == expected
+    assert to_str(expr.Raise.Abort("constraint failed")) == expected
+    assert to_str(expr.Raise("ABORT", "constraint failed")) == expected
+    assert to_str(expr.Raise(expr.Abort, "constraint failed")) == expected
 
 
 def test_raise_fail() -> None:
-    msg = expr.literal("nope")
     expected = "RAISE(FAIL, 'nope')"
-    assert to_str(expr.Raise.Fail(msg)) == expected
-    assert to_str(expr.Raise("FAIL", msg)) == expected
-    assert to_str(expr.Raise(expr.Fail, msg)) == expected
+    assert to_str(expr.Raise.Fail("nope")) == expected
+    assert to_str(expr.Raise("FAIL", "nope")) == expected
+    assert to_str(expr.Raise(expr.Fail, "nope")) == expected
 
 
 def test_raise_message_is_expression() -> None:
@@ -1011,6 +1008,123 @@ def test_raise_inside_case() -> None:
 
 def test_raise_inside_or() -> None:
     assert (
-        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail(expr.literal("x"))))
+        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail("x")))
         == "RAISE(IGNORE) OR RAISE(FAIL, 'x')"
     )
+
+
+# ---------------------------------------------------------------------------
+# SqlLiteral coercion on Expression operators/comparisons/builders
+# ---------------------------------------------------------------------------
+
+
+def test_expression_eq_accepts_python_literal() -> None:
+    assert to_str(a.eq(1)) == "'a' = 1"
+
+
+def test_expression_ne_accepts_python_literal() -> None:
+    assert to_str(a.ne("b")) == "'a' != 'b'"
+
+
+def test_expression_lt_accepts_python_literal() -> None:
+    assert to_str(one < 2) == "1 < 2"
+
+
+def test_expression_add_accepts_python_literal() -> None:
+    assert to_str(one + 2) == "1 + 2"
+
+
+def test_expression_sub_accepts_python_literal() -> None:
+    assert to_str(one - 2) == "1 - 2"
+
+
+def test_expression_mul_accepts_python_literal() -> None:
+    assert to_str(one * 2) == "1 * 2"
+
+
+def test_expression_concat_accepts_python_literal() -> None:
+    assert to_str(a.Concat("z")) == "'a' || 'z'"
+
+
+def test_expression_and_or_accept_python_literals() -> None:
+    assert to_str(one.And(2).Or(3)) == "1 AND 2 OR 3"
+
+
+def test_expression_between_accepts_python_literals() -> None:
+    assert to_str(one.Between(0, 10)) == "1 BETWEEN 0 AND 10"
+
+
+def test_expression_in_accepts_python_literals() -> None:
+    assert to_str(one.In(1, 2, 3)) == "1 IN (1, 2, 3)"
+
+
+def test_expression_like_accepts_python_literal() -> None:
+    assert to_str(a.Like("%x%")) == "'a' LIKE '%x%'"
+
+
+def test_expression_like_escape_accepts_python_literal() -> None:
+    assert to_str(a.Like("%x%").Escape("\\")) == "'a' LIKE '%x%' ESCAPE '\\'"
+
+
+def test_expression_glob_accepts_python_literal() -> None:
+    assert to_str(a.Glob("*.txt")) == "'a' GLOB '*.txt'"
+
+
+def test_not_accepts_python_literal() -> None:
+    assert to_str(expr.Not(1)) == "NOT 1"
+
+
+def test_is_accepts_python_literal() -> None:
+    assert to_str(one.Is(2)) == "1 IS 2"
+
+
+def test_raise_message_none_is_sql_null() -> None:
+    assert to_str(expr.Raise("FAIL", None)) == "RAISE(FAIL, NULL)"
+
+
+# ---------------------------------------------------------------------------
+# Reflected operators (literal on the left side)
+# ---------------------------------------------------------------------------
+
+
+def test_reflected_add() -> None:
+    assert to_str(5 + one) == "5 + 1"
+
+
+def test_reflected_sub_preserves_order() -> None:
+    # Non-commutative: 5 - col must NOT equal col - 5
+    assert to_str(5 - one) == "5 - 1"
+    assert to_str(one - 5) == "1 - 5"
+
+
+def test_reflected_mul() -> None:
+    assert to_str(5 * one) == "5 * 1"
+
+
+def test_reflected_truediv_preserves_order() -> None:
+    assert to_str(5 / one) == "5 / 1"
+
+
+def test_reflected_mod_preserves_order() -> None:
+    assert to_str(5 % one) == "5 % 1"
+
+
+def test_reflected_and() -> None:
+    assert to_str(5 & one) == "5 & 1"
+
+
+def test_reflected_or() -> None:
+    assert to_str(5 | one) == "5 | 1"
+
+
+def test_reflected_lshift_preserves_order() -> None:
+    assert to_str(5 << one) == "5 << 1"
+
+
+def test_reflected_rshift_preserves_order() -> None:
+    assert to_str(5 >> one) == "5 >> 1"
+
+
+def test_reflected_comparison_via_python_reflection() -> None:
+    # Python automatically routes `5 < col` to col.__gt__(5)
+    assert to_str(5 < one) == "1 > 5"

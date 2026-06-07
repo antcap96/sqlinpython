@@ -2,15 +2,32 @@ from __future__ import annotations
 
 import typing
 from abc import ABC
-from typing import overload, override
+from typing import TYPE_CHECKING, overload, override
 
-from sqlinpython.base import NotImplementedSqlElement, SqlElement, comma_separated
+from sqlinpython.base import (
+    NoArg,
+    NotImplementedSqlElement,
+    SqlElement,
+    comma_separated,
+)
 from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
 from sqlinpython.savepoint import RollbackKeyword
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 from sqlinpython.type_name import CompleteTypeName
+
+if TYPE_CHECKING:
+    from sqlinpython.expression.literal import ExpressionOrLiteral
+
+
+def _to_expr(value: ExpressionOrLiteral) -> Expression:
+    # Deferred import: literal.py imports Expression from this module.
+    if isinstance(value, Expression):
+        return value
+    from sqlinpython.expression.literal import literal
+
+    return literal(value)
 
 
 class TableFunction(NotImplementedSqlElement):
@@ -19,13 +36,15 @@ class TableFunction(NotImplementedSqlElement):
 
 # SPEC: https://sqlite.org/lang_expr.html
 class INegatedOperations(SqlElement, ABC):
-    def Between(self, lower: Expression, upper: Expression) -> BetweenExpression:
+    def Between(
+        self, lower: ExpressionOrLiteral, upper: ExpressionOrLiteral
+    ) -> BetweenExpression:
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
             self_ = self
-        lower_ = lower._wrap_parenthesis_if_not(Expression5)
-        upper_ = upper._wrap_parenthesis_if_not(Expression5)
+        lower_ = _to_expr(lower)._wrap_parenthesis_if_not(Expression5)
+        upper_ = _to_expr(upper)._wrap_parenthesis_if_not(Expression5)
         return BetweenExpression(self_, lower_, upper_)
 
     @overload
@@ -34,7 +53,7 @@ class INegatedOperations(SqlElement, ABC):
     def In(self, select_stmt: SelectStatement, /) -> InExpressionWithSelect: ...
     @overload
     def In(
-        self, expr: Expression, /, *exprs: Expression
+        self, expr: ExpressionOrLiteral, /, *exprs: ExpressionOrLiteral
     ) -> InExpressionWithExpressions: ...
     @overload
     def In(self, table_name: Name, /) -> InExpressionWithTableName: ...
@@ -49,7 +68,8 @@ class INegatedOperations(SqlElement, ABC):
         self, schema_name: Name, table_function: TableFunction, /
     ) -> InExpressionWithTableFunction: ...
     def In(
-        self, *exprs: Expression | SelectStatement | Name | TableFunction
+        self,
+        *exprs: ExpressionOrLiteral | SelectStatement | Name | TableFunction,
     ) -> (
         EmptyInExpression
         | InExpressionWithSelect
@@ -79,40 +99,46 @@ class INegatedOperations(SqlElement, ABC):
             ) and isinstance(table_function, TableFunction):
                 return InExpressionWithTableFunction(self_, schema_name, table_function)
             case _:
-                assert all(isinstance(expr, Expression) for expr in exprs)
-                exprs = typing.cast(tuple[Expression, ...], exprs)
-                return InExpressionWithExpressions(self_, exprs)
+                assert all(
+                    isinstance(e, Expression)
+                    or e is None
+                    or isinstance(e, (bool, int, float, str, bytes))
+                    for e in exprs
+                )
+                exprs_ = typing.cast("tuple[ExpressionOrLiteral, ...]", exprs)
+                coerced = tuple(_to_expr(e) for e in exprs_)
+                return InExpressionWithExpressions(self_, coerced)
 
-    def Glob(self, pattern: Expression) -> MatchLikeExpression:
+    def Glob(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
             self_ = self
-        pattern_ = pattern._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
         return MatchLikeExpression(self_, pattern_, "GLOB")
 
-    def Regexp(self, pattern: Expression) -> MatchLikeExpression:
+    def Regexp(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
             self_ = self
-        pattern_ = pattern._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
         return MatchLikeExpression(self_, pattern_, "REGEXP")
 
-    def Match(self, pattern: Expression) -> MatchLikeExpression:
+    def Match(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
             self_ = self
-        pattern_ = pattern._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
         return MatchLikeExpression(self_, pattern_, "MATCH")
 
-    def Like(self, pattern: Expression) -> LikeExpression:
+    def Like(self, pattern: ExpressionOrLiteral) -> LikeExpression:
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
             self_ = self
-        pattern_ = pattern._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
         return LikeExpression(self_, pattern_)
 
 
@@ -122,24 +148,24 @@ class Expression(IHasAscDesc, INegatedOperations, IHasFrameBounds, ABC):
             alias = Name(alias)
         return AliasedExpression(self, alias)
 
-    def Or(self, other: Expression) -> OrCondition:
+    def Or(self, other: ExpressionOrLiteral) -> OrCondition:
         self_ = self._wrap_parenthesis_if_not(Expression1)
-        other_ = other._wrap_parenthesis_if_not(Expression2)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression2)
         return OrCondition(self_, other_)
 
-    def And(self, other: Expression) -> AndCondition:
+    def And(self, other: ExpressionOrLiteral) -> AndCondition:
         self_ = self._wrap_parenthesis_if_not(Expression2)
-        other_ = other._wrap_parenthesis_if_not(Expression3)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression3)
         return AndCondition(self_, other_)
 
-    def eq(self, other: Expression, double_eq: bool = False) -> EqExpression:
+    def eq(self, other: ExpressionOrLiteral, double_eq: bool = False) -> EqExpression:
         self_ = self._wrap_parenthesis_if_not(Expression4)
-        other_ = other._wrap_parenthesis_if_not(Expression5)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression5)
         return EqExpression(self_, other_, double_eq)
 
-    def ne(self, other: Expression, arrows: bool = False) -> NeExpression:
+    def ne(self, other: ExpressionOrLiteral, arrows: bool = False) -> NeExpression:
         self_ = self._wrap_parenthesis_if_not(Expression4)
-        other_ = other._wrap_parenthesis_if_not(Expression5)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression5)
         return NeExpression(self_, other_, arrows)
 
     @property
@@ -162,84 +188,129 @@ class Expression(IHasAscDesc, INegatedOperations, IHasFrameBounds, ABC):
         self_ = self._wrap_parenthesis_if_not(Expression4)
         return NegatedOperator(self_)
 
-    def __lt__(self, other: Expression) -> Comparison:
+    def __lt__(self, other: ExpressionOrLiteral) -> Comparison:
         self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = other._wrap_parenthesis_if_not(Expression6)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
         return Comparison(self_, other_, "<")
 
-    def __le__(self, other: Expression) -> Comparison:
+    def __le__(self, other: ExpressionOrLiteral) -> Comparison:
         self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = other._wrap_parenthesis_if_not(Expression6)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
         return Comparison(self_, other_, "<=")
 
-    def __gt__(self, other: Expression) -> Comparison:
+    def __gt__(self, other: ExpressionOrLiteral) -> Comparison:
         self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = other._wrap_parenthesis_if_not(Expression6)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
         return Comparison(self_, other_, ">")
 
-    def __ge__(self, other: Expression) -> Comparison:
+    def __ge__(self, other: ExpressionOrLiteral) -> Comparison:
         self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = other._wrap_parenthesis_if_not(Expression6)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
         return Comparison(self_, other_, ">=")
 
-    def __and__(self, other: Expression) -> BitOperation:
+    def __and__(self, other: ExpressionOrLiteral) -> BitOperation:
         self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = other._wrap_parenthesis_if_not(Expression8)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
         return BitOperation(self_, other_, "&")
 
-    def __or__(self, other: Expression) -> BitOperation:
+    def __rand__(self, other: ExpressionOrLiteral) -> BitOperation:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
+        right_ = self._wrap_parenthesis_if_not(Expression8)
+        return BitOperation(left_, right_, "&")
+
+    def __or__(self, other: ExpressionOrLiteral) -> BitOperation:
         self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = other._wrap_parenthesis_if_not(Expression8)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
         return BitOperation(self_, other_, "|")
 
-    def __lshift__(self, other: Expression) -> BitOperation:
+    def __ror__(self, other: ExpressionOrLiteral) -> BitOperation:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
+        right_ = self._wrap_parenthesis_if_not(Expression8)
+        return BitOperation(left_, right_, "|")
+
+    def __lshift__(self, other: ExpressionOrLiteral) -> BitOperation:
         self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = other._wrap_parenthesis_if_not(Expression8)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
         return BitOperation(self_, other_, "<<")
 
-    def __rshift__(self, other: Expression) -> BitOperation:
+    def __rlshift__(self, other: ExpressionOrLiteral) -> BitOperation:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
+        right_ = self._wrap_parenthesis_if_not(Expression8)
+        return BitOperation(left_, right_, "<<")
+
+    def __rshift__(self, other: ExpressionOrLiteral) -> BitOperation:
         self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = other._wrap_parenthesis_if_not(Expression8)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
         return BitOperation(self_, other_, ">>")
 
-    def __add__(self, other: Expression) -> Summand:
+    def __rrshift__(self, other: ExpressionOrLiteral) -> BitOperation:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
+        right_ = self._wrap_parenthesis_if_not(Expression8)
+        return BitOperation(left_, right_, ">>")
+
+    def __add__(self, other: ExpressionOrLiteral) -> Summand:
         self_ = self._wrap_parenthesis_if_not(Expression8)
-        other_ = other._wrap_parenthesis_if_not(Expression9)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
         return Summand(self_, other_, "+")
 
-    def __sub__(self, other: Expression) -> Summand:
+    def __radd__(self, other: ExpressionOrLiteral) -> Summand:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        right_ = self._wrap_parenthesis_if_not(Expression9)
+        return Summand(left_, right_, "+")
+
+    def __sub__(self, other: ExpressionOrLiteral) -> Summand:
         self_ = self._wrap_parenthesis_if_not(Expression8)
-        other_ = other._wrap_parenthesis_if_not(Expression9)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
         return Summand(self_, other_, "-")
 
-    def __mul__(self, other: Expression) -> Factor:
+    def __rsub__(self, other: ExpressionOrLiteral) -> Summand:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        right_ = self._wrap_parenthesis_if_not(Expression9)
+        return Summand(left_, right_, "-")
+
+    def __mul__(self, other: ExpressionOrLiteral) -> Factor:
         self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = other._wrap_parenthesis_if_not(Expression10)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
         return Factor(self_, other_, "*")
 
-    def __truediv__(self, other: Expression) -> Factor:
+    def __rmul__(self, other: ExpressionOrLiteral) -> Factor:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
+        right_ = self._wrap_parenthesis_if_not(Expression10)
+        return Factor(left_, right_, "*")
+
+    def __truediv__(self, other: ExpressionOrLiteral) -> Factor:
         self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = other._wrap_parenthesis_if_not(Expression10)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
         return Factor(self_, other_, "/")
 
-    def __mod__(self, other: Expression) -> Factor:
+    def __rtruediv__(self, other: ExpressionOrLiteral) -> Factor:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
+        right_ = self._wrap_parenthesis_if_not(Expression10)
+        return Factor(left_, right_, "/")
+
+    def __mod__(self, other: ExpressionOrLiteral) -> Factor:
         self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = other._wrap_parenthesis_if_not(Expression10)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
         return Factor(self_, other_, "%")
 
-    def Concat(self, other: Expression) -> ConcatLikeOperator:
+    def __rmod__(self, other: ExpressionOrLiteral) -> Factor:
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
+        right_ = self._wrap_parenthesis_if_not(Expression10)
+        return Factor(left_, right_, "%")
+
+    def Concat(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
         self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = other._wrap_parenthesis_if_not(Expression11)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
         return ConcatLikeOperator(self_, other_, "||")
 
-    def Extract(self, other: Expression) -> ConcatLikeOperator:
+    def Extract(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
         self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = other._wrap_parenthesis_if_not(Expression11)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
         return ConcatLikeOperator(self_, other_, "->")
 
-    def Extract2(self, other: Expression) -> ConcatLikeOperator:
+    def Extract2(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
         self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = other._wrap_parenthesis_if_not(Expression11)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
         return ConcatLikeOperator(self_, other_, "->>")
 
     def Collate(self, other: Name | str, /) -> CollateOperator:
@@ -321,8 +392,8 @@ class Expression3(Expression2, ABC):
 
 
 class NotKeyword:
-    def __call__(self, after: Expression) -> NotExpression:
-        return NotExpression(after._wrap_parenthesis_if_not(Expression3))
+    def __call__(self, after: ExpressionOrLiteral) -> NotExpression:
+        return NotExpression(_to_expr(after)._wrap_parenthesis_if_not(Expression3))
 
     def Exists(self, select_stmt: SelectStatement) -> NotExpression:
         return NotExpression(Exists(select_stmt))
@@ -392,8 +463,8 @@ class IsExpressionComplete(Expression4):
 
 
 class IIsCallable(SqlElement, ABC):
-    def __call__(self, other: Expression) -> IsExpressionComplete:
-        _other = other._wrap_parenthesis_if_not(Expression4)
+    def __call__(self, other: ExpressionOrLiteral) -> IsExpressionComplete:
+        _other = _to_expr(other)._wrap_parenthesis_if_not(Expression4)
         return IsExpressionComplete(self, _other)
 
 
@@ -439,7 +510,7 @@ class IsExpression(IIsCallable):
         buffer.append(" IS")
 
 
-class BetweenExpression(SqlElement):
+class BetweenExpression(Expression4):
     def __init__(
         self, prev: SqlElement, lower: Expression5, upper: Expression5
     ) -> None:
@@ -521,8 +592,8 @@ class InExpressionWithTableFunction(SqlElement):
         self._schema = schema
         self._name = name
 
-    def __call__(self, *args: Expression) -> InExpressionWithTableFunctionArgs:
-        return InExpressionWithTableFunctionArgs(self, args)
+    def __call__(self, *args: ExpressionOrLiteral) -> InExpressionWithTableFunctionArgs:
+        return InExpressionWithTableFunctionArgs(self, tuple(_to_expr(a) for a in args))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -584,8 +655,8 @@ class LikeExpression(Expression4):
         self._prev = prev
         self._pattern = pattern
 
-    def Escape(self, escape: Expression) -> LikeExpressionWithEscape:
-        return LikeExpressionWithEscape(self, escape)
+    def Escape(self, escape: ExpressionOrLiteral) -> LikeExpressionWithEscape:
+        return LikeExpressionWithEscape(self, _to_expr(escape))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -875,14 +946,14 @@ class RaiseKeyword:
     def Ignore(self) -> RaiseExpression:
         return RaiseExpression("IGNORE", None)
 
-    def Rollback(self, message: Expression) -> RaiseExpression:
-        return RaiseExpression("ROLLBACK", message)
+    def Rollback(self, message: ExpressionOrLiteral) -> RaiseExpression:
+        return RaiseExpression("ROLLBACK", _to_expr(message))
 
-    def Abort(self, message: Expression) -> RaiseExpression:
-        return RaiseExpression("ABORT", message)
+    def Abort(self, message: ExpressionOrLiteral) -> RaiseExpression:
+        return RaiseExpression("ABORT", _to_expr(message))
 
-    def Fail(self, message: Expression) -> RaiseExpression:
-        return RaiseExpression("FAIL", message)
+    def Fail(self, message: ExpressionOrLiteral) -> RaiseExpression:
+        return RaiseExpression("FAIL", _to_expr(message))
 
     @overload
     def __call__(
@@ -892,21 +963,21 @@ class RaiseKeyword:
     def __call__(
         self,
         mode: typing.Literal["ROLLBACK"] | RollbackKeyword,
-        message: Expression,
+        message: ExpressionOrLiteral,
         /,
     ) -> RaiseExpression: ...
     @overload
     def __call__(
         self,
         mode: typing.Literal["ABORT"] | AbortKeyword,
-        message: Expression,
+        message: ExpressionOrLiteral,
         /,
     ) -> RaiseExpression: ...
     @overload
     def __call__(
         self,
         mode: typing.Literal["FAIL"] | FailKeyword,
-        message: Expression,
+        message: ExpressionOrLiteral,
         /,
     ) -> RaiseExpression: ...
     def __call__(
@@ -916,19 +987,20 @@ class RaiseKeyword:
         | RollbackKeyword
         | AbortKeyword
         | FailKeyword,
-        message: Expression | None = None,
+        message: ExpressionOrLiteral | NoArg = NoArg.NO_ARG,
         /,
     ) -> RaiseExpression:
+        msg_expr = None if message is NoArg.NO_ARG else _to_expr(message)
         if isinstance(mode, IgnoreKeyword):
-            return RaiseExpression("IGNORE", message)
+            return RaiseExpression("IGNORE", msg_expr)
         elif isinstance(mode, RollbackKeyword):
-            return RaiseExpression("ROLLBACK", message)
+            return RaiseExpression("ROLLBACK", msg_expr)
         elif isinstance(mode, AbortKeyword):
-            return RaiseExpression("ABORT", message)
+            return RaiseExpression("ABORT", msg_expr)
         elif isinstance(mode, FailKeyword):
-            return RaiseExpression("FAIL", message)
+            return RaiseExpression("FAIL", msg_expr)
         else:
-            return RaiseExpression(mode, message)
+            return RaiseExpression(mode, msg_expr)
 
 
 Raise = RaiseKeyword()
