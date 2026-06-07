@@ -5,10 +5,14 @@ from abc import ABC
 from typing import Literal, override
 
 from sqlinpython.base import CompleteSqlQuery, NoArg, SqlElement, comma_separated
-from sqlinpython.expression import Expression, Star
-from sqlinpython.expression.core import AliasedExpression
-from sqlinpython.expression.function import Star_
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star,
+    Star_,
+    to_expr,
+)
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.returning import ReturningBase

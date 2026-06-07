@@ -4,12 +4,13 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement, comma_separated
-from sqlinpython.expression.core import (
+from sqlinpython.expression import (
     Expression,
+    ExpressionOrLiteral,
     SchemaTableColumnName,
     TableColumnName,
+    to_expr,
 )
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 from sqlinpython.name import Name
 from sqlinpython.select_base import Complete, SelectStatement_
 

@@ -4,8 +4,7 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.expression import Expression
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
+from sqlinpython.expression import Expression, ExpressionOrLiteral, to_expr
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 

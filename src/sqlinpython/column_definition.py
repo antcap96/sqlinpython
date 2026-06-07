@@ -5,8 +5,7 @@ from typing import TYPE_CHECKING, override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
-from sqlinpython.expression import Expression, Literal
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
+from sqlinpython.expression import Expression, ExpressionOrLiteral, Literal, to_expr
 from sqlinpython.name import Name
 from sqlinpython.type_name import CompleteTypeName
 

@@ -7,10 +7,14 @@ from typing import override
 from typing_extensions import TypeIs
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.expression import Expression, Star
-from sqlinpython.expression.core import AliasedExpression
-from sqlinpython.expression.function import Star_
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star,
+    Star_,
+    to_expr,
+)
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 from sqlinpython.returning import ReturningBase

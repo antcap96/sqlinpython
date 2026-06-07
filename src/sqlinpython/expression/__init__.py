@@ -1,6 +1,7 @@
 from .bind_parameter import BindParameter as BindParameter
 from .case import Case as Case
 from .core import Abort as Abort
+from .core import AliasedExpression as AliasedExpression
 from .core import Cast as Cast
 from .core import Exists as Exists
 from .core import Expression as Expression
@@ -9,7 +10,9 @@ from .core import Ignore as Ignore
 from .core import Not as Not
 from .core import Raise as Raise
 from .core import Row as Row
+from .core import SchemaTableColumnName as SchemaTableColumnName
 from .core import Subquery as Subquery
+from .core import TableColumnName as TableColumnName
 from .function import FunctionCall as FunctionCall
 from .function import FunctionCallWithFilter as FunctionCallWithFilter
 from .function import FunctionName as FunctionName
@@ -19,6 +22,8 @@ from .function import PartitionBy as PartitionBy
 from .function import Range as Range
 from .function import Rows as Rows
 from .function import Star as Star
+from .function import Star_ as Star_
+from .function import WindowDefn as WindowDefn
 from .function import WindowName as WindowName
 from .literal import BlobLiteral as BlobLiteral
 from .literal import CurrentDate as CurrentDate
@@ -29,3 +34,4 @@ from .literal import HexLiteral as HexLiteral
 from .literal import Literal as Literal
 from .literal import NumericLiteral as NumericLiteral
 from .literal import literal as literal
+from .literal import to_expr as to_expr

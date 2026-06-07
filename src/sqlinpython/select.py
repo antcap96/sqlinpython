@@ -5,9 +5,14 @@ from abc import ABC
 from typing import Literal, override
 
 from sqlinpython.base import NoArg, SqlElement, comma_separated
-from sqlinpython.expression.core import AliasedExpression, Expression
-from sqlinpython.expression.function import Star_, WindowDefn
-from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star_,
+    WindowDefn,
+    to_expr,
+)
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.select_base import Complete, Core, SelectStatement_
@@ -30,7 +35,7 @@ _ResultColumnArg = Literal["*"] | ResultColumn
 
 
 def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
-    from sqlinpython.expression.function import Star as StarSingleton
+    from sqlinpython.expression import Star as StarSingleton
 
     if arg == "*":
         return StarSingleton
