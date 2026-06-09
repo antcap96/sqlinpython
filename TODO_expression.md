@@ -22,7 +22,7 @@ Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.ht
 ### Broken / limited (not strictly missing)
 
 - [x] `StringLiteral` uses **double quotes** — fixed: now emits single-quoted form `'...'` and escapes embedded single quotes by doubling (`O'Reilly` → `'O''Reilly'`). Matches SQLite's literal-value grammar; identifier double-quoting (via `Name`) is unaffected.
-- [ ] `FloatLiteral` relies on `str(float)`, which silently turns `1.5e10` into `15000000000.0`, can emit `inf`/`nan`, and loses control over precision/notation.
+- [x] `FloatLiteral` now rejects non-finite values (`inf`, `-inf`, `nan`) via `math.isfinite` at construction. Rendering still uses `str(float)`, which is bit-exact (shortest-roundtrip on IEEE 754 doubles) but flattens scientific notation (e.g. `1.5e10` → `15000000000.0`); users who need precise notation should use `NumericLiteral`.
 
 ## Other notes in the expression package
 

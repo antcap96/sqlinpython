@@ -26,6 +26,21 @@ def test_literal_float() -> None:
     assert to_str(expr.literal(1.0)) == "1.0"
 
 
+def test_literal_float_inf_raises() -> None:
+    with pytest.raises(ValueError, match="FloatLiteral"):
+        _ = expr.literal(float("inf"))
+
+
+def test_literal_float_negative_inf_raises() -> None:
+    with pytest.raises(ValueError, match="FloatLiteral"):
+        _ = expr.literal(float("-inf"))
+
+
+def test_literal_float_nan_raises() -> None:
+    with pytest.raises(ValueError, match="FloatLiteral"):
+        _ = expr.literal(float("nan"))
+
+
 def test_literal_int() -> None:
     assert to_str(expr.literal(1)) == "1"
 

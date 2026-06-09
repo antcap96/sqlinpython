@@ -1,4 +1,5 @@
 import enum
+import math
 from abc import ABC
 from typing import NoReturn, override
 
@@ -194,9 +195,12 @@ class NumericLiteral(Literal):
 
 class FloatLiteral(Literal):
     def __init__(self, value: float) -> None:
+        if not math.isfinite(value):
+            raise ValueError(
+                f"FloatLiteral does not accept non-finite values, got {value}"
+            )
         self._value = value
 
-    # TODO: All this
     @override
     def _create_query(self, buffer: list[str]) -> None:
         buffer.append(str(self._value))
