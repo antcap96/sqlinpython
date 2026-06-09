@@ -14,9 +14,9 @@ From the TODO at the bottom of `src/sqlinpython/expression/core.py`:
 
 ## Missing `literal-value` variants
 
-Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.html); see `# TODO: All this` at `src/sqlinpython/expression/literal.py:51`.
+Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.html).
 
-- [ ] **Hexadecimal integer literals** — `0xFF` form. `IntLiteral` always emits decimal; there is no way to produce hex.
+- [x] **Hexadecimal integer literals** — `0xFF` form — implemented as `HexLiteral(value)`, which validates non-negative and emits uppercase `0x<HEX>`. `IntLiteral` still emits decimal; reach for `HexLiteral` when hex notation is wanted.
 - [x] **BLOB literals** — `X'53514C697465'` / `x'...'` — implemented as `BlobLiteral(bytes)`, also reachable via `literal(b"...")` since `bytes` has an unambiguous SQL form. Emits uppercase `X'<HEX>'`.
 
 ### Broken / limited (not strictly missing)
@@ -26,5 +26,5 @@ Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.ht
 
 ## Other notes in the expression package
 
-- `src/sqlinpython/expression/core.py:559` — refactor idea for `LikeExpressionWithEscape` so some expressions can skip parentheses (not missing functionality).
+- `src/sqlinpython/expression/core.py:639` — refactor idea for `LikeExpressionWithEscape` so some expressions can skip parentheses (not missing functionality).
 - `src/sqlinpython/expression/bind_parameter.py:22` — special case for `$`-style bind parameters (rare numbered/Tcl-style form).
