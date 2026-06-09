@@ -636,10 +636,8 @@ class MatchLikeExpression(Expression4):
         self._pattern._create_query(buffer)
 
 
-# TODO: Maybe this should take prev.prev, pattern and escape, which might allow
-# some expressions to not be parenthesized.
 class LikeExpressionWithEscape(Expression4):
-    def __init__(self, prev: LikeExpression, escape: Expression) -> None:
+    def __init__(self, prev: LikeExpression, escape: Expression5) -> None:
         self._prev = prev
         self._escape = escape
 
@@ -656,7 +654,8 @@ class LikeExpression(Expression4):
         self._pattern = pattern
 
     def Escape(self, escape: ExpressionOrLiteral) -> LikeExpressionWithEscape:
-        return LikeExpressionWithEscape(self, _to_expr(escape))
+        escape_ = _to_expr(escape)._wrap_parenthesis_if_not(Expression5)
+        return LikeExpressionWithEscape(self, escape_)
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

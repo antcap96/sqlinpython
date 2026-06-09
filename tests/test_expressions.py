@@ -495,6 +495,27 @@ def test_like_not_expr_escape() -> None:
     )
 
 
+def test_like_escape_with_not() -> None:
+    assert (
+        to_str(true.Like(false).Escape(expr.Not(true)))
+        == "TRUE LIKE FALSE ESCAPE (NOT TRUE)"
+    )
+
+
+def test_like_escape_with_or() -> None:
+    assert (
+        to_str(true.Like(false).Escape(true.Or(false)))
+        == "TRUE LIKE FALSE ESCAPE (TRUE OR FALSE)"
+    )
+
+
+def test_like_escape_with_like() -> None:
+    assert (
+        to_str(true.Like(false).Escape(true.Like(false)))
+        == "TRUE LIKE FALSE ESCAPE (TRUE LIKE FALSE)"
+    )
+
+
 def test_glob_basic() -> None:
     assert to_str(true.Glob(false)) == "TRUE GLOB FALSE"
 

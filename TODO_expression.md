@@ -26,5 +26,4 @@ Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.ht
 
 ## Other notes in the expression package
 
-- `src/sqlinpython/expression/core.py:639` — refactor idea for `LikeExpressionWithEscape` so some expressions can skip parentheses (not missing functionality).
 - `src/sqlinpython/expression/bind_parameter.py:22` — special case for `$`-style bind parameters (rare numbered/Tcl-style form).
