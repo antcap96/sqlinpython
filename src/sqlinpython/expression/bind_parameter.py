@@ -3,6 +3,7 @@ from typing import Literal, overload, override
 
 from sqlinpython.expression.core import Expression12
 
+_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _TCL_NAME_PATTERN = re.compile(
     r"[A-Za-z_][A-Za-z0-9_]*" + r"(?:::[A-Za-z_][A-Za-z0-9_]*)*" + r"(?:\([^)\s]*\))?"
 )
@@ -29,9 +30,9 @@ class BindParameter(Expression12):
                     raise ValueError(
                         f"BindParameter '$' name must match Tcl-style identifier, got {value!r}"
                     )
-            elif not value.isalpha():
+            elif not _NAME_PATTERN.fullmatch(value):
                 raise ValueError(
-                    f"BindParameter {bind_symbol!r} name must be alphabetic, got {value!r}"
+                    f"BindParameter {bind_symbol!r} name must be a standard identifier, got {value!r}"
                 )
             self._bind_symbol = bind_symbol
 

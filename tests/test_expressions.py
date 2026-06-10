@@ -828,8 +828,21 @@ def test_bind_parameter_dollar_rejects_leading_namespace_separator() -> None:
         _ = expr.BindParameter("::var", "$")
 
 
+def test_bind_parameter_colon_accepts_digits_and_underscore() -> None:
+    assert to_str(expr.BindParameter("var_1", ":")) == ":var_1"
+
+
+def test_bind_parameter_at_accepts_digits_and_underscore() -> None:
+    assert to_str(expr.BindParameter("_col2", "@")) == "@_col2"
+
+
+def test_bind_parameter_colon_rejects_leading_digit() -> None:
+    with pytest.raises(ValueError, match="standard identifier"):
+        _ = expr.BindParameter("1var", ":")
+
+
 def test_bind_parameter_colon_still_rejects_namespace_separator() -> None:
-    with pytest.raises(ValueError, match="alphabetic"):
+    with pytest.raises(ValueError, match="standard identifier"):
         _ = expr.BindParameter("ns::var", ":")
 
 
