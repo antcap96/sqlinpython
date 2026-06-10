@@ -802,6 +802,37 @@ def test_bind_parameter_named_dollar() -> None:
     assert to_str(expr.BindParameter("id", "$")) == "$id"
 
 
+def test_bind_parameter_dollar_tcl_namespace() -> None:
+    assert to_str(expr.BindParameter("ns::var", "$")) == "$ns::var"
+
+
+def test_bind_parameter_dollar_tcl_array_index() -> None:
+    assert to_str(expr.BindParameter("var(idx)", "$")) == "$var(idx)"
+
+
+def test_bind_parameter_dollar_tcl_combined() -> None:
+    assert to_str(expr.BindParameter("ns::var(idx)", "$")) == "$ns::var(idx)"
+
+
+def test_bind_parameter_dollar_tcl_underscores_digits() -> None:
+    assert to_str(expr.BindParameter("_var_1", "$")) == "$_var_1"
+
+
+def test_bind_parameter_dollar_rejects_whitespace_in_parens() -> None:
+    with pytest.raises(ValueError, match="Tcl-style"):
+        _ = expr.BindParameter("var(a b)", "$")
+
+
+def test_bind_parameter_dollar_rejects_leading_namespace_separator() -> None:
+    with pytest.raises(ValueError, match="Tcl-style"):
+        _ = expr.BindParameter("::var", "$")
+
+
+def test_bind_parameter_colon_still_rejects_namespace_separator() -> None:
+    with pytest.raises(ValueError, match="alphabetic"):
+        _ = expr.BindParameter("ns::var", ":")
+
+
 # ---------------------------------------------------------------------------
 # CASE expression
 # ---------------------------------------------------------------------------

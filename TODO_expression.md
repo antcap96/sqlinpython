@@ -26,4 +26,4 @@ Against the [`literal-value` grammar](https://sqlite.org/syntax/literal-value.ht
 
 ## Other notes in the expression package
 
-- `src/sqlinpython/expression/bind_parameter.py:22` — `$`-style bind parameters allow Tcl-style identifiers (e.g. `$var(idx)`, `$ns::var`) per [SQLite docs](https://sqlite.org/lang_expr.html#varparam), but `BindParameter.__init__` currently asserts `value.isalpha()` for all named styles (`:`, `$`, `@`), rejecting any non-alphabetic name. The looser `$` grammar isn't reachable.
+- [x] **Tcl-style `$` bind parameters** — `BindParameter("ns::var", "$")` and `BindParameter("var(idx)", "$")` now reach the looser `$` grammar per [SQLite docs](https://sqlite.org/lang_expr.html#varparam). Implemented in `bind_parameter.py` by splitting the named-style assertion: `$` accepts `identifier (::identifier)* (\(non-ws-non-paren*\))?` via a module-level compiled regex; `:` and `@` deliberately keep the existing strict `value.isalpha()` check (their own narrower grammars are out of scope for this entry).
