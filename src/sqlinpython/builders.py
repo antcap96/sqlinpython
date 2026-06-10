@@ -1,9 +1,10 @@
-from sqlinpython.column_name import ColumnName as ColumnName
-from sqlinpython.column_name import col as col
+from sqlinpython.column_definition import ColumnDef as ColumnDef
 from sqlinpython.common_table_expression import TableName as TableName
+from sqlinpython.expression import ColumnName as ColumnName
 from sqlinpython.expression import FunctionName as FunctionName
 from sqlinpython.expression import Star as Star
 from sqlinpython.expression import WindowName as WindowName
+from sqlinpython.expression import col as col
 from sqlinpython.expression import literal as literal
 from sqlinpython.indexed_column import IndexedColumn as IndexedColumn
 from sqlinpython.name import Name as Name

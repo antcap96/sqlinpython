@@ -9,6 +9,7 @@ from sqlinpython.ordering_term import OrderingTerm
 
 from .core import Expression, Expression13
 from .frame_bound import FollowingFrameBound, PrecedingFrameBound
+from .literal import ExpressionOrLiteral, to_expr
 
 
 class Star_(SqlElement):
@@ -292,9 +293,10 @@ class PartitionByKeyword:
         self._prev = prev
 
     def __call__(
-        self, *exprs: *tuple[Expression, *tuple[Expression, ...]]
+        self,
+        *exprs: *tuple[ExpressionOrLiteral, *tuple[ExpressionOrLiteral, ...]],
     ) -> PartitionByClause:
-        return PartitionByClause(self._prev, exprs)
+        return PartitionByClause(self._prev, tuple(to_expr(e) for e in exprs))
 
 
 PartitionBy = PartitionByKeyword(None)
@@ -385,8 +387,8 @@ class FunctionCall(IFunctionCallOver):
         self._distinct = distinct
         self._order_by = order_by
 
-    def FilterWhere(self, expr: Expression) -> FunctionCallWithFilter:
-        return FunctionCallWithFilter(self, expr)
+    def FilterWhere(self, expr: ExpressionOrLiteral) -> FunctionCallWithFilter:
+        return FunctionCallWithFilter(self, to_expr(expr))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -419,15 +421,15 @@ class FunctionName(SqlElement):
     @overload
     def __call__(
         self,
-        __first: Expression,
-        *rest: Expression,
+        __first: ExpressionOrLiteral,
+        *rest: ExpressionOrLiteral,
         distinct: bool = False,
         order_by: tuple[OrderingTerm, ...] | None = None,
     ) -> FunctionCall: ...
 
     def __call__(
         self,
-        *args: Literal["*"] | Star_ | Expression,
+        *args: Literal["*"] | Star_ | ExpressionOrLiteral,
         distinct: bool = False,
         order_by: tuple[OrderingTerm, ...] | None = None,
     ) -> FunctionCall:
@@ -437,11 +439,16 @@ class FunctionName(SqlElement):
             case ("*",) | (Star_(),):
                 return FunctionCall(self, (), star=True)
             case _:
-                # Cast is safe here: the previous cases handle "*" and Star_,
-                # so remaining args can only be Expression instances.
+                assert all(
+                    isinstance(a, Expression)
+                    or a is None
+                    or isinstance(a, (bool, int, float, str, bytes))
+                    for a in args
+                )
+                exprs = cast("tuple[ExpressionOrLiteral, ...]", args)
                 return FunctionCall(
                     self,
-                    cast(tuple[Expression, ...], args),
+                    tuple(to_expr(e) for e in exprs),
                     distinct=distinct,
                     order_by=order_by,
                 )

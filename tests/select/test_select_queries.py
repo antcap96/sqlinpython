@@ -161,6 +161,41 @@ def test_select_limit_comma_offset() -> None:
     assert q.get_query() == "SELECT * FROM t LIMIT 10, 5"
 
 
+def test_select_where_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).Where(1)
+    assert q.get_query() == "SELECT * FROM t WHERE 1"
+
+
+def test_select_group_by_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).GroupBy(1, 2)
+    assert q.get_query() == "SELECT * FROM t GROUP BY 1, 2"
+
+
+def test_select_having_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).GroupBy(1).Having(1)
+    assert q.get_query() == "SELECT * FROM t GROUP BY 1 HAVING 1"
+
+
+def test_select_limit_accepts_python_literal() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10"
+
+
+def test_select_limit_offset_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10).Offset(5)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10 OFFSET 5"
+
+
+def test_select_limit_comma_accepts_python_literals() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10, 5)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10, 5"
+
+
+def test_select_limit_offset_none_is_sql_null() -> None:
+    q = Select("*").From(TableRef("t")).Limit(10, None)
+    assert q.get_query() == "SELECT * FROM t LIMIT 10, NULL"
+
+
 # ---------------------------------------------------------------------------
 # Compound selects
 # ---------------------------------------------------------------------------
@@ -245,6 +280,11 @@ def test_values_multiple_rows() -> None:
 def test_values_order_by() -> None:
     q = Values((literal(1),)).OrderBy(literal(1).Asc)
     assert q.get_query() == "VALUES (1) ORDER BY 1 ASC"
+
+
+def test_values_accepts_python_literals() -> None:
+    q = Values((1, "a"), (2, "b"))
+    assert q.get_query() == "VALUES (1, 'a'), (2, 'b')"
 
 
 # ---------------------------------------------------------------------------
@@ -366,7 +406,7 @@ def test_where_in_subquery() -> None:
     )
     assert q.get_query() == (
         "SELECT name FROM employees "
-        'WHERE department_id IN (SELECT id FROM departments WHERE location = "NYC")'
+        "WHERE department_id IN (SELECT id FROM departments WHERE location = 'NYC')"
     )
 
 

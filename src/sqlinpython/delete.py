@@ -4,10 +4,15 @@ import typing
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.expression import Expression, Star
-from sqlinpython.expression.core import AliasedExpression
-from sqlinpython.expression.function import Star_
+from sqlinpython.base import CompleteSqlQuery, NoArg, SqlElement, comma_separated
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star,
+    Star_,
+    to_expr,
+)
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.returning import ReturningBase
@@ -72,8 +77,8 @@ class DeleteLimit(DeleteStatementLimited):
         self._prev = prev
         self._limit = limit
 
-    def Offset(self, offset: Expression) -> DeleteLimitOffset:
-        return DeleteLimitOffset(self, offset)
+    def Offset(self, offset: ExpressionOrLiteral) -> DeleteLimitOffset:
+        return DeleteLimitOffset(self, to_expr(offset))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -84,15 +89,19 @@ class DeleteLimit(DeleteStatementLimited):
 
 class IDeleteLimit(SqlElement, ABC):
     @typing.overload
-    def Limit(self, expr: Expression) -> DeleteLimit: ...
+    def Limit(self, expr: ExpressionOrLiteral) -> DeleteLimit: ...
     @typing.overload
-    def Limit(self, expr: Expression, offset: Expression) -> DeleteLimitComma: ...
     def Limit(
-        self, expr: Expression, offset: Expression | None = None
+        self, expr: ExpressionOrLiteral, offset: ExpressionOrLiteral
+    ) -> DeleteLimitComma: ...
+    def Limit(
+        self,
+        expr: ExpressionOrLiteral,
+        offset: ExpressionOrLiteral | NoArg = NoArg.NO_ARG,
     ) -> DeleteLimit | DeleteLimitComma:
-        if offset is None:
-            return DeleteLimit(self, expr)
-        return DeleteLimitComma(self, expr, offset)
+        if offset is NoArg.NO_ARG:
+            return DeleteLimit(self, to_expr(expr))
+        return DeleteLimitComma(self, to_expr(expr), to_expr(offset))
 
 
 class DeleteOrderBy(DeleteStatementLimited, IDeleteLimit):
@@ -145,8 +154,8 @@ class DeleteWhere(IBeforeReturningClause):
 
 
 class IBeforeWhereClause(IBeforeReturningClause, ABC):
-    def Where(self, condition: Expression) -> DeleteWhere:
-        return DeleteWhere(self, condition)
+    def Where(self, condition: ExpressionOrLiteral) -> DeleteWhere:
+        return DeleteWhere(self, to_expr(condition))
 
 
 class DeleteFromNotIndexed(IBeforeWhereClause):

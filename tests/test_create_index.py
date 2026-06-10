@@ -60,6 +60,13 @@ def test_create_index_main_schema() -> None:
     )
 
 
+def test_create_index_where_accepts_python_literal() -> None:
+    assert (
+        Create.Index("my_index").On("my_table", col1).Where(1).get_query()
+        == "CREATE INDEX my_index ON my_table (col1) WHERE 1"
+    )
+
+
 def test_create_index_if_not_exists_rejects_on_without_name() -> None:
     # .On() must not be accessible before providing an index name
     with pytest.raises(AttributeError):

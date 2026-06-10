@@ -4,10 +4,15 @@ import typing
 from abc import ABC
 from typing import Literal, override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.expression import Expression, Star
-from sqlinpython.expression.core import AliasedExpression
-from sqlinpython.expression.function import Star_
+from sqlinpython.base import CompleteSqlQuery, NoArg, SqlElement, comma_separated
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star,
+    Star_,
+    to_expr,
+)
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 from sqlinpython.returning import ReturningBase
@@ -73,8 +78,8 @@ class UpdateLimit(UpdateStatementLimited):
         self._prev = prev
         self._limit = limit
 
-    def Offset(self, offset: Expression) -> UpdateLimitOffset:
-        return UpdateLimitOffset(self, offset)
+    def Offset(self, offset: ExpressionOrLiteral) -> UpdateLimitOffset:
+        return UpdateLimitOffset(self, to_expr(offset))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -85,15 +90,19 @@ class UpdateLimit(UpdateStatementLimited):
 
 class IUpdateLimit(SqlElement, ABC):
     @typing.overload
-    def Limit(self, expr: Expression) -> UpdateLimit: ...
+    def Limit(self, expr: ExpressionOrLiteral) -> UpdateLimit: ...
     @typing.overload
-    def Limit(self, expr: Expression, offset: Expression) -> UpdateLimitComma: ...
     def Limit(
-        self, expr: Expression, offset: Expression | None = None
+        self, expr: ExpressionOrLiteral, offset: ExpressionOrLiteral
+    ) -> UpdateLimitComma: ...
+    def Limit(
+        self,
+        expr: ExpressionOrLiteral,
+        offset: ExpressionOrLiteral | NoArg = NoArg.NO_ARG,
     ) -> UpdateLimit | UpdateLimitComma:
-        if offset is None:
-            return UpdateLimit(self, expr)
-        return UpdateLimitComma(self, expr, offset)
+        if offset is NoArg.NO_ARG:
+            return UpdateLimit(self, to_expr(expr))
+        return UpdateLimitComma(self, to_expr(expr), to_expr(offset))
 
 
 class UpdateOrderBy(UpdateStatementLimited, IUpdateLimit):
@@ -146,8 +155,8 @@ class UpdateWhere(IBeforeReturningClause):
 
 
 class IBeforeWhereClause(IBeforeReturningClause, ABC):
-    def Where(self, condition: Expression) -> UpdateWhere:
-        return UpdateWhere(self, condition)
+    def Where(self, condition: ExpressionOrLiteral) -> UpdateWhere:
+        return UpdateWhere(self, to_expr(condition))
 
 
 class UpdateSetFrom(IBeforeWhereClause):

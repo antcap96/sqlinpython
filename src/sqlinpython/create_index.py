@@ -4,7 +4,7 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
-from sqlinpython.expression import Expression
+from sqlinpython.expression import Expression, ExpressionOrLiteral, to_expr
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 
@@ -38,8 +38,8 @@ class CreateIndexOnTable(CreateIndexStatement):
         self._table = table
         self._columns = columns
 
-    def Where(self, expr: Expression) -> CreateIndexWithWhere:
-        return CreateIndexWithWhere(self, expr)
+    def Where(self, expr: ExpressionOrLiteral) -> CreateIndexWithWhere:
+        return CreateIndexWithWhere(self, to_expr(expr))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

@@ -1,4 +1,4 @@
-from sqlinpython import AlterTable, ColumnName, TypeName
+from sqlinpython import AlterTable, ColumnDef, TypeName
 from sqlinpython import expression as expr
 
 
@@ -23,12 +23,12 @@ def test_rename_column2() -> None:
 
 
 def test_add_column1() -> None:
-    q = AlterTable("t").Add.Column(ColumnName("c")(TypeName("INT")))
+    q = AlterTable("t").Add.Column(ColumnDef("c")(TypeName("INT")))
     assert q.get_query() == "ALTER TABLE t ADD COLUMN c INT"
 
 
 def test_add_column2() -> None:
-    q = AlterTable("t").Add(ColumnName("c")(TypeName("INT")))
+    q = AlterTable("t").Add(ColumnDef("c")(TypeName("INT")))
     assert q.get_query() == "ALTER TABLE t ADD c INT"
 
 
@@ -40,6 +40,16 @@ def test_add_constraint1() -> None:
 def test_add_constraint2() -> None:
     q = AlterTable("t").Add.Check(expr.literal(1)).OnConflict.Abort
     assert q.get_query() == "ALTER TABLE t ADD CHECK (1) ON CONFLICT ABORT"
+
+
+def test_add_constraint_check_accepts_python_literal() -> None:
+    q = AlterTable("t").Add.Check(1)
+    assert q.get_query() == "ALTER TABLE t ADD CHECK (1)"
+
+
+def test_add_named_constraint_check_accepts_python_literal() -> None:
+    q = AlterTable("t").Add.Constraint("x").Check(1)
+    assert q.get_query() == "ALTER TABLE t ADD CONSTRAINT x CHECK (1)"
 
 
 def test_drop_column1() -> None:

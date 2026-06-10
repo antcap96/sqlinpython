@@ -308,3 +308,28 @@ def test_update_limited_full_chain() -> None:
         + "ORDER BY 1 "
         + "LIMIT 1"
     )
+
+
+def test_update_where_accepts_python_literal() -> None:
+    q = Update("users").Set(column=literal(1)).Where(1)
+    assert q.get_query() == "UPDATE users SET column = 1 WHERE 1"
+
+
+def test_update_limit_accepts_python_literal() -> None:
+    q = Update("users").Set(column=literal(1)).Limit(1)
+    assert q.get_query() == "UPDATE users SET column = 1 LIMIT 1"
+
+
+def test_update_limit_comma_accepts_python_literals() -> None:
+    q = Update("users").Set(column=literal(1)).Limit(1, 2)
+    assert q.get_query() == "UPDATE users SET column = 1 LIMIT 1, 2"
+
+
+def test_update_limit_offset_accepts_python_literals() -> None:
+    q = Update("users").Set(column=literal(1)).Limit(1).Offset(2)
+    assert q.get_query() == "UPDATE users SET column = 1 LIMIT 1 OFFSET 2"
+
+
+def test_update_limit_offset_none_is_sql_null() -> None:
+    q = Update("users").Set(column=literal(1)).Limit(1, None)
+    assert q.get_query() == "UPDATE users SET column = 1 LIMIT 1, NULL"

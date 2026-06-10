@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
-from sqlinpython.expression import Expression, Literal
+from sqlinpython.expression import Expression, ExpressionOrLiteral, Literal, to_expr
 from sqlinpython.name import Name
 from sqlinpython.type_name import CompleteTypeName
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 # SPEC: https://sqlite.org/syntax/column-def.html
 class ColumnDefinition(SqlElement, ABC):
-    """To construct a ColumnDefinition, start from a ColumnName"""
+    """To construct a ColumnDefinition, start from a ColumnDef"""
 
     pass
 
@@ -33,8 +33,8 @@ class IColumnConstraintWithName(SqlElement, ABC):
     def Unique(self) -> WithUnique:
         return WithUnique(self)
 
-    def Check(self, expression: Expression) -> WithCheck:
-        return WithCheck(self, expression)
+    def Check(self, expression: ExpressionOrLiteral) -> WithCheck:
+        return WithCheck(self, to_expr(expression))
 
     def Default(
         self, value: int | Literal | Expression, *, force_parenthesis: bool = False
@@ -61,8 +61,8 @@ class IColumnConstraintWithName(SqlElement, ABC):
 
     # SPEC: https://sqlite.org/syntax/column-constraint.html
     # GENERATED ALWAYS is optional; this shortcut omits it
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs:
-        return GeneratedAlwaysAs(self, expression)
+    def As(self, expression: ExpressionOrLiteral, /) -> GeneratedAlwaysAs:
+        return GeneratedAlwaysAs(self, to_expr(expression))
 
 
 class IColumnConstraint(ColumnDefinition, IColumnConstraintWithName, ABC):
@@ -245,8 +245,8 @@ class WithGeneratedAlways(SqlElement):
     def __init__(self, prev: SqlElement):
         self._prev = prev
 
-    def As(self, expression: Expression, /) -> GeneratedAlwaysAs:
-        return GeneratedAlwaysAs(self, expression)
+    def As(self, expression: ExpressionOrLiteral, /) -> GeneratedAlwaysAs:
+        return GeneratedAlwaysAs(self, to_expr(expression))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
@@ -276,3 +276,19 @@ class ColumnNameWithType(IColumnConstraint):
         self._prev._create_query(buffer)
         buffer.append(" ")
         self._type_name._create_query(buffer)
+
+
+class ColumnDef(IColumnConstraint):
+    """DDL entry point for a column definition: ColumnDef('a')(TypeName('INT'))."""
+
+    def __init__(self, name: Name | str, /) -> None:
+        if isinstance(name, str):
+            name = Name(name)
+        self._name = name
+
+    def __call__(self, type_name: CompleteTypeName) -> ColumnNameWithType:
+        return ColumnNameWithType(self, type_name)
+
+    @override
+    def _create_query(self, buffer: list[str]) -> None:
+        self._name._create_query(buffer)

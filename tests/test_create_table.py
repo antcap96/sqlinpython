@@ -2,7 +2,7 @@ import pytest
 
 from sqlinpython import (
     Check,
-    ColumnName,
+    ColumnDef,
     Constraint,
     Create,
     CurrentDate,
@@ -11,11 +11,14 @@ from sqlinpython import (
     Select,
     TypeName,
     Unique,
+    col,
     literal,
 )
 
-a = ColumnName("a")
-b = ColumnName("b")
+a = ColumnDef("a")
+b = ColumnDef("b")
+ca = col("a")
+cb = col("b")
 select_stmt = Select(literal(1))
 
 
@@ -221,7 +224,7 @@ def test_column_definition_default_literal_unique() -> None:
 
 def test_column_definition_default_string_unique() -> None:
     q = Create.Table("table_name")(a.Default(literal("a")).Unique)
-    assert q.get_query() == 'CREATE TABLE table_name (a DEFAULT "a" UNIQUE)'
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT 'a' UNIQUE)"
 
 
 def test_column_definition_default_current_date_not_null_unique() -> None:
@@ -239,26 +242,26 @@ def test_column_definition_default_force_parenthesis_int() -> None:
 
 def test_column_definition_default_force_parenthesis_literal() -> None:
     q = Create.Table("table_name")(a.Default(literal("a"), force_parenthesis=True))
-    assert q.get_query() == 'CREATE TABLE table_name (a DEFAULT ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT ('a'))"
 
 
 def test_column_definition_default_expression() -> None:
-    q = Create.Table("table_name")(a.Default(b + literal(1)))
+    q = Create.Table("table_name")(a.Default(cb + literal(1)))
     assert q.get_query() == "CREATE TABLE table_name (a DEFAULT (b + 1))"
 
 
 def test_column_definition_check() -> None:
-    q = Create.Table("table_name")(a.Check(b > literal(0)))
+    q = Create.Table("table_name")(a.Check(cb > literal(0)))
     assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0))"
 
 
 def test_column_definition_check_not_null() -> None:
-    q = Create.Table("table_name")(a.Check(b > literal(0)).NotNull)
+    q = Create.Table("table_name")(a.Check(cb > literal(0)).NotNull)
     assert q.get_query() == "CREATE TABLE table_name (a CHECK (b > 0) NOT NULL)"
 
 
 def test_column_definition_named_check() -> None:
-    q = Create.Table("table_name")(a.Constraint("c").Check(b > literal(0)))
+    q = Create.Table("table_name")(a.Constraint("c").Check(cb > literal(0)))
     assert q.get_query() == "CREATE TABLE table_name (a CONSTRAINT c CHECK (b > 0))"
 
 
@@ -269,39 +272,49 @@ def test_column_definition_collate() -> None:
 
 def test_column_definition_as_generated() -> None:
     q = Create.Table("table_name")(a.As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a AS ('a'))"
 
 
 def test_column_definition_collate_as_generated() -> None:
     q = Create.Table("table_name")(a.Collate("utf8").As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a COLLATE utf8 AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a COLLATE utf8 AS ('a'))"
 
 
 def test_column_definition_collate_collate_as_generated() -> None:
     q = Create.Table("table_name")(a.Collate("utf8").Collate("utf16").As(literal("a")))
     assert (
         q.get_query()
-        == 'CREATE TABLE table_name (a COLLATE utf8 COLLATE utf16 AS ("a"))'
+        == "CREATE TABLE table_name (a COLLATE utf8 COLLATE utf16 AS ('a'))"
     )
 
 
 def test_column_definition_generated_always_as() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")))
-    assert q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a"))'
+    assert q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a'))"
 
 
 def test_column_definition_generated_always_as_stored() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")).Stored)
     assert (
-        q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") STORED)'
+        q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a') STORED)"
     )
 
 
 def test_column_definition_generated_always_as_virtual() -> None:
     q = Create.Table("table_name")(a.GeneratedAlways.As(literal("a")).Virtual)
     assert (
-        q.get_query() == 'CREATE TABLE table_name (a GENERATED ALWAYS AS ("a") VIRTUAL)'
+        q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS ('a') VIRTUAL)"
     )
+
+
+def test_column_definition_as_generated_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.As("a"))
+    assert q.get_query() == "CREATE TABLE table_name (a AS ('a'))"
+
+
+def test_column_definition_generated_always_as_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.GeneratedAlways.As(1))
+    assert q.get_query() == "CREATE TABLE table_name (a GENERATED ALWAYS AS (1))"
 
 
 # ---------------------------------------------------------------------------
@@ -335,54 +348,54 @@ def test_type_name_with_constraint() -> None:
 
 
 def test_table_constraint_named_primary_key() -> None:
-    q = Create.Table("table_name")(a, Constraint("pk").PrimaryKey(a))
+    q = Create.Table("table_name")(a, Constraint("pk").PrimaryKey(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, CONSTRAINT pk PRIMARY KEY (a))"
 
 
 def test_table_constraint_primary_key_single() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a))
+    q = Create.Table("table_name")(a, PrimaryKey(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a))"
 
 
 def test_table_constraint_primary_key_multiple() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a, b))
+    q = Create.Table("table_name")(a, PrimaryKey(ca, cb))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a, b))"
 
 
 def test_table_constraint_primary_key_autoincrement() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a, autoincrement=True))
+    q = Create.Table("table_name")(a, PrimaryKey(ca, autoincrement=True))
     assert q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a AUTOINCREMENT))"
 
 
 def test_table_constraint_primary_key_on_conflict_fail() -> None:
-    q = Create.Table("table_name")(a, PrimaryKey(a).OnConflict().Fail)
+    q = Create.Table("table_name")(a, PrimaryKey(ca).OnConflict().Fail)
     assert (
         q.get_query() == "CREATE TABLE table_name (a, PRIMARY KEY (a) ON CONFLICT FAIL)"
     )
 
 
 def test_table_constraint_named_unique() -> None:
-    q = Create.Table("table_name")(a, Constraint("uq").Unique(a))
+    q = Create.Table("table_name")(a, Constraint("uq").Unique(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, CONSTRAINT uq UNIQUE (a))"
 
 
 def test_table_constraint_unique_single() -> None:
-    q = Create.Table("table_name")(a, Unique(a))
+    q = Create.Table("table_name")(a, Unique(ca))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a))"
 
 
 def test_table_constraint_unique_multiple() -> None:
-    q = Create.Table("table_name")(a, Unique(a, b))
+    q = Create.Table("table_name")(a, Unique(ca, cb))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a, b))"
 
 
 def test_table_constraint_unique_asc_desc() -> None:
-    q = Create.Table("table_name")(a, Unique(a.Asc, b.Desc))
+    q = Create.Table("table_name")(a, Unique(ca.Asc, cb.Desc))
     assert q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a ASC, b DESC))"
 
 
 def test_table_constraint_unique_on_conflict_rollback() -> None:
-    q = Create.Table("table_name")(a, Unique(a).OnConflict().Rollback)
+    q = Create.Table("table_name")(a, Unique(ca).OnConflict().Rollback)
     assert (
         q.get_query() == "CREATE TABLE table_name (a, UNIQUE (a) ON CONFLICT ROLLBACK)"
     )
@@ -400,6 +413,16 @@ def test_table_constraint_named_check() -> None:
 def test_table_constraint_check() -> None:
     q = Create.Table("table_name")(a, Check(literal(1) > literal(0)))
     assert q.get_query() == "CREATE TABLE table_name (a, CHECK (1 > 0))"
+
+
+def test_table_constraint_check_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a, Check(1))
+    assert q.get_query() == "CREATE TABLE table_name (a, CHECK (1))"
+
+
+def test_column_check_constraint_accepts_python_literal() -> None:
+    q = Create.Table("table_name")(a.Check(1))
+    assert q.get_query() == "CREATE TABLE table_name (a CHECK (1))"
 
 
 def test_table_constraint_named_foreign_key() -> None:
@@ -546,4 +569,4 @@ def test_create_table_column_after_constraint_raises() -> None:
     with pytest.raises(
         ValueError, match="column definitions must come before table constraints"
     ):
-        _ = Create.Table("table_name")(a, PrimaryKey(a), b)
+        _ = Create.Table("table_name")(a, PrimaryKey(ca), b)

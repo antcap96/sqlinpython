@@ -157,6 +157,31 @@ def test_delete_limited_empty_order_by_fails_type_check() -> None:
     # ty doesn't currently identify this error -ty: ignore[missing-argument]
 
 
+def test_delete_where_accepts_python_literal() -> None:
+    q = Delete.From("users").Where(1)
+    assert q.get_query() == "DELETE FROM users WHERE 1"
+
+
+def test_delete_limit_accepts_python_literal() -> None:
+    q = Delete.From("users").Limit(1)
+    assert q.get_query() == "DELETE FROM users LIMIT 1"
+
+
+def test_delete_limit_comma_accepts_python_literals() -> None:
+    q = Delete.From("users").Limit(1, 2)
+    assert q.get_query() == "DELETE FROM users LIMIT 1, 2"
+
+
+def test_delete_limit_offset_accepts_python_literals() -> None:
+    q = Delete.From("users").Limit(1).Offset(2)
+    assert q.get_query() == "DELETE FROM users LIMIT 1 OFFSET 2"
+
+
+def test_delete_limit_offset_none_is_sql_null() -> None:
+    q = Delete.From("users").Limit(1, None)
+    assert q.get_query() == "DELETE FROM users LIMIT 1, NULL"
+
+
 def test_delete_limited_full_chain() -> None:
     q = (
         With(TableName("cte").As(Select(literal(1))))

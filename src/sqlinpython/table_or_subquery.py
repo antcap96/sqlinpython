@@ -4,10 +4,12 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement, comma_separated
-from sqlinpython.expression.core import (
+from sqlinpython.expression import (
     Expression,
+    ExpressionOrLiteral,
     SchemaTableColumnName,
     TableColumnName,
+    to_expr,
 )
 from sqlinpython.name import Name
 from sqlinpython.select_base import Complete, SelectStatement_
@@ -208,8 +210,8 @@ class TableFunctionRef(SqlElement):
         self._schema = schema
         self._name = name
 
-    def __call__(self, *args: Expression) -> TableFunctionRefCall:
-        return TableFunctionRefCall(self, args)
+    def __call__(self, *args: ExpressionOrLiteral) -> TableFunctionRefCall:
+        return TableFunctionRefCall(self, tuple(to_expr(a) for a in args))
 
     @override
     def _create_query(self, buffer: list[str]) -> None:

@@ -1,6 +1,12 @@
+import re
 from typing import Literal, overload, override
 
 from sqlinpython.expression.core import Expression12
+
+_NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+_TCL_NAME_PATTERN = re.compile(
+    r"[A-Za-z_][A-Za-z0-9_]*" + r"(?:::[A-Za-z_][A-Za-z0-9_]*)*" + r"(?:\([^)\s]*\))?"
+)
 
 
 class BindParameter(Expression12):
@@ -19,8 +25,15 @@ class BindParameter(Expression12):
         if isinstance(value, int) or value is None:
             self._bind_symbol = "?"
         else:
-            # TODO: Special case for bind_symbol == "$" (https://sqlite.org/lang_expr.html)
-            assert value.isalpha()
+            if bind_symbol == "$":
+                if not _TCL_NAME_PATTERN.fullmatch(value):
+                    raise ValueError(
+                        f"BindParameter '$' name must match Tcl-style identifier, got {value!r}"
+                    )
+            elif not _NAME_PATTERN.fullmatch(value):
+                raise ValueError(
+                    f"BindParameter {bind_symbol!r} name must be a standard identifier, got {value!r}"
+                )
             self._bind_symbol = bind_symbol
 
     @override
