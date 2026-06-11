@@ -15,7 +15,6 @@ dev = [
     "basedpyright",
     "ruff",
     "ty",
-    "pre-commit",
     "ipykernel",
     "pytest",
 ]

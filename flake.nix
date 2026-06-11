@@ -21,6 +21,11 @@
       inputs.uv2nix.follows = "uv2nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
+
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -29,6 +34,7 @@
       pyproject-nix,
       uv2nix,
       pyproject-build-systems,
+      git-hooks,
       ...
     }:
     let
@@ -62,6 +68,31 @@
           )
       );
 
+      preCommitChecks = forAllSystems (
+        system:
+        let
+          pkgs = nixpkgs.legacyPackages.${system};
+        in
+        git-hooks.lib.${system}.run {
+          src = ./.;
+          # Optional: recent git-hooks.nix already defaults to prek. Kept
+          # explicit to document intent and pin the runner to our nixpkgs.
+          package = pkgs.prek;
+          hooks = {
+            trim-trailing-whitespace.enable = true;
+            end-of-file-fixer.enable = true;
+            check-yaml.enable = true;
+            check-added-large-files.enable = true;
+            just-check = {
+              enable = true;
+              entry = "just check";
+              pass_filenames = false;
+              always_run = true;
+            };
+          };
+        }
+      );
+
     in
     {
       devShells = forAllSystems (
@@ -70,6 +101,7 @@
           pkgs = nixpkgs.legacyPackages.${system};
           pythonSet = pythonSets.${system}.overrideScope editableOverlay;
           virtualenv = pythonSet.mkVirtualEnv "sqlinpython-dev-env" workspace.deps.all;
+          preCommitCheck = preCommitChecks.${system};
         in
         {
           default = pkgs.mkShell {
@@ -77,13 +109,15 @@
               virtualenv
               pkgs.uv
               pkgs.just
-            ];
+            ]
+            ++ preCommitCheck.enabledPackages;
             env = {
               UV_NO_SYNC = "1";
               UV_PYTHON = pythonSet.python.interpreter;
               UV_PYTHON_DOWNLOADS = "never";
             };
             shellHook = ''
+              ${preCommitCheck.shellHook}
               unset PYTHONPATH
               export REPO_ROOT=$(git rev-parse --show-toplevel)
             '';
