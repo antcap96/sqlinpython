@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from typing import TYPE_CHECKING, override
+from typing import TYPE_CHECKING, overload, override
 
 from sqlinpython.base import SqlElement
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
@@ -36,10 +36,31 @@ class IColumnConstraintWithName(SqlElement, ABC):
     def Check(self, expression: ExpressionOrLiteral) -> WithCheck:
         return WithCheck(self, to_expr(expression))
 
+    @overload
     def Default(
-        self, value: int | Literal | Expression, *, force_parenthesis: bool = False
+        self,
+        value: int,
+        *,
+        explicit_sign: bool = False,
+        force_parenthesis: bool = False,
+    ) -> WithDefault: ...
+    @overload
+    def Default(
+        self, value: Literal | Expression, *, force_parenthesis: bool = False
+    ) -> WithDefault: ...
+    def Default(
+        self,
+        value: int | Literal | Expression,
+        *,
+        explicit_sign: bool = False,
+        force_parenthesis: bool = False,
     ) -> WithDefault:
-        return WithDefault(self, value, force_parenthesis=force_parenthesis)
+        return WithDefault(
+            self,
+            value,
+            explicit_sign=explicit_sign,
+            force_parenthesis=force_parenthesis,
+        )
 
     def Collate(self, collation_name: Name | str, /) -> WithCollate:
         if isinstance(collation_name, str):
@@ -170,16 +191,17 @@ class WithCheck(IColumnConstraint):
 
 
 class WithDefault(IColumnConstraint):
-    # TODO: Not sure if possible to pass +1 somehow but should be accepted
     def __init__(
         self,
         prev: SqlElement,
         default_value: Expression | Literal | int,
         *,
+        explicit_sign: bool = False,
         force_parenthesis: bool = False,
     ):
         self._prev = prev
         self._default_value = default_value
+        self._explicit_sign = explicit_sign
         self._force_parenthesis = force_parenthesis
 
     @override
@@ -187,7 +209,11 @@ class WithDefault(IColumnConstraint):
         self._prev._create_query(buffer)
         buffer.append(" DEFAULT ")
         if isinstance(self._default_value, int):
-            val = str(self._default_value)
+            val = (
+                f"{self._default_value:+}"
+                if self._explicit_sign
+                else str(self._default_value)
+            )
             buffer.append(f"({val})" if self._force_parenthesis else val)
         elif self._force_parenthesis or not isinstance(self._default_value, Literal):
             buffer.append("(")

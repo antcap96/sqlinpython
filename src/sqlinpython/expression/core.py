@@ -4,12 +4,7 @@ import typing
 from abc import ABC
 from typing import TYPE_CHECKING, overload, override
 
-from sqlinpython.base import (
-    NoArg,
-    NotImplementedSqlElement,
-    SqlElement,
-    comma_separated,
-)
+from sqlinpython.base import NoArg, SqlElement, comma_separated
 from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
@@ -19,6 +14,7 @@ from sqlinpython.type_name import CompleteTypeName
 
 if TYPE_CHECKING:
     from sqlinpython.expression.literal import ExpressionOrLiteral
+    from sqlinpython.table_or_subquery import TableFunctionRefCall
 
 
 def _to_expr(value: ExpressionOrLiteral) -> Expression:
@@ -28,10 +24,6 @@ def _to_expr(value: ExpressionOrLiteral) -> Expression:
     from sqlinpython.expression.literal import literal
 
     return literal(value)
-
-
-class TableFunction(NotImplementedSqlElement):
-    pass
 
 
 # SPEC: https://sqlite.org/lang_expr.html
@@ -62,14 +54,12 @@ class INegatedOperations(SqlElement, ABC):
         self, schema_name: Name, table_name: Name, /
     ) -> InExpressionWithTableName: ...
     @overload
-    def In(self, table_function: TableFunction, /) -> InExpressionWithTableFunction: ...
-    @overload
     def In(
-        self, schema_name: Name, table_function: TableFunction, /
+        self, table_function: TableFunctionRefCall, /
     ) -> InExpressionWithTableFunction: ...
     def In(
         self,
-        *exprs: ExpressionOrLiteral | SelectStatement | Name | TableFunction,
+        *exprs: ExpressionOrLiteral | SelectStatement | Name | TableFunctionRefCall,
     ) -> (
         EmptyInExpression
         | InExpressionWithSelect
@@ -77,6 +67,9 @@ class INegatedOperations(SqlElement, ABC):
         | InExpressionWithTableName
         | InExpressionWithTableFunction
     ):
+        # Deferred import: table_or_subquery imports from this module.
+        from sqlinpython.table_or_subquery import TableFunctionRefCall
+
         if isinstance(self, Expression):
             self_ = self._wrap_parenthesis_if_not(Expression4)
         else:
@@ -86,18 +79,14 @@ class INegatedOperations(SqlElement, ABC):
                 return EmptyInExpression(self_)
             case [select_stmt] if isinstance(select_stmt, SelectStatement_):
                 return InExpressionWithSelect(self_, select_stmt)
+            case [table_function] if isinstance(table_function, TableFunctionRefCall):
+                return InExpressionWithTableFunction(self_, table_function)
             case [table_name] if isinstance(table_name, Name):
                 return InExpressionWithTableName(self_, table_name)
             case [schema_name, table_name] if isinstance(
                 schema_name, Name
             ) and isinstance(table_name, Name):
                 return InExpressionWithTableName(self_, schema_name, table_name)
-            case [table_function] if isinstance(table_function, TableFunction):
-                return InExpressionWithTableFunction(self_, table_function)
-            case [schema_name, table_function] if isinstance(
-                schema_name, Name
-            ) and isinstance(table_function, TableFunction):
-                return InExpressionWithTableFunction(self_, schema_name, table_function)
             case _:
                 assert all(
                     isinstance(e, Expression)
@@ -581,41 +570,16 @@ class InExpressionWithTableName(Expression4):
             self._name._create_query(buffer)
 
 
-class InExpressionWithTableFunction(SqlElement):
-    def __init__(
-        self,
-        prev: SqlElement,
-        schema: TableFunction | Name,
-        name: TableFunction | None = None,
-    ) -> None:
+class InExpressionWithTableFunction(Expression4):
+    def __init__(self, prev: SqlElement, table_function: TableFunctionRefCall) -> None:
         self._prev = prev
-        self._schema = schema
-        self._name = name
-
-    def __call__(self, *args: ExpressionOrLiteral) -> InExpressionWithTableFunctionArgs:
-        return InExpressionWithTableFunctionArgs(self, tuple(_to_expr(a) for a in args))
+        self._table_function = table_function
 
     @override
     def _create_query(self, buffer: list[str]) -> None:
         self._prev._create_query(buffer)
         buffer.append(" IN ")
-        self._schema._create_query(buffer)
-        if self._name is not None:
-            buffer.append(".")
-            self._name._create_query(buffer)
-
-
-class InExpressionWithTableFunctionArgs(Expression4):
-    def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
-        self._prev = prev
-        self._exprs = exprs
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        self._prev._create_query(buffer)
-        buffer.append("(")
-        comma_separated(buffer, self._exprs)
-        buffer.append(")")
+        self._table_function._create_query(buffer)
 
 
 class MatchLikeExpression(Expression4):

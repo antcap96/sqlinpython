@@ -14,35 +14,20 @@
 # =============================================================================
 # - ReturningClause._create_query is just `...`
 # - OnConflictClause is abstract and raises NotImplementedError
-# - SelectStatement placeholder needs real SELECT implementation
 # - AliasedExpression placeholder for RETURNING clause
 
-
-from typing import override
 
 from sqlinpython import (
     ColumnName,
     Insert,
     Name,
     Replace,
-    SelectStatement,
+    Select,
     TableName,
+    TableRef,
     With,
     literal,
 )
-
-
-# TODO: replace _PlaceholderSelect usages with real Select(...) expressions
-class _PlaceholderSelect(SelectStatement):
-    """Concrete placeholder used in tests to stand in for a real SELECT statement."""
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        buffer.append("<select-stmt>")
-
-
-CteSelectStatement = _PlaceholderSelect
-
 
 # =============================================================================
 # Basic INSERT ... VALUES (simplest complete queries first)
@@ -150,23 +135,23 @@ def test_insert_default_values_with_alias() -> None:
 
 
 # =============================================================================
-# INSERT ... SELECT (using placeholder)
+# INSERT ... SELECT
 # =============================================================================
 
 
 def test_insert_select_simple() -> None:
-    select_stmt = _PlaceholderSelect()
+    select_stmt = Select("*").From(TableRef("events"))
     assert (
         Insert.Into("users")(select_stmt).get_query()
-        == "INSERT INTO users <select-stmt>"
+        == "INSERT INTO users SELECT * FROM events"
     )
 
 
 def test_insert_select_with_columns() -> None:
-    select_stmt = _PlaceholderSelect()
+    select_stmt = Select("*").From(TableRef("events"))
     assert (
         Insert.Into("users")("id", "name")(select_stmt).get_query()
-        == "INSERT INTO users (id, name) <select-stmt>"
+        == "INSERT INTO users (id, name) SELECT * FROM events"
     )
 
 
@@ -278,52 +263,54 @@ def test_replace_default_values() -> None:
 
 
 def test_with_cte_insert_values() -> None:
-    cte = TableName("temp").As(_PlaceholderSelect())
+    cte = TableName("temp").As(Select("*").From(TableRef("events")))
     assert (
         With(cte).Insert.Into("users")("id").Values((literal(1),)).get_query()
-        == "WITH temp AS (<select-stmt>) INSERT INTO users (id) VALUES (1)"
+        == "WITH temp AS (SELECT * FROM events) INSERT INTO users (id) VALUES (1)"
     )
 
 
 def test_with_cte_insert_default_values() -> None:
-    cte = TableName("temp").As(_PlaceholderSelect())
+    cte = TableName("temp").As(Select("*").From(TableRef("events")))
     assert (
         With(cte).Insert.Into("users").DefaultValues.get_query()
-        == "WITH temp AS (<select-stmt>) INSERT INTO users DEFAULT VALUES"
+        == "WITH temp AS (SELECT * FROM events) INSERT INTO users DEFAULT VALUES"
     )
 
 
 def test_with_cte_replace_values() -> None:
-    cte = TableName("temp").As(_PlaceholderSelect())
+    cte = TableName("temp").As(Select("*").From(TableRef("events")))
     assert (
         With(cte).Replace.Into("users")("id").Values((literal(1),)).get_query()
-        == "WITH temp AS (<select-stmt>) REPLACE INTO users (id) VALUES (1)"
+        == "WITH temp AS (SELECT * FROM events) REPLACE INTO users (id) VALUES (1)"
     )
 
 
 def test_with_recursive_cte_insert() -> None:
-    cte = TableName("recursive_t").As(_PlaceholderSelect())
+    cte = TableName("recursive_t").As(Select("*").From(TableRef("events")))
     assert (
         With.Recursive(cte).Insert.Into("users").DefaultValues.get_query()
-        == "WITH RECURSIVE recursive_t AS (<select-stmt>) INSERT INTO users DEFAULT VALUES"
+        == "WITH RECURSIVE recursive_t AS (SELECT * FROM events)"
+        + " INSERT INTO users DEFAULT VALUES"
     )
 
 
 def test_with_multiple_ctes_insert() -> None:
-    cte1 = TableName("t1").As(_PlaceholderSelect())
-    cte2 = TableName("t2")("a", "b").As(_PlaceholderSelect())
+    cte1 = TableName("t1").As(Select("*").From(TableRef("events")))
+    cte2 = TableName("t2")("a", "b").As(Select("*").From(TableRef("events")))
     assert (
         With(cte1, cte2).Insert.Into("target")("x").Values((literal(1),)).get_query()
-        == "WITH t1 AS (<select-stmt>), t2(a, b) AS (<select-stmt>) INSERT INTO target (x) VALUES (1)"
+        == "WITH t1 AS (SELECT * FROM events), t2(a, b) AS (SELECT * FROM events)"
+        + " INSERT INTO target (x) VALUES (1)"
     )
 
 
 def test_with_cte_insert_select() -> None:
-    cte = TableName("source").As(_PlaceholderSelect())
-    select_stmt = _PlaceholderSelect()
+    cte = TableName("source").As(Select("*").From(TableRef("events")))
+    select_stmt = Select("*").From(TableRef("events"))
     assert (
         With(cte).Insert.Into("target")(select_stmt).get_query()
-        == "WITH source AS (<select-stmt>) INSERT INTO target <select-stmt>"
+        == "WITH source AS (SELECT * FROM events) INSERT INTO target SELECT * FROM events"
     )
 
 
@@ -441,10 +428,10 @@ def test_on_conflict_column_with_collate_and_asc() -> None:
 def test_on_conflict_with_insert_select() -> None:
     # INSERT ... SELECT ... ON CONFLICT DO NOTHING
     col = ColumnName("id")
-    select_stmt = _PlaceholderSelect()
+    select_stmt = Select("*").From(TableRef("events"))
     assert (
         Insert.Into("users")(select_stmt).OnConflict(col).Do.Nothing.get_query()
-        == "INSERT INTO users <select-stmt> ON CONFLICT(id) DO NOTHING"
+        == "INSERT INTO users SELECT * FROM events ON CONFLICT(id) DO NOTHING"
     )
 
 

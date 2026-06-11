@@ -1,6 +1,6 @@
 import pytest
 
-from sqlinpython import Name, Rollback, Select, TableRef, TypeName
+from sqlinpython import Name, Rollback, Select, TableFunctionRef, TableRef, TypeName
 from sqlinpython import expression as expr
 
 true = expr.literal(True)
@@ -439,6 +439,24 @@ def test_in_schema_table_quoted() -> None:
     assert to_str(true.In(Name('a"'), Name('b"'))) == 'TRUE IN "a"""."b"""'
 
 
+def test_in_table_function() -> None:
+    assert to_str(true.In(TableFunctionRef("json_each")(a))) == "TRUE IN json_each('a')"
+
+
+def test_in_table_function_schema_qualified() -> None:
+    assert (
+        to_str(true.In(TableFunctionRef("s", "json_each")(a)))
+        == "TRUE IN s.json_each('a')"
+    )
+
+
+def test_in_table_function_multiple_args() -> None:
+    assert (
+        to_str(true.In(TableFunctionRef("generate_series")(one, two)))
+        == "TRUE IN generate_series(1, 2)"
+    )
+
+
 def test_not_in_empty() -> None:
     assert to_str(true.Not.In()) == "TRUE NOT IN ()"
 
@@ -461,6 +479,13 @@ def test_not_in_schema_table() -> None:
 
 def test_not_in_schema_table_quoted() -> None:
     assert to_str(true.Not.In(Name('a"'), Name('b"'))) == 'TRUE NOT IN "a"""."b"""'
+
+
+def test_not_in_table_function() -> None:
+    assert (
+        to_str(true.Not.In(TableFunctionRef("json_each")(a)))
+        == "TRUE NOT IN json_each('a')"
+    )
 
 
 def test_in_not_expression_parenthesized() -> None:

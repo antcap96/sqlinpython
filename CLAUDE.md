@@ -71,6 +71,15 @@ The expression system uses an **operator precedence hierarchy** (Expression1 thr
 
 The `_parenthesize_if_necessary()` function automatically wraps expressions in parentheses based on precedence.
 
+### `*Ref` vs `*Name` Naming Convention
+
+`*Ref` is a table source in a `table-or-subquery`/FROM position and carries the `[schema.]x [AS alias]` machinery (schema qualification, aliasing, sometimes index hints): `TableRef`, `TableFunctionRef`. `*Name` is a bare identifier token used anywhere else — the CTE definition site (`TableName`), the function callee in an expression (`FunctionName`), and column/type/window/pragma identifiers (`ColumnName`, `TypeName`, `WindowName`, `PragmaName`, `IntoName`).
+
+The distinguishing axis is **schema-qualification + aliasing**, *not* definition-vs-use or callable-vs-not. In particular:
+
+- `TableName` (CTE) and `TableRef` (FROM) are not duplicates — they are different grammar productions. `cte-table-name` is a definition (`t1(a, b)`, no schema, no alias); `table-or-subquery` is a qualified, aliasable reference. They cannot be merged.
+- `FunctionName` (expression, just `name(args)`) and `TableFunctionRef` (FROM, schema-qualifiable, produces an aliasable `TableFunctionRefAliased`) look structurally similar but get different suffixes *because* only the table-function form is aliasable and lives in FROM. Do not "unify" them or rename `FunctionName` to `FunctionRef`.
+
 ### Interface/Mixin Naming Convention
 
 Abstract mixin classes that provide shared methods use an `I` prefix and must inherit from `ABC` (basedpyright requires explicit abstractness to detect abstract classes):

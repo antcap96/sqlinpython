@@ -1,7 +1,7 @@
 import enum
 from abc import ABCMeta, abstractmethod
 from collections.abc import Iterable
-from typing import Protocol, override
+from typing import Protocol
 
 
 class NoArg(enum.Enum):
@@ -30,12 +30,3 @@ class CompleteSqlQuery(SqlElement, metaclass=ABCMeta):
         buffer: list[str] = []
         self._create_query(buffer)
         return "".join(buffer)
-
-
-class NotImplementedSqlElement(SqlElement):
-    def __init__(self, placeholder: str) -> None:
-        self._placeholder = placeholder
-
-    @override
-    def _create_query(self, buffer: list[str]) -> None:
-        buffer.append(self._placeholder)

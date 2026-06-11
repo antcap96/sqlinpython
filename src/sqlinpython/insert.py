@@ -296,7 +296,6 @@ class IntoName(ICallableWithColumnNames):
         self._schema = schema
         self._table = table
 
-    # TODO: Is alias a name or is it more restrictive?
     def As(self, alias: Name | str) -> InsertNameAs:
         if isinstance(alias, str):
             alias = Name(alias)

@@ -94,7 +94,6 @@ class CteTableNameWithColumns(SqlElement):
         buffer.append(")")
 
 
-# TODO: Integrate TableName into expression module
 class TableName(Name, CteTableNameWithColumns):
     def __call__(
         self, column_name: Name | str, *more_column_names: Name | str

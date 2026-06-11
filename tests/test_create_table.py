@@ -212,6 +212,34 @@ def test_column_definition_default_int() -> None:
     assert q.get_query() == "CREATE TABLE table_name (a DEFAULT 1)"
 
 
+def test_column_definition_default_explicit_sign_positive() -> None:
+    q = Create.Table("table_name")(a.Default(1, explicit_sign=True))
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT +1)"
+
+
+def test_column_definition_default_explicit_sign_zero() -> None:
+    q = Create.Table("table_name")(a.Default(0, explicit_sign=True))
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT +0)"
+
+
+def test_column_definition_default_explicit_sign_negative() -> None:
+    q = Create.Table("table_name")(a.Default(-1, explicit_sign=True))
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT -1)"
+
+
+def test_column_definition_default_explicit_sign_parenthesized() -> None:
+    q = Create.Table("table_name")(
+        a.Default(1, explicit_sign=True, force_parenthesis=True)
+    )
+    assert q.get_query() == "CREATE TABLE table_name (a DEFAULT (+1))"
+
+
+def test_column_definition_default_explicit_sign_rejects_non_int() -> None:
+    Create.Table("table_name")(
+        a.Default(literal(1), explicit_sign=True)  # type: ignore[call-overload] # pyright: ignore[reportArgumentType] # ty: ignore[invalid-argument-type]
+    ).WithoutRowId.Strict
+
+
 def test_column_definition_default_not_null() -> None:
     q = Create.Table("table_name")(a.Default(1).NotNull)
     assert q.get_query() == "CREATE TABLE table_name (a DEFAULT 1 NOT NULL)"
