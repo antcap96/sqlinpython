@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.conflict_clause import OnConflict_, OnConflictAction
 from sqlinpython.expression import Expression, ExpressionOrLiteral, to_expr
@@ -12,7 +12,7 @@ from sqlinpython.name import Name
 # SPEC: https://www.sqlite.org/lang_altertable.html
 
 
-class AlterTableStatement(CompleteSqlQuery, ABC):
+class AlterTableStatement(NonExplainSqlQuery, ABC):
     pass
 
 

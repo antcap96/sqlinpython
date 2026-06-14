@@ -1,7 +1,7 @@
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 # SPEC: https://sqlite.org/lang_savepoint.html
@@ -9,7 +9,7 @@ from sqlinpython.name import Name
 # TODO: Consider a SavepointName
 
 
-class SavepointStatement(CompleteSqlQuery, ABC):
+class SavepointStatement(NonExplainSqlQuery, ABC):
     pass
 
 
@@ -42,7 +42,7 @@ class SavepointKeyword(SqlElement):
 Savepoint = SavepointKeyword()
 
 
-class ReleaseStatement(CompleteSqlQuery, ABC):
+class ReleaseStatement(NonExplainSqlQuery, ABC):
     pass
 
 
@@ -91,7 +91,7 @@ class ReleaseKeyword(ICallableReleaseSavepoint):
 Release = ReleaseKeyword()
 
 
-class RollbackStatement(CompleteSqlQuery, ABC):
+class RollbackStatement(NonExplainSqlQuery, ABC):
     pass
 
 

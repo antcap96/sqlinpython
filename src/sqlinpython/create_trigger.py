@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Literal, override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
+from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.delete import DeleteStatement
 from sqlinpython.expression import Expression, ExpressionOrLiteral, to_expr
 from sqlinpython.insert import InsertStatement
@@ -16,7 +16,7 @@ from sqlinpython.update import UpdateStatement
 TriggerBodyStmt = UpdateStatement | InsertStatement | DeleteStatement | SelectStatement
 
 
-class CreateTriggerStatement(CompleteSqlQuery, ABC):
+class CreateTriggerStatement(NonExplainSqlQuery, ABC):
     pass
 
 

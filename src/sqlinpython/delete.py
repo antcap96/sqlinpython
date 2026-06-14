@@ -4,7 +4,7 @@ import typing
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, NoArg, SqlElement, comma_separated
+from sqlinpython.base import NoArg, NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
     AliasedExpression,
     Expression,
@@ -24,11 +24,11 @@ from sqlinpython.returning import ReturningBase
 # NOTE: The qualified-table-name classes (DeleteFrom, DeleteFromAliased,
 # DeleteFromIndexedBy, DeleteFromNotIndexed) will be duplicated in update.py.
 # A unified QualifiedTableName_[T] with self-typed Where/Set would be ideal,
-# but QTN must be CompleteSqlQuery for DELETE (bare DELETE FROM table is valid)
+# but QTN must be NonExplainSqlQuery for DELETE (bare DELETE FROM table is valid)
 # while it must not be for UPDATE (SET is required).
 
 
-class DeleteStatementLimited(CompleteSqlQuery, ABC):
+class DeleteStatementLimited(NonExplainSqlQuery, ABC):
     """Base for delete-stmt-limited (ORDER BY / LIMIT requires SQLITE_ENABLE_UPDATE_DELETE_LIMIT)."""
 
     pass

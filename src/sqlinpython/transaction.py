@@ -3,11 +3,11 @@ from __future__ import annotations
 from abc import ABC
 from typing import Literal, override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 
 
 # SPEC: https://sqlite.org/lang_transaction.html
-class BeginStatement(CompleteSqlQuery, ABC):
+class BeginStatement(NonExplainSqlQuery, ABC):
     pass
 
 
@@ -66,7 +66,7 @@ class BeginKeyword(IBeginTransaction):
 Begin = BeginKeyword()
 
 
-class CommitStatement(CompleteSqlQuery, ABC):
+class CommitStatement(NonExplainSqlQuery, ABC):
     pass
 
 

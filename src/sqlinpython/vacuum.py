@@ -1,12 +1,12 @@
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/lang_vacuum.html
-class VacuumStatement(CompleteSqlQuery, ABC):
+class VacuumStatement(NonExplainSqlQuery, ABC):
     pass
 
 

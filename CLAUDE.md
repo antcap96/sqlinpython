@@ -25,14 +25,22 @@ just check             # Full CI check: lint, types, and tests
 
 ### Intentional type-error tests
 
-Tests that verify a call is rejected by the type checkers use a bare expression statement (no `_ =` assignment — that triggers `reportUnknownVariableType`) with inline suppression for each checker:
+Tests that verify a call is rejected by the type checkers suppress the error inline for each checker. The statement form depends on whether the rejected call still produces a value with a *known* type:
 
-```python
-SomeClass().BadCall()  # type: ignore[error-code] # pyright: ignore[reportCode]
-# ty doesn't currently identify this error -ty: ignore[ty-error-code]
-```
+- **The error makes the result type unknown** (e.g. the call itself is invalid). Use a bare expression statement — a `_ =` assignment would trigger `reportUnknownVariableType`:
 
-`ty` often misses errors that mypy/pyright catch; leave the hypothetical ignore code in a comment.
+  ```python
+  SomeClass().BadCall()  # type: ignore[error-code] # pyright: ignore[reportCode]
+  # ty doesn't currently identify this error -ty: ignore[ty-error-code]
+  ```
+
+- **The error is on an argument but the call still returns a known type** (e.g. passing the wrong type to a builder that returns normally). Assign to `_` — the return type is known so `reportUnknownVariableType` does not fire, and the assignment avoids `reportUnusedCallResult` on the otherwise-unused value:
+
+  ```python
+  _ = Explain(Explain(Select(literal(1))))  # type: ignore[arg-type] # pyright: ignore[reportArgumentType] # ty: ignore[invalid-argument-type]
+  ```
+
+`ty` often misses errors that mypy/pyright catch; when it does, leave the hypothetical ignore code in a `-ty: ignore[...]` comment rather than an active one.
 
 Multi-line expected strings in assertions must use explicit `+` concatenation — basedpyright flags `reportImplicitStringConcatenation`:
 
@@ -50,7 +58,8 @@ sqlinpython is a Python library that constructs SQL queries using type-annotated
 ### Core Base Classes (`base.py`)
 
 - **`SqlElement`**: Abstract base class defining `_create_query(buffer: list[str]) -> None` interface. All SQL components inherit from this.
-- **`CompleteSqlQuery(SqlElement)`**: Extends SqlElement with `get_query() -> str` for complete, executable queries.
+- **`CompleteSqlQuery(SqlElement)`**: Extends SqlElement with `get_query() -> str` for complete, executable queries — including an `EXPLAIN`-wrapped statement.
+- **`NonExplainSqlQuery(CompleteSqlQuery)`**: A complete query that is *not* itself an `EXPLAIN`. Every concrete statement base (select, insert, update, delete, all create-*, alter, drop, pragma, analyze, reindex, attach, detach, vacuum, transaction/savepoint) inherits this. `Explain(...)` accepts a `NonExplainSqlQuery`, and the `EXPLAIN` result (`ExplainStatement`) inherits `CompleteSqlQuery` directly but **not** `NonExplainSqlQuery` — this is what makes `Explain(Explain(...))` a type error while keeping `get_query` single-sourced (`explain.py`).
 
 ### Expression System (`expression/`)
 
@@ -229,11 +238,9 @@ TableName("t1").As.Not.Materialized(...) # t1 AS NOT MATERIALIZED (...)
 ```
 
 **Key patterns:**
-1. Use `NotImplementedSqlElement` subclasses (e.g., `SelectStatement`) as placeholders for unimplemented syntax - allows type checking and easy identification of TODOs
 2. Trailing underscore in class names (e.g., `As_`, `CteNot_`) only when a property has the same name as the class it returns
-3. Use inheritance to share `__call__` methods (e.g., `WithKeyword(WithRecursive)` inherits `__call__` instead of duplicating)
+3. Use mixins to share methods
 4. Entry point classes take no `__init__` args and are instantiated as singletons (e.g., `With = WithKeyword()`)
-5. Multi-inheritance for classes that need properties from multiple paths (e.g., `TableName(Name, CteTableNameWithColumns)`)
 
 ### INSERT Statement (`insert.py`)
 

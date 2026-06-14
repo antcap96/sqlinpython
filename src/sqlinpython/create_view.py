@@ -3,14 +3,14 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
+from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
 
 # SPEC: https://sqlite.org/lang_createview.html
 
 
-class CreateViewStatement(CompleteSqlQuery, ABC):
+class CreateViewStatement(NonExplainSqlQuery, ABC):
     pass
 
 

@@ -3,12 +3,12 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 
 # SPEC: https://sqlite.org/pragma.html
-class PragmaStatement(CompleteSqlQuery, ABC):
+class PragmaStatement(NonExplainSqlQuery, ABC):
     pass
 
 

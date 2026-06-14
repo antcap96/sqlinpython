@@ -27,3 +27,7 @@ class CompleteSqlQuery(SqlElement, metaclass=ABCMeta):
         buffer: list[str] = []
         self._create_query(buffer)
         return "".join(buffer)
+
+
+class NonExplainSqlQuery(CompleteSqlQuery, metaclass=ABCMeta):
+    pass

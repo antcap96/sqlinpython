@@ -3,13 +3,13 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 # SPEC: https://sqlite.org/lang_createvtab.html
 
 
-class CreateVirtualTableStatement(CompleteSqlQuery, ABC):
+class CreateVirtualTableStatement(NonExplainSqlQuery, ABC):
     pass
 
 

@@ -6,6 +6,7 @@ from sqlinpython.create import Create as Create
 from sqlinpython.delete import Delete as Delete
 from sqlinpython.detach import Detach as Detach
 from sqlinpython.drop import Drop as Drop
+from sqlinpython.explain import Explain as Explain
 from sqlinpython.expression import Case as Case
 from sqlinpython.expression import CurrentDate as CurrentDate
 from sqlinpython.expression import CurrentTime as CurrentTime

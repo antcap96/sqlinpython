@@ -6,7 +6,7 @@ from typing import override
 
 from typing_extensions import TypeIs
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
+from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
     AliasedExpression,
     Expression,
@@ -28,7 +28,7 @@ def _is_column_names(
 
 
 # SPEC: https://sqlite.org/lang_insert.html
-class InsertStatement(CompleteSqlQuery, ABC):
+class InsertStatement(NonExplainSqlQuery, ABC):
     pass
 
 

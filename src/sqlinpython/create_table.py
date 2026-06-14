@@ -4,7 +4,7 @@ import typing
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
+from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.column_definition import ColumnDefinition
 from sqlinpython.name import Name
 from sqlinpython.select_base import SelectStatement
@@ -12,7 +12,7 @@ from sqlinpython.table_constraint import TableConstraint
 
 
 # SPEC: https://sqlite.org/syntax/create-table-stmt.html
-class CreateTableStatement(CompleteSqlQuery, ABC):
+class CreateTableStatement(NonExplainSqlQuery, ABC):
     pass
 
 

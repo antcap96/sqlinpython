@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import Literal, override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement
+from sqlinpython.base import NonExplainSqlQuery, SqlElement
 from sqlinpython.name import Name
 
 # SPEC DROP TABLE: https://sqlite.org/lang_droptable.html
@@ -24,7 +24,7 @@ class _Trigger: ...
 class _Index: ...
 
 
-class DropStatement[T: (_Table, _View, _Trigger, _Index)](CompleteSqlQuery):
+class DropStatement[T: (_Table, _View, _Trigger, _Index)](NonExplainSqlQuery):
     def __init__(self, prev: SqlElement, schema: Name, name: Name | None) -> None:
         self._prev = prev
         self._schema = schema

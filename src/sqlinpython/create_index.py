@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC
 from typing import override
 
-from sqlinpython.base import CompleteSqlQuery, SqlElement, comma_separated
+from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import Expression, ExpressionOrLiteral, to_expr
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
@@ -11,7 +11,7 @@ from sqlinpython.name import Name
 # SPEC: https://sqlite.org/lang_createindex.html
 
 
-class CreateIndexStatement(CompleteSqlQuery, ABC):
+class CreateIndexStatement(NonExplainSqlQuery, ABC):
     pass
 
 

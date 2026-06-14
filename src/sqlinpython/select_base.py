@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from abc import ABC
 
-from sqlinpython.base import CompleteSqlQuery
+from sqlinpython.base import NonExplainSqlQuery
 
 # Type tags used to track which SELECT statements may appear as compound operands
 # (UNION / INTERSECT / EXCEPT).
@@ -31,7 +31,7 @@ class Core(Complete):
     """
 
 
-class SelectStatement_[T: Core | Complete](CompleteSqlQuery, ABC):
+class SelectStatement_[T: Core | Complete](NonExplainSqlQuery, ABC):
     """Abstract base for SELECT statements. Isolated to avoid circular imports."""
 
 
