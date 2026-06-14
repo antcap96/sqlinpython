@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
+from typing import Generic, TypeVar
 
 from sqlinpython.base import NonExplainSqlQuery
 
@@ -31,7 +32,10 @@ class Core(Complete):
     """
 
 
-class SelectStatement_[T: Core | Complete](NonExplainSqlQuery, ABC):
+T_co = TypeVar("T_co", bound=Complete, covariant=True)
+
+
+class SelectStatement_(NonExplainSqlQuery, ABC, Generic[T_co]):
     """Abstract base for SELECT statements. Isolated to avoid circular imports."""
 
 

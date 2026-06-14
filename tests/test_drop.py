@@ -1,3 +1,5 @@
+from typing import assert_type
+
 from sqlinpython import (
     Drop,
     DropIndexStatement,
@@ -7,31 +9,27 @@ from sqlinpython import (
 )
 
 
-def typecheck_isinstance[T](_obj: T, _cls: type[T]) -> None:
-    pass
-
-
 def test_drop_table() -> None:
     q = Drop.Table("name")
-    typecheck_isinstance(q, DropTableStatement)
+    _ = assert_type(q, DropTableStatement)
     assert q.get_query() == "DROP TABLE name"
 
 
 def test_drop_view() -> None:
     q = Drop.View("name")
-    typecheck_isinstance(q, DropViewStatement)
+    _ = assert_type(q, DropViewStatement)
     assert q.get_query() == "DROP VIEW name"
 
 
 def test_drop_trigger() -> None:
     q = Drop.Trigger("name")
-    typecheck_isinstance(q, DropTriggerStatement)
+    _ = assert_type(q, DropTriggerStatement)
     assert q.get_query() == "DROP TRIGGER name"
 
 
 def test_drop_index() -> None:
     q = Drop.Index("name")
-    typecheck_isinstance(q, DropIndexStatement)
+    _ = assert_type(q, DropIndexStatement)
     assert q.get_query() == "DROP INDEX name"
 
 

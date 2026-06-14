@@ -12,6 +12,7 @@ dependencies = ["typing_extensions"]
 [project.optional-dependencies]
 dev = [
     "mypy",
+    "pyrefly",
     "basedpyright",
     "ruff",
     "ty",
@@ -26,7 +27,10 @@ build-backend = "uv_build"
 [tool.ruff]
 target-version = "py312"
 lint.select = ["E", "F", "I", "UP"]
-lint.ignore = ["E501"]
+# UP046: would rewrite Generic[T_co] bases to PEP 695 type params, but PEP 695
+# syntax cannot declare explicit variance — which SelectStatement_ needs so
+# pyrefly's strict preset accepts SelectStatement_[Core] as SelectStatement_[Complete].
+lint.ignore = ["E501", "UP046"]
 lint.per-file-ignores = {"src/sqlinpython/__init__.py" = ["F403"]}
 fix = true
 
@@ -48,3 +52,6 @@ reportPrivateUsage = false
 # are architectural - these classes are genuinely interdependent and work fine at runtime.
 reportImportCycles = false
 reportUnnecessaryTypeIgnoreComment = true
+
+[tool.pyrefly]
+preset = "strict"

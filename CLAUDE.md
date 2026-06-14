@@ -12,7 +12,8 @@ just test-one TEST     # Run specific test (e.g., just test-one tests/test_selec
 just ty                # Type check with ty (primary type checker)
 just pyright           # Type check with basedpyright
 just mypy              # Type check with mypy
-just types             # Run all three type checkers
+just pyrefly           # Type check with pyrefly (strict preset)
+just types             # Run all four type checkers
 just lint              # Check code style
 just format            # Format code
 just fix               # Fix code style issues
@@ -41,6 +42,8 @@ Tests that verify a call is rejected by the type checkers suppress the error inl
   ```
 
 `ty` often misses errors that mypy/pyright catch; when it does, leave the hypothetical ignore code in a `-ty: ignore[...]` comment rather than an active one.
+
+`pyrefly` anchors a `# pyrefly: ignore[code]` to the line it *reports* the error on, which is not always the argument line the other checkers point at. For a multi-line call it reports on the line with the opening `(`, so the pyrefly ignore goes there — not on the same line as the `# type: ignore` / `# pyright: ignore` suppressions. A misplaced pyrefly ignore is itself flagged as `unused-ignore`.
 
 Multi-line expected strings in assertions must use explicit `+` concatenation — basedpyright flags `reportImplicitStringConcatenation`:
 

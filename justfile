@@ -19,7 +19,10 @@ pyright:
 mypy:
     {{run}}mypy .
 
-types: ty pyright mypy
+pyrefly:
+    {{run}}pyrefly check
+
+types: ty pyright mypy pyrefly
 
 # Linting / formatting
 lint:

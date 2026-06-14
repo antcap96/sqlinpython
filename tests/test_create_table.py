@@ -587,7 +587,7 @@ def test_foreign_key_clause_deferrable_initially_immediate() -> None:
 
 
 def test_create_table_doesnt_accept_table_constraint() -> None:
-    Create.Table("table_name")(
+    Create.Table("table_name")(  # pyrefly: ignore[bad-argument-type]
         Constraint("a").ForeignKey("b").References("t")  # type: ignore[arg-type] # pyright: ignore[reportArgumentType]
         # ty doesn't currently identify this error -ty: ignore[invalid-argument]
     ).WithoutRowId.Strict

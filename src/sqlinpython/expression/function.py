@@ -421,7 +421,8 @@ class FunctionName(SqlElement):
     @overload
     def __call__(
         self,
-        __first: ExpressionOrLiteral,
+        first: ExpressionOrLiteral,
+        /,
         *rest: ExpressionOrLiteral,
         distinct: bool = False,
         order_by: tuple[OrderingTerm, ...] | None = None,
