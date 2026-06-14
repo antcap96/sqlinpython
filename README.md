@@ -19,16 +19,17 @@ assert (
 But the library is capable of much more complex queries like the following:
 
 ```python
-from sqlinpython import Select, TableRef, FunctionName, col, literal
+from sqlinpython import Select, TableRef, col
+from sqlinpython.functions import Avg
 assert (
     Select(col("full_name"))
     .From(TableRef("SALES_PERSON"))
-    .Where(col("ranking") >= literal(5.0))
+    .Where(col("ranking") >= 5.0)
     .UnionAll(
         Select(col("reviewer_name"))
         .From(TableRef("CUSTOMER_REVIEW"))
         .GroupBy(col("reviewer_name"))
-        .Having(FunctionName("AVG")(col("score")) >= literal(8.0))
+        .Having(Avg(col("score")) >= 8.0)
     )
     .get_query()
     == "SELECT full_name FROM SALES_PERSON WHERE ranking >= 5.0 UNION ALL SELECT reviewer_name FROM CUSTOMER_REVIEW GROUP BY reviewer_name HAVING AVG(score) >= 8.0"
@@ -41,13 +42,13 @@ Although for larger queries, for the sake of readability, you should probably sp
 sales_people = (
     Select(col("full_name"))
     .From(TableRef("SALES_PERSON"))
-    .Where(col("ranking") >= literal(5.0))
+    .Where(col("ranking") >= 5.0)
 )
 reviewers = (
     Select(col("reviewer_name"))
     .From(TableRef("CUSTOMER_REVIEW"))
     .GroupBy(col("reviewer_name"))
-    .Having(FunctionName("AVG")(col("score")) >= literal(8.0))
+    .Having(Avg(col("score")) >= 8.0)
 )
 assert (
     sales_people.UnionAll(reviewers).get_query()
