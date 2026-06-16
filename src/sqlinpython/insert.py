@@ -4,8 +4,6 @@ import typing
 from abc import ABC
 from typing import override
 
-from typing_extensions import TypeIs
-
 from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
     AliasedExpression,
@@ -19,12 +17,6 @@ from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
 from sqlinpython.returning import ReturningBase
 from sqlinpython.select_base import SelectStatement, SelectStatement_
-
-
-def _is_column_names(
-    args: tuple[Name | str | SelectStatement, *tuple[Name | str, ...]],
-) -> TypeIs[tuple[Name | str, *tuple[Name | str, ...]]]:
-    return not isinstance(args[0], SelectStatement_)
 
 
 # SPEC: https://sqlite.org/lang_insert.html
@@ -268,14 +260,20 @@ class ICallableWithColumnNames(IInsertBody, ABC):
         self,
         *column_names: *tuple[Name | str | SelectStatement, *tuple[Name | str, ...]],
     ) -> InsertColumnNames | InsertSelect:
-        if _is_column_names(column_names):
-            names = tuple(
-                Name(name) if isinstance(name, str) else name for name in column_names
-            )
-            return InsertColumnNames(self, names)
-        first = column_names[0]
-        assert isinstance(first, SelectStatement_)
-        return InsertSelect(self, first)
+        match column_names:
+            case [SelectStatement_() as first]:
+                return InsertSelect(self, first)
+            case [SelectStatement_(), *_]:
+                raise TypeError(
+                    "When providing a select statement, only one argument is accepted"
+                )
+            case _:
+                names = tuple(
+                    Name(name) if isinstance(name, str) else name
+                    for name in column_names
+                    if not isinstance(name, SelectStatement_)
+                )
+                return InsertColumnNames(self, names)
 
 
 class InsertNameAs(ICallableWithColumnNames):
