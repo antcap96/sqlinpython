@@ -6,16 +6,17 @@ from typing import override
 
 from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
-    AliasedExpression,
     Expression,
     ExpressionOrLiteral,
-    Star,
-    Star_,
     to_expr,
 )
 from sqlinpython.indexed_column import IndexedColumn
 from sqlinpython.name import Name
-from sqlinpython.returning import ReturningBase
+from sqlinpython.returning import (
+    ReturningBase,
+    ReturningColumnArg,
+    resolve_returning_column,
+)
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 
 
@@ -29,11 +30,8 @@ class ReturningClause(InsertStatement, ReturningBase):
 
 
 class IBeforeReturningClause(InsertStatement, ABC):
-    def Returning(
-        self, *args: typing.Literal["*"] | Expression | AliasedExpression | Star_
-    ) -> ReturningClause:
-        values = tuple(Star if arg == "*" else arg for arg in args)
-        return ReturningClause(self, values)
+    def Returning(self, *args: ReturningColumnArg) -> ReturningClause:
+        return ReturningClause(self, tuple(resolve_returning_column(a) for a in args))
 
 
 class OnConflictUpdateWhere(IBeforeReturningClause):

@@ -540,6 +540,14 @@ def test_returning_star() -> None:
     )
 
 
+def test_returning_bare_literal() -> None:
+    # RETURNING with bare Python literals
+    assert (
+        Insert.Into("users")("id").Values((literal(1),)).Returning(1, "x").get_query()
+        == "INSERT INTO users (id) VALUES (1) RETURNING 1, 'x'"
+    )
+
+
 def test_returning_single_column() -> None:
     # RETURNING expr
     col = ColumnName("id")

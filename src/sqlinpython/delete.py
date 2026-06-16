@@ -6,16 +6,17 @@ from typing import override
 
 from sqlinpython.base import NoArg, NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
-    AliasedExpression,
     Expression,
     ExpressionOrLiteral,
-    Star,
-    Star_,
     to_expr,
 )
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
-from sqlinpython.returning import ReturningBase
+from sqlinpython.returning import (
+    ReturningBase,
+    ReturningColumnArg,
+    resolve_returning_column,
+)
 
 # SPEC: https://sqlite.org/lang_delete.html
 # SPEC: https://sqlite.org/syntax/qualified-table-name.html
@@ -133,12 +134,8 @@ class DeleteReturning(DeleteStatement, IDeleteOrderBy, ReturningBase):
 
 
 class IBeforeReturningClause(DeleteStatement, IDeleteOrderBy, ABC):
-    def Returning(
-        self,
-        *args: typing.Literal["*"] | Expression | AliasedExpression | Star_,
-    ) -> DeleteReturning:
-        values = tuple(Star if arg == "*" else arg for arg in args)
-        return DeleteReturning(self, values)
+    def Returning(self, *args: ReturningColumnArg) -> DeleteReturning:
+        return DeleteReturning(self, tuple(resolve_returning_column(a) for a in args))
 
 
 class DeleteWhere(IBeforeReturningClause):

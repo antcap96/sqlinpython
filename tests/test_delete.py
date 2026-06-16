@@ -99,6 +99,11 @@ def test_delete_returning_clause() -> None:
     assert q.get_query() == "DELETE FROM users RETURNING 1"
 
 
+def test_delete_returning_bare_literal() -> None:
+    q = Delete.From("users").Returning(1, "x")
+    assert q.get_query() == "DELETE FROM users RETURNING 1, 'x'"
+
+
 def test_delete_where_returning() -> None:
     q = Delete.From("users").Where(literal(1)).Returning("*")
     assert isinstance(q, DeleteStatement)

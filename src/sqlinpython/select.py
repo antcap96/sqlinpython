@@ -31,7 +31,11 @@ from sqlinpython.table_or_subquery import (
 # table-name.* is handled by TableStarResultColumn from table_or_subquery
 ResultColumn = Expression | AliasedExpression | Star_ | TableStarResultColumn
 
-_ResultColumnArg = Literal["*"] | ResultColumn
+# "*" is the Star sentinel; bare literals become Literal expressions via to_expr.
+# ExpressionOrLiteral already covers Expression and str (so "*" is covered by str).
+_ResultColumnArg = (
+    ExpressionOrLiteral | AliasedExpression | Star_ | TableStarResultColumn
+)
 
 
 def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
@@ -39,7 +43,9 @@ def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
 
     if arg == "*":
         return StarSingleton
-    return arg
+    if isinstance(arg, (Expression, AliasedExpression, Star_, TableStarResultColumn)):
+        return arg
+    return to_expr(arg)
 
 
 class ISelectAliasable(SelectStatement_[Complete], ABC):

@@ -198,6 +198,11 @@ def test_update_returning() -> None:
     assert q.get_query() == "UPDATE users SET column = 1 RETURNING 1"
 
 
+def test_update_returning_bare_literal() -> None:
+    q = Update("users").Set(column=literal(1)).Returning(1, "x")
+    assert q.get_query() == "UPDATE users SET column = 1 RETURNING 1, 'x'"
+
+
 def test_update_returning_as() -> None:
     q = Update("users").Set(column=literal(1)).Returning(literal(1).As("alias"))
     assert isinstance(q, UpdateStatement)

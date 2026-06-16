@@ -4,7 +4,29 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement, comma_separated
-from sqlinpython.expression import AliasedExpression, Expression, Star_
+from sqlinpython.expression import (
+    AliasedExpression,
+    Expression,
+    ExpressionOrLiteral,
+    Star,
+    Star_,
+    to_expr,
+)
+
+# RETURNING result-columns: "*" sentinel, expressions, aliased expressions, or bare
+# literals (via to_expr). RETURNING does not support table-name.* so there is no
+# TableStarResultColumn here.
+ReturningColumnArg = ExpressionOrLiteral | AliasedExpression | Star_
+
+
+def resolve_returning_column(
+    arg: ReturningColumnArg,
+) -> Star_ | Expression | AliasedExpression:
+    if arg == "*":
+        return Star
+    if isinstance(arg, (Expression, AliasedExpression, Star_)):
+        return arg
+    return to_expr(arg)
 
 
 class ReturningBase(SqlElement, ABC):

@@ -6,16 +6,17 @@ from typing import Literal, override
 
 from sqlinpython.base import NoArg, NonExplainSqlQuery, SqlElement, comma_separated
 from sqlinpython.expression import (
-    AliasedExpression,
     Expression,
     ExpressionOrLiteral,
-    Star,
-    Star_,
     to_expr,
 )
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
-from sqlinpython.returning import ReturningBase
+from sqlinpython.returning import (
+    ReturningBase,
+    ReturningColumnArg,
+    resolve_returning_column,
+)
 from sqlinpython.table_or_subquery import TableOrSubquery
 
 # SPEC: https://sqlite.org/lang_update.html
@@ -134,12 +135,8 @@ class UpdateReturning(UpdateStatement, IUpdateOrderBy, ReturningBase):
 
 
 class IBeforeReturningClause(UpdateStatement, IUpdateOrderBy, ABC):
-    def Returning(
-        self,
-        *args: typing.Literal["*"] | Expression | AliasedExpression | Star_,
-    ) -> UpdateReturning:
-        values = tuple(Star if arg == "*" else arg for arg in args)
-        return UpdateReturning(self, values)
+    def Returning(self, *args: ReturningColumnArg) -> UpdateReturning:
+        return UpdateReturning(self, tuple(resolve_returning_column(a) for a in args))
 
 
 class UpdateWhere(IBeforeReturningClause):

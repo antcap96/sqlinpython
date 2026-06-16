@@ -24,6 +24,18 @@ def test_select_multiple_cols() -> None:
     assert Select(literal(1), literal(2)).get_query() == "SELECT 1, 2"
 
 
+def test_select_bare_literals() -> None:
+    assert Select(1).get_query() == "SELECT 1"
+    assert Select(3.14).get_query() == "SELECT 3.14"
+    assert Select("foo").get_query() == "SELECT 'foo'"
+    assert Select(None).get_query() == "SELECT NULL"
+
+
+def test_select_mixed_literals_and_columns() -> None:
+    q = Select(col("a"), 1, "x").From(TableRef("t"))
+    assert q.get_query() == "SELECT a, 1, 'x' FROM t"
+
+
 def test_select_distinct() -> None:
     assert Select.Distinct("*").get_query() == "SELECT DISTINCT *"
 
