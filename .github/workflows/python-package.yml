@@ -34,7 +34,13 @@ jobs:
         run: uv run mypy .
       - name: Run ty
         run: uv run ty check
+      - name: Run basedpyright
+        run: uv run basedpyright
+      - name: Run pyrefly
+        run: uv run pyrefly check
       - name: Run Ruff
         run: uv run ruff check
+      - name: Run Ruff format check
+        run: uv run ruff format --check
       - name: Run tests
         run: uv run pytest tests

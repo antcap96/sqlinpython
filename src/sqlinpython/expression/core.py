@@ -19,11 +19,9 @@ if TYPE_CHECKING:
 
 def _to_expr(value: ExpressionOrLiteral) -> Expression:
     # Deferred import: literal.py imports Expression from this module.
-    if isinstance(value, Expression):
-        return value
-    from sqlinpython.expression.literal import literal
+    from sqlinpython.expression.literal import to_expr
 
-    return literal(value)
+    return to_expr(value)
 
 
 # SPEC: https://sqlite.org/lang_expr.html
