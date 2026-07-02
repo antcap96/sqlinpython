@@ -1,4 +1,5 @@
-from sqlinpython import Name, Pragma, PragmaStatement
+from sqlinpython import Name, Pragma
+from sqlinpython.types import PragmaStatement
 
 
 def test_pragma() -> None:

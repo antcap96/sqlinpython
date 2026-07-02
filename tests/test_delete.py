@@ -1,12 +1,11 @@
 from sqlinpython import (
     Delete,
-    DeleteStatement,
-    DeleteStatementLimited,
     Select,
     TableName,
     With,
     literal,
 )
+from sqlinpython.types import DeleteStatement, DeleteStatementLimited
 
 
 def test_with_delete() -> None:

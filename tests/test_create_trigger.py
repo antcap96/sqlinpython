@@ -1,6 +1,5 @@
 from sqlinpython import (
     Create,
-    CreateTriggerStatement,
     Delete,
     Insert,
     Name,
@@ -8,6 +7,7 @@ from sqlinpython import (
     Update,
     literal,
 )
+from sqlinpython.types import CreateTriggerStatement
 
 
 def test_create_trigger_basic() -> None:

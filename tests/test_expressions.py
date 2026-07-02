@@ -1,6 +1,6 @@
 import pytest
 
-from sqlinpython import Name, Rollback, Select, TableFunctionRef, TableRef, TypeName
+from sqlinpython import Name, Select, TableFunctionRef, TableRef, TypeName
 from sqlinpython import expression as expr
 
 true = expr.literal(True)
@@ -241,37 +241,40 @@ def test_numeric_literal_non_ascii_digit_raises() -> None:
 
 
 # ---------------------------------------------------------------------------
-# HexLiteral
+# literal(..., hex=True)
 # ---------------------------------------------------------------------------
 
 
 def test_hex_literal_basic() -> None:
-    assert to_str(expr.HexLiteral(0xFF)) == "0xFF"
+    assert to_str(expr.literal(0xFF, hex=True)) == "0xFF"
 
 
 def test_hex_literal_zero() -> None:
-    assert to_str(expr.HexLiteral(0)) == "0x0"
+    assert to_str(expr.literal(0, hex=True)) == "0x0"
 
 
 def test_hex_literal_decimal_input() -> None:
-    assert to_str(expr.HexLiteral(255)) == "0xFF"
+    assert to_str(expr.literal(255, hex=True)) == "0xFF"
 
 
 def test_hex_literal_uppercase_output() -> None:
-    assert to_str(expr.HexLiteral(0xDEADBEEF)) == "0xDEADBEEF"
+    assert to_str(expr.literal(0xDEADBEEF, hex=True)) == "0xDEADBEEF"
 
 
 def test_hex_literal_large() -> None:
-    assert to_str(expr.HexLiteral(0xFFFFFFFFFFFFFFFF)) == "0xFFFFFFFFFFFFFFFF"
+    assert to_str(expr.literal(0xFFFFFFFFFFFFFFFF, hex=True)) == "0xFFFFFFFFFFFFFFFF"
 
 
 def test_hex_literal_in_comparison() -> None:
-    assert to_str(expr.HexLiteral(0xFF).eq(expr.HexLiteral(0xFF))) == "0xFF = 0xFF"
+    assert (
+        to_str(expr.literal(0xFF, hex=True).eq(expr.literal(0xFF, hex=True)))
+        == "0xFF = 0xFF"
+    )
 
 
 def test_hex_literal_negative_raises() -> None:
     with pytest.raises(ValueError, match="negative"):
-        _ = expr.HexLiteral(-1)
+        _ = expr.literal(-1, hex=True)
 
 
 # ---------------------------------------------------------------------------
@@ -1061,15 +1064,15 @@ def test_exists_in_and() -> None:
 
 
 def test_subquery_basic() -> None:
-    assert to_str(expr.Subquery(_subselect)) == f"({_subselect_sql})"
+    assert to_str(expr.ScalarSubquery(_subselect)) == f"({_subselect_sql})"
 
 
 def test_subquery_in_comparison() -> None:
-    assert to_str(expr.Subquery(_subselect).eq(one)) == f"({_subselect_sql}) = 1"
+    assert to_str(expr.ScalarSubquery(_subselect).eq(one)) == f"({_subselect_sql}) = 1"
 
 
 def test_subquery_in_arithmetic() -> None:
-    assert to_str(expr.Subquery(_subselect) + one) == f"({_subselect_sql}) + 1"
+    assert to_str(expr.ScalarSubquery(_subselect) + one) == f"({_subselect_sql}) + 1"
 
 
 # ---------------------------------------------------------------------------
@@ -1078,47 +1081,38 @@ def test_subquery_in_arithmetic() -> None:
 
 
 def test_raise_ignore() -> None:
-    expected = "RAISE(IGNORE)"
-    assert to_str(expr.Raise.Ignore) == expected
-    assert to_str(expr.Raise("IGNORE")) == expected
-    assert to_str(expr.Raise(expr.Ignore)) == expected
+    assert to_str(expr.Raise("IGNORE")) == "RAISE(IGNORE)"
 
 
 def test_raise_rollback() -> None:
-    expected = "RAISE(ROLLBACK, 'oops')"
-    assert to_str(expr.Raise.Rollback("oops")) == expected
-    assert to_str(expr.Raise("ROLLBACK", "oops")) == expected
-    assert to_str(expr.Raise(Rollback, "oops")) == expected
+    assert to_str(expr.Raise("ROLLBACK", "oops")) == "RAISE(ROLLBACK, 'oops')"
 
 
 def test_raise_abort() -> None:
-    expected = "RAISE(ABORT, 'constraint failed')"
-    assert to_str(expr.Raise.Abort("constraint failed")) == expected
-    assert to_str(expr.Raise("ABORT", "constraint failed")) == expected
-    assert to_str(expr.Raise(expr.Abort, "constraint failed")) == expected
+    assert (
+        to_str(expr.Raise("ABORT", "constraint failed"))
+        == "RAISE(ABORT, 'constraint failed')"
+    )
 
 
 def test_raise_fail() -> None:
-    expected = "RAISE(FAIL, 'nope')"
-    assert to_str(expr.Raise.Fail("nope")) == expected
-    assert to_str(expr.Raise("FAIL", "nope")) == expected
-    assert to_str(expr.Raise(expr.Fail, "nope")) == expected
+    assert to_str(expr.Raise("FAIL", "nope")) == "RAISE(FAIL, 'nope')"
 
 
 def test_raise_message_is_expression() -> None:
-    assert to_str(expr.Raise.Fail(a.Concat(b))) == "RAISE(FAIL, 'a' || 'b')"
+    assert to_str(expr.Raise("FAIL", a.Concat(b))) == "RAISE(FAIL, 'a' || 'b')"
 
 
 def test_raise_inside_case() -> None:
     assert (
-        to_str(expr.Case.When(one.eq(two)).Then(expr.Raise.Ignore).End)
+        to_str(expr.Case.When(one.eq(two)).Then(expr.Raise("IGNORE")).End)
         == "CASE WHEN 1 = 2 THEN RAISE(IGNORE) END"
     )
 
 
 def test_raise_inside_or() -> None:
     assert (
-        to_str(expr.Raise.Ignore.Or(expr.Raise.Fail("x")))
+        to_str(expr.Raise("IGNORE").Or(expr.Raise("FAIL", "x")))
         == "RAISE(IGNORE) OR RAISE(FAIL, 'x')"
     )
 

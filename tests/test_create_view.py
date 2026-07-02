@@ -1,4 +1,5 @@
-from sqlinpython import Create, CreateViewStatement, Name, Select, literal
+from sqlinpython import Create, Name, Select, literal
+from sqlinpython.types import CreateViewStatement
 
 
 def test_create_view() -> None:

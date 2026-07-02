@@ -1,7 +1,7 @@
 import enum
 import math
 from abc import ABC
-from typing import NoReturn, override
+from typing import NoReturn, overload, override
 
 from .core import Expression, Expression13
 
@@ -266,7 +266,19 @@ class NullLiteral(Literal):
 type SqlLiteral = float | str | bytes | None | bool
 
 
-def literal(value: SqlLiteral) -> Literal:
+@overload
+def literal(value: int, *, hex: bool = False) -> Literal: ...
+@overload
+def literal(value: SqlLiteral) -> Literal: ...
+def literal(value: SqlLiteral, *, hex: bool = False) -> Literal:
+    if hex:
+        # `hex` is only offered for ints via the overloads; bool is an int
+        # subtype at runtime, so guard it out explicitly.
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(
+                f"literal(..., hex=True) requires an int value, got {type(value).__name__}"
+            )
+        return HexLiteral(value)
     # The order of bool, int and float is necessary due to the type hierarchy
     if isinstance(value, bool):
         return BooleanLiteral(value)

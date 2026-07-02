@@ -16,6 +16,11 @@ from sqlinpython.drop import DropStatement as DropStatement
 from sqlinpython.drop import DropTableStatement as DropTableStatement
 from sqlinpython.drop import DropTriggerStatement as DropTriggerStatement
 from sqlinpython.drop import DropViewStatement as DropViewStatement
+from sqlinpython.expression import Expression as Expression
+from sqlinpython.expression import ExpressionOrLiteral as ExpressionOrLiteral
+from sqlinpython.expression import FunctionCall as FunctionCall
+from sqlinpython.expression import Literal as Literal
+from sqlinpython.expression import SqlLiteral as SqlLiteral
 from sqlinpython.insert import InsertStatement as InsertStatement
 from sqlinpython.pragma import PragmaStatement as PragmaStatement
 from sqlinpython.reindex import ReindexStatement as ReindexStatement

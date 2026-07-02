@@ -6,11 +6,10 @@ from sqlinpython import (
     TableName,
     TableRef,
     Update,
-    UpdateStatement,
-    UpdateStatementLimited,
     With,
     literal,
 )
+from sqlinpython.types import UpdateStatement, UpdateStatementLimited
 
 
 def test_with_update() -> None:

@@ -58,9 +58,19 @@ assert (
 
 Further examples can be seen in the [tests](./tests) directory.
 
+## Public API
+
+The public API is whatever is importable from one of:
+
+- **`sqlinpython`** — the statement entry points (`Select`, `Insert`, `Create`, …) and the building blocks you construct queries from (`col`, `literal`, `TableRef`, `Case`, `Cast`, `Not`, …).
+- **`sqlinpython.functions`** — the SQL function wrappers (`Avg`, `Count`, `Coalesce`, …). Typically imported as e.g. `from sqlinpython import functions as fn`.
+- **`sqlinpython.types`** — the statement result types (`SelectStatement`, `InsertStatement`, …) and expression types (`Expression`, `ExpressionOrLiteral`, …), for annotating your own query-building helpers.
+
+Everything else is internal and may change without notice — in particular the whole `sqlinpython.expression` subpackage and the intermediate builder types (see below). The public surface is declared in code via re-export (`from … import X as X`).
+
 ## Potential problems
 
 In order to only allow valid SQL syntax, the library creates hundreds of different types. A naming convention is adhered to try to make these types somewhat manageable, but it isn't always obvious what the type should be if you decide to create a function that outputs an incomplete sql query.
 For example, a select query of the type ``Select(...).From(...)`` has the type ``SelectStatementWithFrom``, while the type of a select query of the type ``Select(...)`` has the type ``SelectStatementWithSelectExpression``.
 
-These types are not yet part of a public api and their names might be changed in the future.
+These intermediate types are **not** part of the public API and their names might change in the future. They are part of the public *behavior* — autocomplete and method chaining work through them — but you should let the type checker infer them rather than writing them in annotations.

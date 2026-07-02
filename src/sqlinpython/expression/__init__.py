@@ -4,17 +4,14 @@ from .column import ColumnName as ColumnName
 from .column import SchemaTableColumnName as SchemaTableColumnName
 from .column import TableColumnName as TableColumnName
 from .column import col as col
-from .core import Abort as Abort
 from .core import AliasedExpression as AliasedExpression
 from .core import Cast as Cast
 from .core import Exists as Exists
 from .core import Expression as Expression
-from .core import Fail as Fail
-from .core import Ignore as Ignore
 from .core import Not as Not
 from .core import Raise as Raise
 from .core import Row as Row
-from .core import Subquery as Subquery
+from .core import ScalarSubquery as ScalarSubquery
 from .function import FunctionCall as FunctionCall
 from .function import FunctionCallWithFilter as FunctionCallWithFilter
 from .function import FunctionName as FunctionName
@@ -35,5 +32,6 @@ from .literal import ExpressionOrLiteral as ExpressionOrLiteral
 from .literal import HexLiteral as HexLiteral
 from .literal import Literal as Literal
 from .literal import NumericLiteral as NumericLiteral
+from .literal import SqlLiteral as SqlLiteral
 from .literal import literal as literal
 from .literal import to_expr as to_expr

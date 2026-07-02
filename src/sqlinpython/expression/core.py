@@ -8,7 +8,6 @@ from sqlinpython.base import NoArg, SqlElement, comma_separated
 from sqlinpython.expression.frame_bound import IHasFrameBounds
 from sqlinpython.indexed_column import IHasAscDesc
 from sqlinpython.name import Name
-from sqlinpython.savepoint import RollbackKeyword
 from sqlinpython.select_base import SelectStatement, SelectStatement_
 from sqlinpython.type_name import CompleteTypeName
 
@@ -846,7 +845,7 @@ class Cast(Expression13):
         buffer.append(")")
 
 
-class Subquery(Expression13):
+class ScalarSubquery(Expression13):
     def __init__(self, select_stmt: SelectStatement) -> None:
         self._select_stmt = select_stmt
 
@@ -868,27 +867,6 @@ class Exists(Expression13):
         buffer.append(")")
 
 
-class IgnoreKeyword:
-    pass
-
-
-Ignore = IgnoreKeyword()
-
-
-class AbortKeyword:
-    pass
-
-
-Abort = AbortKeyword()
-
-
-class FailKeyword:
-    pass
-
-
-Fail = FailKeyword()
-
-
 class RaiseExpression(Expression13):
     def __init__(
         self,
@@ -908,65 +886,23 @@ class RaiseExpression(Expression13):
 
 
 class RaiseKeyword:
-    @property
-    def Ignore(self) -> RaiseExpression:
-        return RaiseExpression("IGNORE", None)
-
-    def Rollback(self, message: ExpressionOrLiteral) -> RaiseExpression:
-        return RaiseExpression("ROLLBACK", _to_expr(message))
-
-    def Abort(self, message: ExpressionOrLiteral) -> RaiseExpression:
-        return RaiseExpression("ABORT", _to_expr(message))
-
-    def Fail(self, message: ExpressionOrLiteral) -> RaiseExpression:
-        return RaiseExpression("FAIL", _to_expr(message))
-
     @overload
-    def __call__(
-        self, mode: typing.Literal["IGNORE"] | IgnoreKeyword, /
-    ) -> RaiseExpression: ...
+    def __call__(self, mode: typing.Literal["IGNORE"], /) -> RaiseExpression: ...
     @overload
     def __call__(
         self,
-        mode: typing.Literal["ROLLBACK"] | RollbackKeyword,
-        message: ExpressionOrLiteral,
-        /,
-    ) -> RaiseExpression: ...
-    @overload
-    def __call__(
-        self,
-        mode: typing.Literal["ABORT"] | AbortKeyword,
-        message: ExpressionOrLiteral,
-        /,
-    ) -> RaiseExpression: ...
-    @overload
-    def __call__(
-        self,
-        mode: typing.Literal["FAIL"] | FailKeyword,
+        mode: typing.Literal["ROLLBACK", "ABORT", "FAIL"],
         message: ExpressionOrLiteral,
         /,
     ) -> RaiseExpression: ...
     def __call__(
         self,
-        mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"]
-        | IgnoreKeyword
-        | RollbackKeyword
-        | AbortKeyword
-        | FailKeyword,
+        mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"],
         message: ExpressionOrLiteral | NoArg = NoArg.NO_ARG,
         /,
     ) -> RaiseExpression:
         msg_expr = None if message is NoArg.NO_ARG else _to_expr(message)
-        if isinstance(mode, IgnoreKeyword):
-            return RaiseExpression("IGNORE", msg_expr)
-        elif isinstance(mode, RollbackKeyword):
-            return RaiseExpression("ROLLBACK", msg_expr)
-        elif isinstance(mode, AbortKeyword):
-            return RaiseExpression("ABORT", msg_expr)
-        elif isinstance(mode, FailKeyword):
-            return RaiseExpression("FAIL", msg_expr)
-        else:
-            return RaiseExpression(mode, msg_expr)
+        return RaiseExpression(mode, msg_expr)
 
 
 Raise = RaiseKeyword()
