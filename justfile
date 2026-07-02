@@ -5,7 +5,7 @@ run := if env_var_or_default("IN_NIX_SHELL", "") != "" { "" } else { "nix develo
 test:
     {{run}}pytest
 
-# Run a specific test file or function: just test-one tests/test_select.py::test_join
+# Run a specific test file or function: just test-one tests/select/test_select_queries.py::test_select_star
 test-one TEST:
     {{run}}pytest {{TEST}}
 

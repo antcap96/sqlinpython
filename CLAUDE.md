@@ -8,7 +8,7 @@ Use the `justfile` for common commands:
 
 ```bash
 just test              # Run all tests
-just test-one TEST     # Run specific test (e.g., just test-one tests/test_select.py::test_join)
+just test-one TEST     # Run specific test (e.g., just test-one tests/select/test_select_queries.py::test_select_star)
 just ty                # Type check with ty (primary type checker)
 just pyright           # Type check with basedpyright
 just mypy              # Type check with mypy
@@ -81,7 +81,7 @@ The expression system uses an **operator precedence hierarchy** (Expression1 thr
 - `Expression12`: Unary operators, bind parameters
 - `Expression13`: Literals, function calls, parenthesized expressions (highest precedence)
 
-The `_parenthesize_if_necessary()` function automatically wraps expressions in parentheses based on precedence.
+The `Expression._wrap_parenthesis_if_not(output_class)` method wraps an expression in parentheses when it is not already an instance of the required precedence class.
 
 ### `*Ref` vs `*Name` Naming Convention
 
@@ -135,17 +135,15 @@ Within a module, classes are ordered so that **reading bottom-to-top follows the
 # top — abstract base class (inherited everywhere, must come first)
 class ColumnDefinition(SqlElement, ABC): ...
 
-# top — terminal states (deepest in the chain)
-class ConflictClauseAutoIncrement(IColumnConstraint): ...
-class WithNotNull(ConflictClause): ...
-
 # mixin placed just above its first user
 class IColumnConstraint(ColumnDefinition, ...): ...
-class ColumnNameWithType(IColumnConstraint): ...  # first user
-class AnotherUser(IColumnConstraint): ...
+
+# terminal states (deepest in the chain)
+class ConflictClauseAutoIncrement(IColumnConstraint): ...  # first user of the mixin
+class WithCheck(IColumnConstraint): ...
 
 # bottom — entry point (first class a user touches)
-class ColumnDefinitionEntry(SqlElement): ...
+class ColumnDef(IColumnConstraint): ...
 ```
 
 ### Chained Builder Pattern
@@ -154,8 +152,8 @@ Statements are built through fluent method chaining where each stage returns a n
 
 ```python
 Create.Table("users")(
-    ColumnName("id")(TypeName("INT")),
-    ColumnName("name")(TypeName("TEXT"))
+    ColumnDef("id")(TypeName("INT")),
+    ColumnDef("name")(TypeName("TEXT"))
 ).WithoutRowId.get_query()
 ```
 
@@ -173,11 +171,11 @@ Entry points are singleton instances: `Create`, `Case`, `Not`, `Insert`, `Replac
 - `expression/case.py`: CASE/WHEN/THEN/ELSE/END builder
 - `expression/bind_parameter.py`: Parameter binding (?, :name, $name, @name)
 - `expression/function.py`: Function calls, window functions, frame specs
+- `expression/column.py`: `ColumnName`, `TableColumnName`, `SchemaTableColumnName` and the overloaded `col()` helper
 - `ordering_term.py`: ORDER BY terms with NULLS FIRST/LAST support
 - `name.py`: Identifier handling with automatic quoting
 - `create.py`, `create_table.py`, `create_index.py`: CREATE statement builders
-- `column_definition.py`: Column specifications and column-constraint mixins
-- `column_name.py`: `ColumnName` and `col()` helper
+- `column_definition.py`: Column specifications (`ColumnDef`) and column-constraint mixins
 - `column_foreign_key_clause.py`: Column-level FK clause chain (produces `ColumnDefinition`)
 - `table_constraint.py`: Table-level constraints
 - `table_foreign_key_clause.py`: Table-level FK clause chain (produces `TableConstraint`)
@@ -224,9 +222,8 @@ Rows.CurrentRow.ExcludeTies                        # ROWS CURRENT ROW EXCLUDE TI
 
 **Key patterns learned:**
 1. Use `Literal` types to differentiate similar keywords (e.g., `Literal["RANGE", "ROWS", "GROUPS"]`)
-2. Use `# type: ignore[assignment]` when subclasses reuse attribute names with different Literal types
-3. Layered `I*` mixins share properties across related clauses (e.g., `IHasFrameSpec` provides `Range`/`Rows`/`Groups`; `IHasOrderBy` adds `OrderBy` on top)
-4. Expression properties like `expr.Preceding` and `expr.Following` create frame bound objects
+2. Layered `I*` mixins share properties across related clauses (e.g., `IHasFrameSpec` provides `Range`/`Rows`/`Groups`; `IHasOrderBy` adds `OrderBy` on top)
+3. Expression properties like `expr.Preceding` and `expr.Following` create frame bound objects
 
 ### Common Table Expressions (`common_table_expression.py`)
 
@@ -241,9 +238,9 @@ TableName("t1").As.Not.Materialized(...) # t1 AS NOT MATERIALIZED (...)
 ```
 
 **Key patterns:**
-2. Trailing underscore in class names (e.g., `As_`, `CteNot_`) only when a property has the same name as the class it returns
-3. Use mixins to share methods
-4. Entry point classes take no `__init__` args and are instantiated as singletons (e.g., `With = WithKeyword()`)
+1. Trailing underscore in class names (e.g., `As_`, `CteNot_`) only when a property has the same name as the class it returns
+2. Use mixins to share methods
+3. Entry point classes take no `__init__` args and are instantiated as singletons (e.g., `With = WithKeyword()`)
 
 ### INSERT Statement (`insert.py`)
 
@@ -275,7 +272,7 @@ With(cte).Insert.Into("table")...                             # WITH cte INSERT 
 
 **Key patterns:**
 1. Entry point singleton classes use `*Keyword` suffix (e.g., `InsertKeyword`, `ReplaceKeyword`)
-2. Use `@typing.overload` for methods accepting different argument types (e.g., `ColumnName.As` handles both aliasing and generated column expressions)
+2. Use `@typing.overload` for methods accepting different argument types (e.g., `ICallableWithColumnNames.__call__` handles both column names and an `INSERT INTO t (SELECT ...)` statement)
 3. `AliasedExpression` class in `expression/core.py` handles `expr AS alias` syntax
 
 ### Parallel chains: two files over generics
@@ -297,7 +294,7 @@ This also enforces correct type separation at no extra cost — a `TableReferenc
 When a statement has a "limited" variant (e.g. `update-stmt` / `update-stmt-limited`), the plain base class extends the limited one — not the other way around:
 
 ```python
-class UpdateStatementLimited(CompleteSqlQuery, ABC): ...  # ORDER BY / LIMIT results
+class UpdateStatementLimited(NonExplainSqlQuery, ABC): ...  # ORDER BY / LIMIT results
 class UpdateStatement(UpdateStatementLimited, ABC): ...   # plain UPDATE results
 ```
 
