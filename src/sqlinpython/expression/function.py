@@ -7,7 +7,7 @@ from sqlinpython.base import SqlElement, comma_separated
 from sqlinpython.name import Name
 from sqlinpython.ordering_term import OrderingTerm
 
-from .core import Expression, Expression13
+from .core import Expression, PrimaryPrecedence
 from .frame_bound import FollowingFrameBound, PrecedingFrameBound
 from .literal import ExpressionOrLiteral, to_expr
 
@@ -329,7 +329,7 @@ class WindowName(Name, IHasOrderBy):
 
 
 # SPEC: https://sqlite.org/syntax/over-clause.html
-class FunctionCallWithOver(Expression13):
+class FunctionCallWithOver(PrimaryPrecedence):
     def __init__(
         self, prev: SqlElement, arg: WindowName | WindowDefn | None = None, /
     ) -> None:
@@ -350,7 +350,7 @@ class FunctionCallWithOver(Expression13):
             buffer.append(")")
 
 
-class IFunctionCallOver(Expression13, ABC):
+class IFunctionCallOver(PrimaryPrecedence, ABC):
     def Over(self, arg: WindowName | WindowDefn | None = None) -> FunctionCallWithOver:
         return FunctionCallWithOver(self, arg)
 

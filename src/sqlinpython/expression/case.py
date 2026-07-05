@@ -4,11 +4,11 @@ from abc import ABC
 from typing import override
 
 from sqlinpython.base import SqlElement
-from sqlinpython.expression.core import Expression, Expression13
+from sqlinpython.expression.core import Expression, PrimaryPrecedence
 from sqlinpython.expression.literal import ExpressionOrLiteral, to_expr
 
 
-class CaseExpression(Expression13):
+class CaseExpression(PrimaryPrecedence):
     def __init__(self, prev: ElseClause | ThenClause):
         self._prev = prev
 

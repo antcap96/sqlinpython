@@ -66,20 +66,21 @@ sqlinpython is a Python library that constructs SQL queries using type-annotated
 
 ### Expression System (`expression/`)
 
-The expression system uses an **operator precedence hierarchy** (Expression1 through Expression13):
+The expression system uses an **operator precedence hierarchy** of abstract marker classes, one per SQLite precedence level (each class's docstring states its level):
 
-- `Expression1`: OR (lowest precedence)
-- `Expression2`: AND
-- `Expression3`: NOT
-- `Expression4`: Comparison (=, !=, BETWEEN, IN, IS, LIKE, etc.)
-- `Expression5`: Relational (<, >, <=, >=)
-- `Expression7`: Bitwise (&, |, <<, >>)
-- `Expression8`: Addition/Subtraction
-- `Expression9`: Multiplication/Division
-- `Expression10`: Concatenation (||)
-- `Expression11`: COLLATE
-- `Expression12`: Unary operators, bind parameters
-- `Expression13`: Literals, function calls, parenthesized expressions (highest precedence)
+- `OrPrecedence` (1): OR (lowest precedence)
+- `AndPrecedence` (2): AND
+- `NotPrecedence` (3): NOT
+- `ComparisonPrecedence` (4): Comparison (=, !=, BETWEEN, IN, IS, LIKE, etc.)
+- `RelationalPrecedence` (5): Relational (<, >, <=, >=)
+- `EscapePrecedence` (6): ESCAPE
+- `BitwisePrecedence` (7): Bitwise (&, |, <<, >>)
+- `AdditivePrecedence` (8): Addition/Subtraction
+- `MultiplicativePrecedence` (9): Multiplication/Division
+- `ConcatPrecedence` (10): Concatenation (||)
+- `CollatePrecedence` (11): COLLATE
+- `UnaryPrecedence` (12): Unary operators, bind parameters
+- `PrimaryPrecedence` (13): Literals, function calls, parenthesized expressions (highest precedence)
 
 The `Expression._wrap_parenthesis_if_not(output_class)` method wraps an expression in parentheses when it is not already an instance of the required precedence class.
 

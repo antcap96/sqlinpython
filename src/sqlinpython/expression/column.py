@@ -4,14 +4,14 @@ from typing import overload, override
 
 from sqlinpython.name import Name
 
-from .core import Expression12
+from .core import UnaryPrecedence
 
 
-class ColumnName(Name, Expression12):
+class ColumnName(Name, UnaryPrecedence):
     """Expression atom referring to a column. Use ColumnDef for column definitions."""
 
 
-class TableColumnName(Expression12):
+class TableColumnName(UnaryPrecedence):
     def __init__(self, table: Name | str, column: Name | str) -> None:
         if isinstance(table, str):
             table = Name(table)
@@ -27,7 +27,7 @@ class TableColumnName(Expression12):
         self._column._create_query(buffer)
 
 
-class SchemaTableColumnName(Expression12):
+class SchemaTableColumnName(UnaryPrecedence):
     def __init__(
         self, schema: Name | str, table: Name | str, column: Name | str
     ) -> None:

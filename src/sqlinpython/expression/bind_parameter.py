@@ -1,7 +1,7 @@
 import re
 from typing import Literal, overload, override
 
-from sqlinpython.expression.core import Expression12
+from sqlinpython.expression.core import UnaryPrecedence
 
 _NAME_PATTERN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 _TCL_NAME_PATTERN = re.compile(
@@ -9,7 +9,7 @@ _TCL_NAME_PATTERN = re.compile(
 )
 
 
-class BindParameter(Expression12):
+class BindParameter(UnaryPrecedence):
     @overload
     def __init__(self) -> None: ...
     @overload

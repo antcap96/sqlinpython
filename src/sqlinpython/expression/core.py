@@ -29,11 +29,11 @@ class INegatedOperations(SqlElement, ABC):
         self, lower: ExpressionOrLiteral, upper: ExpressionOrLiteral
     ) -> BetweenExpression:
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
-        lower_ = _to_expr(lower)._wrap_parenthesis_if_not(Expression5)
-        upper_ = _to_expr(upper)._wrap_parenthesis_if_not(Expression5)
+        lower_ = _to_expr(lower)._wrap_parenthesis_if_not(RelationalPrecedence)
+        upper_ = _to_expr(upper)._wrap_parenthesis_if_not(RelationalPrecedence)
         return BetweenExpression(self_, lower_, upper_)
 
     @overload
@@ -68,7 +68,7 @@ class INegatedOperations(SqlElement, ABC):
         from sqlinpython.table_or_subquery import TableFunctionRefCall
 
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
         match exprs:
@@ -97,34 +97,34 @@ class INegatedOperations(SqlElement, ABC):
 
     def Glob(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
-        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(RelationalPrecedence)
         return MatchLikeExpression(self_, pattern_, "GLOB")
 
     def Regexp(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
-        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(RelationalPrecedence)
         return MatchLikeExpression(self_, pattern_, "REGEXP")
 
     def Match(self, pattern: ExpressionOrLiteral) -> MatchLikeExpression:
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
-        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(RelationalPrecedence)
         return MatchLikeExpression(self_, pattern_, "MATCH")
 
     def Like(self, pattern: ExpressionOrLiteral) -> LikeExpression:
         if isinstance(self, Expression):
-            self_ = self._wrap_parenthesis_if_not(Expression4)
+            self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         else:
             self_ = self
-        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(Expression5)
+        pattern_ = _to_expr(pattern)._wrap_parenthesis_if_not(RelationalPrecedence)
         return LikeExpression(self_, pattern_)
 
 
@@ -135,172 +135,172 @@ class Expression(IHasAscDesc, INegatedOperations, IHasFrameBounds, ABC):
         return AliasedExpression(self, alias)
 
     def Or(self, other: ExpressionOrLiteral) -> OrCondition:
-        self_ = self._wrap_parenthesis_if_not(Expression1)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression2)
+        self_ = self._wrap_parenthesis_if_not(OrPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(AndPrecedence)
         return OrCondition(self_, other_)
 
     def And(self, other: ExpressionOrLiteral) -> AndCondition:
-        self_ = self._wrap_parenthesis_if_not(Expression2)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression3)
+        self_ = self._wrap_parenthesis_if_not(AndPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(NotPrecedence)
         return AndCondition(self_, other_)
 
     def eq(self, other: ExpressionOrLiteral, double_eq: bool = False) -> EqExpression:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression5)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(RelationalPrecedence)
         return EqExpression(self_, other_, double_eq)
 
     def ne(self, other: ExpressionOrLiteral, arrows: bool = False) -> NeExpression:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression5)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(RelationalPrecedence)
         return NeExpression(self_, other_, arrows)
 
     @property
     def Is(self) -> IsExpression:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         return IsExpression(self_)
 
     @property
     def IsNull(self) -> NullCompareExpression:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         return NullCompareExpression(self_, "ISNULL")
 
     @property
     def Notnull(self) -> NullCompareExpression:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         return NullCompareExpression(self_, "NOTNULL")
 
     @property
     def Not(self) -> NegatedOperator:
-        self_ = self._wrap_parenthesis_if_not(Expression4)
+        self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         return NegatedOperator(self_)
 
     def __lt__(self, other: ExpressionOrLiteral) -> Comparison:
-        self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
+        self_ = self._wrap_parenthesis_if_not(RelationalPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(EscapePrecedence)
         return Comparison(self_, other_, "<")
 
     def __le__(self, other: ExpressionOrLiteral) -> Comparison:
-        self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
+        self_ = self._wrap_parenthesis_if_not(RelationalPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(EscapePrecedence)
         return Comparison(self_, other_, "<=")
 
     def __gt__(self, other: ExpressionOrLiteral) -> Comparison:
-        self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
+        self_ = self._wrap_parenthesis_if_not(RelationalPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(EscapePrecedence)
         return Comparison(self_, other_, ">")
 
     def __ge__(self, other: ExpressionOrLiteral) -> Comparison:
-        self_ = self._wrap_parenthesis_if_not(Expression5)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression6)
+        self_ = self._wrap_parenthesis_if_not(RelationalPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(EscapePrecedence)
         return Comparison(self_, other_, ">=")
 
     def __and__(self, other: ExpressionOrLiteral) -> BitOperation:
-        self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        self_ = self._wrap_parenthesis_if_not(BitwisePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(self_, other_, "&")
 
     def __rand__(self, other: ExpressionOrLiteral) -> BitOperation:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
-        right_ = self._wrap_parenthesis_if_not(Expression8)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(BitwisePrecedence)
+        right_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(left_, right_, "&")
 
     def __or__(self, other: ExpressionOrLiteral) -> BitOperation:
-        self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        self_ = self._wrap_parenthesis_if_not(BitwisePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(self_, other_, "|")
 
     def __ror__(self, other: ExpressionOrLiteral) -> BitOperation:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
-        right_ = self._wrap_parenthesis_if_not(Expression8)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(BitwisePrecedence)
+        right_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(left_, right_, "|")
 
     def __lshift__(self, other: ExpressionOrLiteral) -> BitOperation:
-        self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        self_ = self._wrap_parenthesis_if_not(BitwisePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(self_, other_, "<<")
 
     def __rlshift__(self, other: ExpressionOrLiteral) -> BitOperation:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
-        right_ = self._wrap_parenthesis_if_not(Expression8)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(BitwisePrecedence)
+        right_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(left_, right_, "<<")
 
     def __rshift__(self, other: ExpressionOrLiteral) -> BitOperation:
-        self_ = self._wrap_parenthesis_if_not(Expression7)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
+        self_ = self._wrap_parenthesis_if_not(BitwisePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(self_, other_, ">>")
 
     def __rrshift__(self, other: ExpressionOrLiteral) -> BitOperation:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression7)
-        right_ = self._wrap_parenthesis_if_not(Expression8)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(BitwisePrecedence)
+        right_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
         return BitOperation(left_, right_, ">>")
 
     def __add__(self, other: ExpressionOrLiteral) -> Summand:
-        self_ = self._wrap_parenthesis_if_not(Expression8)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
+        self_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(MultiplicativePrecedence)
         return Summand(self_, other_, "+")
 
     def __radd__(self, other: ExpressionOrLiteral) -> Summand:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
-        right_ = self._wrap_parenthesis_if_not(Expression9)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
+        right_ = self._wrap_parenthesis_if_not(MultiplicativePrecedence)
         return Summand(left_, right_, "+")
 
     def __sub__(self, other: ExpressionOrLiteral) -> Summand:
-        self_ = self._wrap_parenthesis_if_not(Expression8)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
+        self_ = self._wrap_parenthesis_if_not(AdditivePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(MultiplicativePrecedence)
         return Summand(self_, other_, "-")
 
     def __rsub__(self, other: ExpressionOrLiteral) -> Summand:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression8)
-        right_ = self._wrap_parenthesis_if_not(Expression9)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(AdditivePrecedence)
+        right_ = self._wrap_parenthesis_if_not(MultiplicativePrecedence)
         return Summand(left_, right_, "-")
 
     def __mul__(self, other: ExpressionOrLiteral) -> Factor:
-        self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
+        self_ = self._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(self_, other_, "*")
 
     def __rmul__(self, other: ExpressionOrLiteral) -> Factor:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
-        right_ = self._wrap_parenthesis_if_not(Expression10)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        right_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(left_, right_, "*")
 
     def __truediv__(self, other: ExpressionOrLiteral) -> Factor:
-        self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
+        self_ = self._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(self_, other_, "/")
 
     def __rtruediv__(self, other: ExpressionOrLiteral) -> Factor:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
-        right_ = self._wrap_parenthesis_if_not(Expression10)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        right_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(left_, right_, "/")
 
     def __mod__(self, other: ExpressionOrLiteral) -> Factor:
-        self_ = self._wrap_parenthesis_if_not(Expression9)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression10)
+        self_ = self._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(self_, other_, "%")
 
     def __rmod__(self, other: ExpressionOrLiteral) -> Factor:
-        left_ = _to_expr(other)._wrap_parenthesis_if_not(Expression9)
-        right_ = self._wrap_parenthesis_if_not(Expression10)
+        left_ = _to_expr(other)._wrap_parenthesis_if_not(MultiplicativePrecedence)
+        right_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
         return Factor(left_, right_, "%")
 
     def Concat(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
-        self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
+        self_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(CollatePrecedence)
         return ConcatLikeOperator(self_, other_, "||")
 
     def Extract(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
-        self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
+        self_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(CollatePrecedence)
         return ConcatLikeOperator(self_, other_, "->")
 
     def Extract2(self, other: ExpressionOrLiteral) -> ConcatLikeOperator:
-        self_ = self._wrap_parenthesis_if_not(Expression10)
-        other_ = _to_expr(other)._wrap_parenthesis_if_not(Expression11)
+        self_ = self._wrap_parenthesis_if_not(ConcatPrecedence)
+        other_ = _to_expr(other)._wrap_parenthesis_if_not(CollatePrecedence)
         return ConcatLikeOperator(self_, other_, "->>")
 
     def Collate(self, other: Name | str, /) -> CollateOperator:
-        self_ = self._wrap_parenthesis_if_not(Expression11)
+        self_ = self._wrap_parenthesis_if_not(CollatePrecedence)
         if isinstance(other, str):
             other = Name(other)
         return CollateOperator(self_, other)
@@ -341,12 +341,12 @@ class AliasedExpression(SqlElement):
         self._alias._create_query(buffer)
 
 
-class Expression1(Expression, ABC):
-    pass
+class OrPrecedence(Expression, ABC):
+    """Precedence level 1 (lowest): OR."""
 
 
-class OrCondition(Expression1):
-    def __init__(self, left: Expression1, right: Expression2) -> None:
+class OrCondition(OrPrecedence):
+    def __init__(self, left: OrPrecedence, right: AndPrecedence) -> None:
         self._left = left
         self._right = right
 
@@ -357,12 +357,12 @@ class OrCondition(Expression1):
         self._right._create_query(buffer)
 
 
-class Expression2(Expression1, ABC):
-    pass
+class AndPrecedence(OrPrecedence, ABC):
+    """Precedence level 2: AND."""
 
 
-class AndCondition(Expression2):
-    def __init__(self, left: Expression2, right: Expression3) -> None:
+class AndCondition(AndPrecedence):
+    def __init__(self, left: AndPrecedence, right: NotPrecedence) -> None:
         self._left = left
         self._right = right
 
@@ -373,13 +373,13 @@ class AndCondition(Expression2):
         self._right._create_query(buffer)
 
 
-class Expression3(Expression2, ABC):
-    pass
+class NotPrecedence(AndPrecedence, ABC):
+    """Precedence level 3: NOT."""
 
 
 class NotKeyword:
     def __call__(self, after: ExpressionOrLiteral) -> NotExpression:
-        return NotExpression(_to_expr(after)._wrap_parenthesis_if_not(Expression3))
+        return NotExpression(_to_expr(after)._wrap_parenthesis_if_not(NotPrecedence))
 
     def Exists(self, select_stmt: SelectStatement) -> NotExpression:
         return NotExpression(Exists(select_stmt))
@@ -388,8 +388,8 @@ class NotKeyword:
 Not = NotKeyword()
 
 
-class NotExpression(Expression3):
-    def __init__(self, after: Expression3) -> None:
+class NotExpression(NotPrecedence):
+    def __init__(self, after: NotPrecedence) -> None:
         self._after = after
 
     @override
@@ -398,12 +398,14 @@ class NotExpression(Expression3):
         self._after._create_query(buffer)
 
 
-class Expression4(Expression3, ABC):
-    pass
+class ComparisonPrecedence(NotPrecedence, ABC):
+    """Precedence level 4: =, ==, !=, <>, IS, IN, LIKE, GLOB, MATCH, REGEXP, BETWEEN, ISNULL, NOTNULL."""
 
 
-class EqExpression(Expression4):
-    def __init__(self, left: Expression4, right: Expression5, double_eq: bool) -> None:
+class EqExpression(ComparisonPrecedence):
+    def __init__(
+        self, left: ComparisonPrecedence, right: RelationalPrecedence, double_eq: bool
+    ) -> None:
         self._left = left
         self._right = right
         self._double_eq = double_eq
@@ -419,8 +421,10 @@ class EqExpression(Expression4):
         self._right._create_query(buffer)
 
 
-class NeExpression(Expression4):
-    def __init__(self, left: Expression4, right: Expression5, arrows: bool) -> None:
+class NeExpression(ComparisonPrecedence):
+    def __init__(
+        self, left: ComparisonPrecedence, right: RelationalPrecedence, arrows: bool
+    ) -> None:
         self._left = left
         self._right = right
         self._arrows = arrows
@@ -436,8 +440,8 @@ class NeExpression(Expression4):
         self._right._create_query(buffer)
 
 
-class IsExpressionComplete(Expression4):
-    def __init__(self, prev: IIsCallable, other: Expression4) -> None:
+class IsExpressionComplete(ComparisonPrecedence):
+    def __init__(self, prev: IIsCallable, other: ComparisonPrecedence) -> None:
         self._prev = prev
         self._other = other
 
@@ -450,7 +454,7 @@ class IsExpressionComplete(Expression4):
 
 class IIsCallable(SqlElement, ABC):
     def __call__(self, other: ExpressionOrLiteral) -> IsExpressionComplete:
-        _other = _to_expr(other)._wrap_parenthesis_if_not(Expression4)
+        _other = _to_expr(other)._wrap_parenthesis_if_not(ComparisonPrecedence)
         return IsExpressionComplete(self, _other)
 
 
@@ -479,7 +483,7 @@ class IsNotExpression(IIsCallable):
 
 
 class IsExpression(IIsCallable):
-    def __init__(self, prev: Expression4) -> None:
+    def __init__(self, prev: ComparisonPrecedence) -> None:
         self._prev = prev
 
     @property
@@ -496,9 +500,9 @@ class IsExpression(IIsCallable):
         buffer.append(" IS")
 
 
-class BetweenExpression(Expression4):
+class BetweenExpression(ComparisonPrecedence):
     def __init__(
-        self, prev: SqlElement, lower: Expression5, upper: Expression5
+        self, prev: SqlElement, lower: RelationalPrecedence, upper: RelationalPrecedence
     ) -> None:
         self._prev = prev
         self._lower = lower
@@ -513,7 +517,7 @@ class BetweenExpression(Expression4):
         self._upper._create_query(buffer)
 
 
-class EmptyInExpression(Expression4):
+class EmptyInExpression(ComparisonPrecedence):
     def __init__(self, prev: SqlElement) -> None:
         self._prev = prev
 
@@ -523,7 +527,7 @@ class EmptyInExpression(Expression4):
         buffer.append(" IN ()")
 
 
-class InExpressionWithSelect(Expression4):
+class InExpressionWithSelect(ComparisonPrecedence):
     def __init__(self, prev: SqlElement, select_stmt: SelectStatement) -> None:
         self._prev = prev
         self._select_stmt = select_stmt
@@ -536,7 +540,7 @@ class InExpressionWithSelect(Expression4):
         buffer.append(")")
 
 
-class InExpressionWithExpressions(Expression4):
+class InExpressionWithExpressions(ComparisonPrecedence):
     def __init__(self, prev: SqlElement, exprs: tuple[Expression, ...]) -> None:
         self._prev = prev
         self._exprs = exprs
@@ -549,7 +553,7 @@ class InExpressionWithExpressions(Expression4):
         buffer.append(")")
 
 
-class InExpressionWithTableName(Expression4):
+class InExpressionWithTableName(ComparisonPrecedence):
     def __init__(
         self, prev: SqlElement, schema: Name, name: Name | None = None
     ) -> None:
@@ -567,7 +571,7 @@ class InExpressionWithTableName(Expression4):
             self._name._create_query(buffer)
 
 
-class InExpressionWithTableFunction(Expression4):
+class InExpressionWithTableFunction(ComparisonPrecedence):
     def __init__(self, prev: SqlElement, table_function: TableFunctionRefCall) -> None:
         self._prev = prev
         self._table_function = table_function
@@ -579,11 +583,11 @@ class InExpressionWithTableFunction(Expression4):
         self._table_function._create_query(buffer)
 
 
-class MatchLikeExpression(Expression4):
+class MatchLikeExpression(ComparisonPrecedence):
     def __init__(
         self,
         prev: SqlElement,
-        pattern: Expression5,
+        pattern: RelationalPrecedence,
         op: typing.Literal["MATCH", "REGEXP", "GLOB"],
     ) -> None:
         self._prev = prev
@@ -597,8 +601,8 @@ class MatchLikeExpression(Expression4):
         self._pattern._create_query(buffer)
 
 
-class LikeExpressionWithEscape(Expression4):
-    def __init__(self, prev: LikeExpression, escape: Expression5) -> None:
+class LikeExpressionWithEscape(ComparisonPrecedence):
+    def __init__(self, prev: LikeExpression, escape: RelationalPrecedence) -> None:
         self._prev = prev
         self._escape = escape
 
@@ -609,13 +613,13 @@ class LikeExpressionWithEscape(Expression4):
         self._escape._create_query(buffer)
 
 
-class LikeExpression(Expression4):
-    def __init__(self, prev: SqlElement, pattern: Expression5) -> None:
+class LikeExpression(ComparisonPrecedence):
+    def __init__(self, prev: SqlElement, pattern: RelationalPrecedence) -> None:
         self._prev = prev
         self._pattern = pattern
 
     def Escape(self, escape: ExpressionOrLiteral) -> LikeExpressionWithEscape:
-        escape_ = _to_expr(escape)._wrap_parenthesis_if_not(Expression5)
+        escape_ = _to_expr(escape)._wrap_parenthesis_if_not(RelationalPrecedence)
         return LikeExpressionWithEscape(self, escape_)
 
     @override
@@ -625,7 +629,7 @@ class LikeExpression(Expression4):
         self._pattern._create_query(buffer)
 
 
-class NullCompareExpression(Expression4):
+class NullCompareExpression(ComparisonPrecedence):
     def __init__(
         self, prev: SqlElement, op: typing.Literal["ISNULL", "NOTNULL", "NULL"]
     ) -> None:
@@ -639,7 +643,7 @@ class NullCompareExpression(Expression4):
 
 
 class NegatedOperator(INegatedOperations):
-    def __init__(self, prev: Expression4) -> None:
+    def __init__(self, prev: ComparisonPrecedence) -> None:
         self._prev = prev
 
     @property
@@ -652,15 +656,15 @@ class NegatedOperator(INegatedOperations):
         buffer.append(" NOT")
 
 
-class Expression5(Expression4, ABC):
-    pass
+class RelationalPrecedence(ComparisonPrecedence, ABC):
+    """Precedence level 5: <, <=, >, >=."""
 
 
-class Comparison(Expression5):
+class Comparison(RelationalPrecedence):
     def __init__(
         self,
-        left: Expression5,
-        right: Expression6,
+        left: RelationalPrecedence,
+        right: EscapePrecedence,
         operator: typing.Literal["<", "<=", ">", ">="],
     ):
         self._left = left
@@ -674,19 +678,19 @@ class Comparison(Expression5):
         self._right._create_query(buffer)
 
 
-class Expression6(Expression5, ABC):
-    pass
+class EscapePrecedence(RelationalPrecedence, ABC):
+    """Precedence level 6: ESCAPE."""
 
 
-class Expression7(Expression6, ABC):
-    pass
+class BitwisePrecedence(EscapePrecedence, ABC):
+    """Precedence level 7: &, |, <<, >>."""
 
 
-class BitOperation(Expression7):
+class BitOperation(BitwisePrecedence):
     def __init__(
         self,
-        left: Expression7,
-        right: Expression8,
+        left: BitwisePrecedence,
+        right: AdditivePrecedence,
         operator: typing.Literal["&", "|", "<<", ">>"],
     ):
         self._left = left
@@ -700,13 +704,16 @@ class BitOperation(Expression7):
         self._right._create_query(buffer)
 
 
-class Expression8(Expression7, ABC):
-    pass
+class AdditivePrecedence(BitwisePrecedence, ABC):
+    """Precedence level 8: +, -."""
 
 
-class Summand(Expression8):
+class Summand(AdditivePrecedence):
     def __init__(
-        self, left: Expression8, right: Expression9, operator: typing.Literal["+", "-"]
+        self,
+        left: AdditivePrecedence,
+        right: MultiplicativePrecedence,
+        operator: typing.Literal["+", "-"],
     ):
         self._left = left
         self._right = right
@@ -719,15 +726,15 @@ class Summand(Expression8):
         self._right._create_query(buffer)
 
 
-class Expression9(Expression8, ABC):
-    pass
+class MultiplicativePrecedence(AdditivePrecedence, ABC):
+    """Precedence level 9: *, /, %."""
 
 
-class Factor(Expression9):
+class Factor(MultiplicativePrecedence):
     def __init__(
         self,
-        left: Expression9,
-        right: Expression10,
+        left: MultiplicativePrecedence,
+        right: ConcatPrecedence,
         operator: typing.Literal["*", "/", "%"],
     ):
         self._left = left
@@ -741,15 +748,15 @@ class Factor(Expression9):
         self._right._create_query(buffer)
 
 
-class Expression10(Expression9, ABC):
-    pass
+class ConcatPrecedence(MultiplicativePrecedence, ABC):
+    """Precedence level 10: ||, ->, ->>."""
 
 
-class ConcatLikeOperator(Expression10):
+class ConcatLikeOperator(ConcatPrecedence):
     def __init__(
         self,
-        left: Expression10,
-        right: Expression11,
+        left: ConcatPrecedence,
+        right: CollatePrecedence,
         operator: typing.Literal["||", "->", "->>"],
     ):
         self._left = left
@@ -763,14 +770,14 @@ class ConcatLikeOperator(Expression10):
         self._right._create_query(buffer)
 
 
-class Expression11(Expression10, ABC):
-    pass
+class CollatePrecedence(ConcatPrecedence, ABC):
+    """Precedence level 11: COLLATE."""
 
 
-class CollateOperator(Expression11):
+class CollateOperator(CollatePrecedence):
     def __init__(
         self,
-        left: Expression11,
+        left: CollatePrecedence,
         right: Name,
     ):
         self._left = left
@@ -783,11 +790,11 @@ class CollateOperator(Expression11):
         self._right._create_query(buffer)
 
 
-class Expression12(Expression11, ABC):
-    pass
+class UnaryPrecedence(CollatePrecedence, ABC):
+    """Precedence level 12: unary +, -, ~ and bind parameters."""
 
 
-class UnaryOperator(Expression12):
+class UnaryOperator(UnaryPrecedence):
     def __init__(self, left: Expression, op: typing.Literal["+", "-", "~"]):
         self._left = left
         self._op = op
@@ -798,11 +805,11 @@ class UnaryOperator(Expression12):
         self._left._create_query(buffer)
 
 
-class Expression13(Expression12, ABC):
-    pass
+class PrimaryPrecedence(UnaryPrecedence, ABC):
+    """Precedence level 13 (highest): literals, column names, function calls, parenthesized expressions."""
 
 
-class ParenthesizedExpression(Expression13):
+class ParenthesizedExpression(PrimaryPrecedence):
     def __init__(self, prev: Expression) -> None:
         self._prev = prev
 
@@ -813,7 +820,7 @@ class ParenthesizedExpression(Expression13):
         buffer.append(")")
 
 
-class Row(Expression13):
+class Row(PrimaryPrecedence):
     def __init__(
         self,
         *exprs: *tuple[
@@ -831,7 +838,7 @@ class Row(Expression13):
         buffer.append(")")
 
 
-class Cast(Expression13):
+class Cast(PrimaryPrecedence):
     def __init__(self, expr: Expression, type_name: CompleteTypeName) -> None:
         self._expr = expr
         self._type_name = type_name
@@ -845,7 +852,7 @@ class Cast(Expression13):
         buffer.append(")")
 
 
-class ScalarSubquery(Expression13):
+class ScalarSubquery(PrimaryPrecedence):
     def __init__(self, select_stmt: SelectStatement) -> None:
         self._select_stmt = select_stmt
 
@@ -856,7 +863,7 @@ class ScalarSubquery(Expression13):
         buffer.append(")")
 
 
-class Exists(Expression13):
+class Exists(PrimaryPrecedence):
     def __init__(self, select_stmt: SelectStatement) -> None:
         self._select_stmt = select_stmt
 
@@ -867,7 +874,7 @@ class Exists(Expression13):
         buffer.append(")")
 
 
-class RaiseExpression(Expression13):
+class RaiseExpression(PrimaryPrecedence):
     def __init__(
         self,
         mode: typing.Literal["IGNORE", "ROLLBACK", "ABORT", "FAIL"],

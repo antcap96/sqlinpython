@@ -3,10 +3,10 @@ import math
 from abc import ABC
 from typing import NoReturn, overload, override
 
-from .core import Expression, Expression13
+from .core import Expression, PrimaryPrecedence
 
 
-class Literal(Expression13, ABC):
+class Literal(PrimaryPrecedence, ABC):
     pass
 
 
