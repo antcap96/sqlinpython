@@ -98,6 +98,20 @@ def test_update_dict_list_mixed_2() -> None:
     assert q.get_query() == "UPDATE users SET (column, other) = 1, another = 2"
 
 
+def test_update_set_accepts_python_literals() -> None:
+    q = Update("users").Set(column=1, other="x")
+    assert isinstance(q, UpdateStatement)
+    assert isinstance(q, UpdateStatementLimited)
+    assert q.get_query() == "UPDATE users SET column = 1, other = 'x'"
+
+
+def test_update_set_dict_accepts_python_literals() -> None:
+    q = Update("users").Set({"column": 1, ("a", "b"): 2})
+    assert isinstance(q, UpdateStatement)
+    assert isinstance(q, UpdateStatementLimited)
+    assert q.get_query() == "UPDATE users SET column = 1, (a, b) = 2"
+
+
 def test_update_or_abort() -> None:
     q = Update.OrAbort("users").Set(column=literal(1))
     assert isinstance(q, UpdateStatement)

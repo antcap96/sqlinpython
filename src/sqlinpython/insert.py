@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import typing
 from abc import ABC
+from collections.abc import Mapping
 from typing import override
 
 from sqlinpython.base import NonExplainSqlQuery, SqlElement, comma_separated
@@ -100,25 +101,25 @@ class OnConflictDo(SqlElement):
 
     def UpdateSet(
         self,
-        __assignments: dict[str | Name | tuple[str | Name, ...], Expression]
+        __assignments: Mapping[str | Name | tuple[str | Name, ...], ExpressionOrLiteral]
         | None = None,
         /,
-        **kwargs: Expression,
+        **kwargs: ExpressionOrLiteral,
     ) -> OnConflictDoUpdateSet:
         assignments: list[_Assignment] = []
         source = __assignments.items() if __assignments is not None else ()
         for k, v in source:
             if isinstance(k, str):
-                assignments.append((Name(k), v))
+                assignments.append((Name(k), to_expr(v)))
             elif isinstance(k, Name):
-                assignments.append((k, v))
+                assignments.append((k, to_expr(v)))
             else:
                 col_names: list[Name] = []
                 for x in k:
                     col_names.append(Name(x) if isinstance(x, str) else x)
-                assignments.append((tuple(col_names), v))
+                assignments.append((tuple(col_names), to_expr(v)))
         for k, v in kwargs.items():
-            assignments.append((Name(k), v))
+            assignments.append((Name(k), to_expr(v)))
         if not assignments:
             raise ValueError("UpdateSet() requires at least one assignment")
         return OnConflictDoUpdateSet(self, assignments)

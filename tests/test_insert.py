@@ -480,6 +480,18 @@ def test_on_conflict_do_update_set_multiple_assignments() -> None:
     )
 
 
+def test_on_conflict_do_update_set_accepts_python_literals() -> None:
+    col = ColumnName("id")
+    assert (
+        Insert.Into("users")("id", "name")
+        .Values((1, "Alice"))
+        .OnConflict(col)
+        .Do.UpdateSet(name="Updated")
+        .get_query()
+        == "INSERT INTO users (id, name) VALUES (1, 'Alice') ON CONFLICT(id) DO UPDATE SET name = 'Updated'"
+    )
+
+
 def test_on_conflict_do_update_set_column_list() -> None:
     # ON CONFLICT (col) DO UPDATE SET (col1, col2) = expr
     # This is used for row value assignments
