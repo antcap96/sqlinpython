@@ -56,7 +56,21 @@ assert (
 )
 ```
 
-Further examples can be seen in the [tests](./tests) directory.
+## Documentation
+
+Guide pages with runnable examples (every code block in the docs and in this README is executed by the test suite):
+
+- [SELECT](./docs/select.md) — result columns, FROM/joins, WHERE, GROUP BY/HAVING, compound queries, VALUES
+- [Expressions](./docs/expressions.md) — `col`, `literal`, operators and precedence, CASE, CAST, subqueries, bind parameters
+- [Functions](./docs/functions.md) — the `functions` module, `FunctionName`, FILTER/OVER, window frame specs
+- [INSERT and REPLACE](./docs/insert.md) — VALUES, INSERT ... SELECT, upsert (ON CONFLICT), RETURNING
+- [UPDATE and DELETE](./docs/update-delete.md) — SET forms, UPDATE ... FROM, ORDER BY/LIMIT variants
+- [CREATE statements](./docs/create.md) — tables, column/table constraints, foreign keys, indexes, views, triggers, virtual tables
+- [Common table expressions](./docs/cte.md) — WITH, WITH RECURSIVE, materialization hints
+- [Other statements](./docs/misc.md) — ALTER, DROP, transactions, PRAGMA, ANALYZE, VACUUM, ATTACH, EXPLAIN
+- [Typing and the public API](./docs/typing.md) — annotating helpers with `sqlinpython.types`
+
+Even more examples can be found in the [tests](./tests) directory.
 
 ## Public API
 
