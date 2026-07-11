@@ -2,6 +2,7 @@ __version__ = "0.1.0"
 
 from sqlinpython import functions as functions
 from sqlinpython import types as types
+from sqlinpython import typing as typing
 
 # isort: split
 

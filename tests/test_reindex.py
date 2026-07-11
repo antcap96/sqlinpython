@@ -1,5 +1,5 @@
 from sqlinpython import Name, Reindex
-from sqlinpython.types import ReindexStatement
+from sqlinpython.typing import ReindexStatement
 
 
 def test_reindex() -> None:

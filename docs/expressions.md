@@ -132,15 +132,19 @@ assert q2.get_query() == "SELECT CASE a WHEN 1 THEN 'one' WHEN 2 THEN 'two' END"
 
 ## CAST
 
-`Cast` takes an expression and a `TypeName`, which is callable for parameterized types:
+`Cast` takes an expression and a type name — most easily one from `sqlinpython.types`; the raw `TypeName` builder (callable for parameterized types) covers anything the module doesn't:
 
 ```python
-from sqlinpython import Cast, Select, TypeName, col
+from sqlinpython import Cast, Select, TypeName, col, types
 
-assert Select(Cast(col("a"), TypeName("INTEGER"))).get_query() == "SELECT CAST(a AS INTEGER)"
+assert Select(Cast(col("a"), types.Integer)).get_query() == "SELECT CAST(a AS INTEGER)"
 assert (
-    Select(Cast(col("a"), TypeName("DECIMAL")(10, 2))).get_query()
+    Select(Cast(col("a"), types.Decimal(10, 2))).get_query()
     == "SELECT CAST(a AS DECIMAL(10, 2))"
+)
+assert (
+    Select(Cast(col("a"), TypeName("VARCHAR")(10))).get_query()
+    == "SELECT CAST(a AS VARCHAR(10))"
 )
 ```
 

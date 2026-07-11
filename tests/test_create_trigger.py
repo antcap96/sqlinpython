@@ -7,7 +7,7 @@ from sqlinpython import (
     Update,
     literal,
 )
-from sqlinpython.types import CreateTriggerStatement
+from sqlinpython.typing import CreateTriggerStatement
 
 
 def test_create_trigger_basic() -> None:

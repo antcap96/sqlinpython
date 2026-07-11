@@ -68,7 +68,7 @@ Guide pages with runnable examples (every code block in the docs and in this REA
 - [CREATE statements](./docs/create.md) — tables, column/table constraints, foreign keys, indexes, views, triggers, virtual tables
 - [Common table expressions](./docs/cte.md) — WITH, WITH RECURSIVE, materialization hints
 - [Other statements](./docs/misc.md) — ALTER, DROP, transactions, PRAGMA, ANALYZE, VACUUM, ATTACH, EXPLAIN
-- [Typing and the public API](./docs/typing.md) — annotating helpers with `sqlinpython.types`
+- [Typing and the public API](./docs/typing.md) — annotating helpers with `sqlinpython.typing`
 
 Even more examples can be found in the [tests](./tests) directory.
 
@@ -78,7 +78,8 @@ The public API is whatever is importable from one of:
 
 - **`sqlinpython`** — the statement entry points (`Select`, `Insert`, `Create`, …) and the building blocks you construct queries from (`col`, `literal`, `TableRef`, `Case`, `Cast`, `Not`, …).
 - **`sqlinpython.functions`** — the SQL function wrappers (`Avg`, `Count`, `Coalesce`, …). Typically imported as e.g. `from sqlinpython import functions as fn`.
-- **`sqlinpython.types`** — the statement result types (`SelectStatement`, `InsertStatement`, …) and expression types (`Expression`, `ExpressionOrLiteral`, …), for annotating your own query-building helpers.
+- **`sqlinpython.types`** — the SQL type names (`Integer`, `Text`, `Varchar(255)`, `Decimal(10, 2)`, …) for column definitions and CAST.
+- **`sqlinpython.typing`** — the statement result types (`SelectStatement`, `InsertStatement`, …) and expression types (`Expression`, `ExpressionOrLiteral`, …), for annotating your own query-building helpers.
 
 Everything else is internal and may change without notice — in particular the whole `sqlinpython.expression` subpackage and the intermediate builder types (see below). The public surface is declared in code via re-export (`from … import X as X`).
 

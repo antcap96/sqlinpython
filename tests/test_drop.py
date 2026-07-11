@@ -1,7 +1,7 @@
 from typing import assert_type
 
 from sqlinpython import Drop
-from sqlinpython.types import (
+from sqlinpython.typing import (
     DropIndexStatement,
     DropTableStatement,
     DropTriggerStatement,

@@ -4,16 +4,31 @@ All CREATE statements start from the `Create` entry point: `Create.Table`, `Crea
 
 ## CREATE TABLE
 
-Calling the table with `ColumnDef` objects defines the columns; the type is attached by calling the column def with a `TypeName`:
+Calling the table with `ColumnDef` objects defines the columns; the type is attached by calling the column def with a type from `sqlinpython.types` — constants for argument-less types, functions where arguments are required:
+
+```python
+from sqlinpython import ColumnDef, Create, types
+
+q = Create.Table("users")(
+    ColumnDef("id")(types.Integer),
+    ColumnDef("name")(types.Varchar(255)),
+    ColumnDef("balance")(types.Decimal(10, 2)),
+)
+assert q.get_query() == (
+    "CREATE TABLE users (id INTEGER, name VARCHAR(255), balance DECIMAL(10, 2))"
+)
+```
+
+For type names the module doesn't cover, the raw `TypeName` builder takes one or more names (SQLite type names can be several words) and is callable for arguments:
 
 ```python
 from sqlinpython import ColumnDef, Create, TypeName
 
-q = Create.Table("users")(
-    ColumnDef("id")(TypeName("INTEGER")),
-    ColumnDef("name")(TypeName("TEXT")),
+q = Create.Table("t")(
+    ColumnDef("a")(TypeName("DOUBLE", "PRECISION")),
+    ColumnDef("b")(TypeName("VARCHAR")(10)),
 )
-assert q.get_query() == "CREATE TABLE users (id INTEGER, name TEXT)"
+assert q.get_query() == "CREATE TABLE t (a DOUBLE PRECISION, b VARCHAR(10))"
 ```
 
 Table options are trailing properties, and `Create.Table("schema", "name")` schema-qualifies:
@@ -33,12 +48,12 @@ assert Create.Table("t")(ColumnDef("a")).Strict.get_query() == "CREATE TABLE t (
 Constraints chain onto the column definition: `PrimaryKey` (with `Asc`/`Desc`/`AutoIncrement`/`OnConflict.*`), `NotNull`, `Unique`, `Default`, `Check`, and `Constraint("name")` to name the next constraint:
 
 ```python
-from sqlinpython import ColumnDef, Create, CurrentDate, TypeName, col
+from sqlinpython import ColumnDef, Create, CurrentDate, col, types
 
 q = Create.Table("users")(
-    ColumnDef("id")(TypeName("INTEGER")).PrimaryKey.AutoIncrement,
-    ColumnDef("name")(TypeName("TEXT")).NotNull.Unique,
-    ColumnDef("age")(TypeName("INTEGER")).Check(col("age") >= 0),
+    ColumnDef("id")(types.Integer).PrimaryKey.AutoIncrement,
+    ColumnDef("name")(types.Text).NotNull.Unique,
+    ColumnDef("age")(types.Integer).Check(col("age") >= 0),
     ColumnDef("joined").Default(CurrentDate),
 )
 assert q.get_query() == (
@@ -56,10 +71,10 @@ assert q.get_query() == (
 A column-level foreign key starts with `References`; the referenced columns are a call, and `On.Update` / `On.Delete` actions, `Match` and deferrability chain after:
 
 ```python
-from sqlinpython import ColumnDef, Create, TypeName
+from sqlinpython import ColumnDef, Create, types
 
 q = Create.Table("orders")(
-    ColumnDef("user_id")(TypeName("INTEGER")).References("users")("id").On.Delete.Cascade,
+    ColumnDef("user_id")(types.Integer).References("users")("id").On.Delete.Cascade,
 )
 assert q.get_query() == (
     "CREATE TABLE orders (user_id INTEGER REFERENCES users (id) ON DELETE CASCADE)"

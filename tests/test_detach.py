@@ -1,5 +1,5 @@
 from sqlinpython import Detach, Name
-from sqlinpython.types import DetachStatement
+from sqlinpython.typing import DetachStatement
 
 
 def test_detach() -> None:

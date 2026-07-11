@@ -1,35 +1,101 @@
-from sqlinpython.alter_table import AlterTableStatement as AlterTableStatement
-from sqlinpython.analyze import AnalyzeStatement as AnalyzeStatement
-from sqlinpython.attach import AttachStatement as AttachStatement
-from sqlinpython.create_index import CreateIndexStatement as CreateIndexStatement
-from sqlinpython.create_table import CreateTableStatement as CreateTableStatement
-from sqlinpython.create_trigger import CreateTriggerStatement as CreateTriggerStatement
-from sqlinpython.create_view import CreateViewStatement as CreateViewStatement
-from sqlinpython.create_vtable import (
-    CreateVirtualTableStatement as CreateVirtualTableStatement,
-)
-from sqlinpython.delete import DeleteStatement as DeleteStatement
-from sqlinpython.delete import DeleteStatementLimited as DeleteStatementLimited
-from sqlinpython.detach import DetachStatement as DetachStatement
-from sqlinpython.drop import DropIndexStatement as DropIndexStatement
-from sqlinpython.drop import DropStatement as DropStatement
-from sqlinpython.drop import DropTableStatement as DropTableStatement
-from sqlinpython.drop import DropTriggerStatement as DropTriggerStatement
-from sqlinpython.drop import DropViewStatement as DropViewStatement
-from sqlinpython.expression import Expression as Expression
-from sqlinpython.expression import ExpressionOrLiteral as ExpressionOrLiteral
-from sqlinpython.expression import FunctionCall as FunctionCall
-from sqlinpython.expression import Literal as Literal
-from sqlinpython.expression import SqlLiteral as SqlLiteral
-from sqlinpython.insert import InsertStatement as InsertStatement
-from sqlinpython.pragma import PragmaStatement as PragmaStatement
-from sqlinpython.reindex import ReindexStatement as ReindexStatement
-from sqlinpython.savepoint import ReleaseStatement as ReleaseStatement
-from sqlinpython.savepoint import RollbackStatement as RollbackStatement
-from sqlinpython.savepoint import SavepointStatement as SavepointStatement
-from sqlinpython.select_base import SelectStatement as SelectStatement
-from sqlinpython.transaction import BeginStatement as BeginStatement
-from sqlinpython.transaction import CommitStatement as CommitStatement
-from sqlinpython.update import UpdateStatement as UpdateStatement
-from sqlinpython.update import UpdateStatementLimited as UpdateStatementLimited
-from sqlinpython.vacuum import VacuumStatement as VacuumStatement
+from sqlinpython.type_name import CompleteTypeName, TypeName, TypeNameWithArgs
+
+# SPEC: https://sqlite.org/datatype3.html
+#
+# Types that never take arguments are constants annotated as CompleteTypeName,
+# so calling them is a type error. Types that require arguments are wrapper
+# functions, so using them bare is a type error. The raw TypeName builder
+# remains the escape hatch for anything else.
+
+# ---------------------------------------------------------------------------
+# Cached TypeName instances for the parameterized wrappers (private).
+# ---------------------------------------------------------------------------
+
+_CHARACTER = TypeName("CHARACTER")
+_VARCHAR = TypeName("VARCHAR")
+_VARYING_CHARACTER = TypeName("VARYING", "CHARACTER")
+_NCHAR = TypeName("NCHAR")
+_NATIVE_CHARACTER = TypeName("NATIVE", "CHARACTER")
+_NVARCHAR = TypeName("NVARCHAR")
+_DECIMAL = TypeName("DECIMAL")
+
+# ---------------------------------------------------------------------------
+# Integer affinity
+# ---------------------------------------------------------------------------
+
+Int: CompleteTypeName = TypeName("INT")
+Integer: CompleteTypeName = TypeName("INTEGER")
+TinyInt: CompleteTypeName = TypeName("TINYINT")
+SmallInt: CompleteTypeName = TypeName("SMALLINT")
+MediumInt: CompleteTypeName = TypeName("MEDIUMINT")
+BigInt: CompleteTypeName = TypeName("BIGINT")
+UnsignedBigInt: CompleteTypeName = TypeName("UNSIGNED", "BIG", "INT")
+Int2: CompleteTypeName = TypeName("INT2")
+Int8: CompleteTypeName = TypeName("INT8")
+
+# ---------------------------------------------------------------------------
+# Text affinity
+# ---------------------------------------------------------------------------
+
+Text: CompleteTypeName = TypeName("TEXT")
+Clob: CompleteTypeName = TypeName("CLOB")
+
+
+def Character(length: int, /) -> TypeNameWithArgs:
+    return _CHARACTER(length)
+
+
+def Varchar(length: int, /) -> TypeNameWithArgs:
+    return _VARCHAR(length)
+
+
+def VaryingCharacter(length: int, /) -> TypeNameWithArgs:
+    return _VARYING_CHARACTER(length)
+
+
+def Nchar(length: int, /) -> TypeNameWithArgs:
+    return _NCHAR(length)
+
+
+def NativeCharacter(length: int, /) -> TypeNameWithArgs:
+    return _NATIVE_CHARACTER(length)
+
+
+def Nvarchar(length: int, /) -> TypeNameWithArgs:
+    return _NVARCHAR(length)
+
+
+# ---------------------------------------------------------------------------
+# Blob affinity
+# ---------------------------------------------------------------------------
+
+Blob: CompleteTypeName = TypeName("BLOB")
+
+# ---------------------------------------------------------------------------
+# Real affinity
+# ---------------------------------------------------------------------------
+
+Real: CompleteTypeName = TypeName("REAL")
+Double: CompleteTypeName = TypeName("DOUBLE")
+DoublePrecision: CompleteTypeName = TypeName("DOUBLE", "PRECISION")
+Float: CompleteTypeName = TypeName("FLOAT")
+
+# ---------------------------------------------------------------------------
+# Numeric affinity
+# ---------------------------------------------------------------------------
+
+Numeric: CompleteTypeName = TypeName("NUMERIC")
+Boolean: CompleteTypeName = TypeName("BOOLEAN")
+Date: CompleteTypeName = TypeName("DATE")
+Datetime: CompleteTypeName = TypeName("DATETIME")
+
+
+def Decimal(precision: int, scale: int | None = None, /) -> TypeNameWithArgs:
+    return _DECIMAL(precision, scale)
+
+
+# ---------------------------------------------------------------------------
+# STRICT tables
+# ---------------------------------------------------------------------------
+
+Any: CompleteTypeName = TypeName("ANY")

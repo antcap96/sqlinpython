@@ -54,7 +54,7 @@ assert q.get_query() == (
 
 ## ORDER BY and LIMIT (update-stmt-limited)
 
-When SQLite is built with `SQLITE_ENABLE_UPDATE_DELETE_LIMIT`, UPDATE and DELETE accept `ORDER BY` / `LIMIT`. These produce the *limited* statement types (`UpdateStatementLimited` / `DeleteStatementLimited` in [`sqlinpython.types`](./typing.md)):
+When SQLite is built with `SQLITE_ENABLE_UPDATE_DELETE_LIMIT`, UPDATE and DELETE accept `ORDER BY` / `LIMIT`. These produce the *limited* statement types (`UpdateStatementLimited` / `DeleteStatementLimited` in [`sqlinpython.typing`](./typing.md)):
 
 ```python
 from sqlinpython import Update, literal

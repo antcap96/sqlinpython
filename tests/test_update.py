@@ -9,7 +9,7 @@ from sqlinpython import (
     With,
     literal,
 )
-from sqlinpython.types import UpdateStatement, UpdateStatementLimited
+from sqlinpython.typing import UpdateStatement, UpdateStatementLimited
 
 
 def test_with_update() -> None:

@@ -5,7 +5,7 @@ from sqlinpython import (
     With,
     literal,
 )
-from sqlinpython.types import DeleteStatement, DeleteStatementLimited
+from sqlinpython.typing import DeleteStatement, DeleteStatementLimited
 
 
 def test_with_delete() -> None:
