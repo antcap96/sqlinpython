@@ -156,7 +156,7 @@ from sqlinpython import Create, Insert, Update, col
 q = (
     Create.Trigger("audit_users")
     .After.Update.On("users")
-    .ForEachRow.When(col("old", "name").ne(col("new", "name")))
+    .ForEachRow.When(col("old", "name") != col("new", "name"))
     .Begin(
         Insert.Into("audit")("user_id").Values((1,)),
         Update("users").Set(updated=1),

@@ -437,7 +437,10 @@ class FunctionName(SqlElement):
         match args:
             case ():
                 return FunctionCall(self, (), distinct=distinct, order_by=order_by)
-            case ("*",) | (Star_(),):
+            # str("*") keeps the isinstance check ahead of the equality: a bare
+            # `"*"` literal pattern would compare via Expression.__eq__, which
+            # is always truthy.
+            case (str("*"),) | (Star_(),):
                 return FunctionCall(self, (), star=True)
             case _:
                 assert all(

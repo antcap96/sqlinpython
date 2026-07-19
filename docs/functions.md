@@ -50,7 +50,7 @@ Aggregates take a `FILTER (WHERE ...)` clause via `FilterWhere`:
 from sqlinpython import Select, col
 from sqlinpython import functions as fn
 
-q = Select(fn.Count("*").FilterWhere(col("status").eq("active")))
+q = Select(fn.Count("*").FilterWhere(col("status") == "active"))
 assert q.get_query() == "SELECT COUNT(*) FILTER (WHERE status = 'active')"
 ```
 

@@ -84,16 +84,18 @@ assert Select(col("doc").Extract2("$.id")).get_query() == "SELECT doc ->> '$.id'
 
 ## Comparisons
 
-`=` and `!=` cannot be expressed with `==`/`!=` (those must return `bool` in Python), so they are the methods `eq` and `ne`; flags choose the alternative SQL spellings:
+`==` and `!=` build the SQL comparisons `=` and `!=`; the `eq` and `ne` methods remain for the alternative SQL spellings, chosen via flags:
 
 ```python
 from sqlinpython import Select, col
 
-assert Select(col("a").eq(1)).get_query() == "SELECT a = 1"
+assert Select(col("a") == 1).get_query() == "SELECT a = 1"
+assert Select(col("a") != 1).get_query() == "SELECT a != 1"
 assert Select(col("a").eq(1, double_eq=True)).get_query() == "SELECT a == 1"
-assert Select(col("a").ne(1)).get_query() == "SELECT a != 1"
 assert Select(col("a").ne(1, arrows=True)).get_query() == "SELECT a <> 1"
 ```
+
+Because comparison operators build SQL instead of returning `bool`, truth-testing an expression raises `TypeError`. This makes accidental Python-level uses fail loudly instead of silently misbehaving: `if a == b:`, `expr in some_list`, and chained comparisons like `0 <= col("a") <= 5` all raise (use `col("a").Between(0, 5)` instead). Python-level identity stays available via `is`, and expressions remain hashable by identity, so sets and dicts of expressions work as before.
 
 The remaining SQL comparison forms are methods and properties, with `Not` variants chained through `.Not`:
 
@@ -123,7 +125,7 @@ assert Select(col("a").Notnull).get_query() == "SELECT a NOTNULL"
 ```python
 from sqlinpython import Case, Select, col
 
-q = Select(Case.When(col("a").eq(1)).Then("one").Else("other").End)
+q = Select(Case.When(col("a") == 1).Then("one").Else("other").End)
 assert q.get_query() == "SELECT CASE WHEN a = 1 THEN 'one' ELSE 'other' END"
 
 q2 = Select(Case(col("a")).When(1).Then("one").When(2).Then("two").End)
@@ -156,7 +158,7 @@ assert (
 from sqlinpython import Exists, Not, Row, ScalarSubquery, Select, TableRef, col
 
 sub = Select(col("id")).From(TableRef("t"))
-assert Select(ScalarSubquery(sub).eq(1)).get_query() == "SELECT (SELECT id FROM t) = 1"
+assert Select(ScalarSubquery(sub) == 1).get_query() == "SELECT (SELECT id FROM t) = 1"
 assert Select(Exists(sub)).get_query() == "SELECT EXISTS (SELECT id FROM t)"
 assert Select(Not.Exists(sub)).get_query() == "SELECT NOT EXISTS (SELECT id FROM t)"
 assert Select(Row(1, 2).In(Row(1, 2), Row(3, 4))).get_query() == "SELECT (1, 2) IN ((1, 2), (3, 4))"
@@ -170,7 +172,7 @@ assert Select(Row(1, 2).In(Row(1, 2), Row(3, 4))).get_query() == "SELECT (1, 2) 
 from sqlinpython import BindParameter, Select, TableRef, col
 
 assert (
-    Select("*").From(TableRef("t")).Where(col("id").eq(BindParameter())).get_query()
+    Select("*").From(TableRef("t")).Where(col("id") == BindParameter()).get_query()
     == "SELECT * FROM t WHERE id = ?"
 )
 assert Select(BindParameter(2)).get_query() == "SELECT ?2"

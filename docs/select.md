@@ -63,7 +63,7 @@ from sqlinpython import Select, TableRef
 
 o = TableRef("orders").As("o", explicit_as=False)
 u = TableRef("users").As("u", explicit_as=False)
-q = Select(o["id"], u["name"]).From(o.Join(u).On(o["user_id"].eq(u["id"])))
+q = Select(o["id"], u["name"]).From(o.Join(u).On(o["user_id"] == u["id"]))
 assert (
     q.get_query()
     == "SELECT o.id, u.name FROM orders o JOIN users u ON o.user_id = u.id"
@@ -81,7 +81,7 @@ q = (
         TableRef("users")
         .As("u", explicit_as=False)
         .LeftJoin(TableRef("orders").As("o", explicit_as=False))
-        .On(col("u", "id").eq(col("o", "user_id")))
+        .On(col("u", "id") == col("o", "user_id"))
     )
     .Where(col("o", "id").IsNull)
 )
@@ -108,7 +108,7 @@ assert q.get_query() == "SELECT AVG(count) FROM (SELECT id, COUNT(*) FROM t GROU
 
 ## WHERE
 
-`Where` takes any expression — comparisons are built with Python operators and methods like `.eq`, `.In`, `.IsNull` (see [Expressions](./expressions.md)):
+`Where` takes any expression — comparisons are built with Python operators (`==`, `<`, …) and methods like `.In`, `.IsNull` (see [Expressions](./expressions.md)):
 
 ```python
 from sqlinpython import Select, TableRef, col
@@ -129,7 +129,7 @@ q = (
         col("department_id").In(
             Select(col("id"))
             .From(TableRef("departments"))
-            .Where(col("location").eq("NYC"))
+            .Where(col("location") == "NYC")
         )
     )
 )

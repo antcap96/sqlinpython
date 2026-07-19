@@ -44,7 +44,7 @@ q = (
     Update("users")
     .Set(column=1)
     .From(TableRef("other"))
-    .Where(col("users", "id").eq(col("other", "id")))
+    .Where(col("users", "id") == col("other", "id"))
     .Returning("*")
 )
 assert q.get_query() == (
@@ -72,7 +72,7 @@ from sqlinpython import Delete, col
 
 assert Delete.From("users").get_query() == "DELETE FROM users"
 assert (
-    Delete.From("users").Where(col("id").eq(1)).Returning("*").get_query()
+    Delete.From("users").Where(col("id") == 1).Returning("*").get_query()
     == "DELETE FROM users WHERE id = 1 RETURNING *"
 )
 assert (

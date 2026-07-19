@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import typing
 from abc import ABC
-from typing import TYPE_CHECKING, overload, override
+from typing import TYPE_CHECKING, NoReturn, overload, override
 
 from sqlinpython.base import NoArg, SqlElement, comma_separated
 from sqlinpython.expression.frame_bound import IHasFrameBounds
@@ -153,6 +153,24 @@ class Expression(IHasAscDesc, INegatedOperations, IHasFrameBounds, ABC):
         self_ = self._wrap_parenthesis_if_not(ComparisonPrecedence)
         other_ = _to_expr(other)._wrap_parenthesis_if_not(RelationalPrecedence)
         return NeExpression(self_, other_, arrows)
+
+    @override
+    def __eq__(self, other: ExpressionOrLiteral) -> EqExpression:  # type: ignore[override] # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore[invalid-method-override]
+        return self.eq(other)
+
+    @override
+    def __ne__(self, other: ExpressionOrLiteral) -> NeExpression:  # type: ignore[override] # pyright: ignore[reportIncompatibleMethodOverride] # ty: ignore[invalid-method-override]
+        return self.ne(other)
+
+    # Defining __eq__ would otherwise set __hash__ to None, making every
+    # expression unhashable.
+    __hash__ = object.__hash__
+
+    def __bool__(self) -> NoReturn:
+        # Comparison dunders build SQL instead of returning bool, so any
+        # truth-test of an expression (`if a == b:`, `expr in a_list`,
+        # `0 < col < 5`) would silently take the truthy branch. Fail loudly.
+        raise TypeError("The boolean value of an Expression is not defined")
 
     @property
     def Is(self) -> IsExpression:

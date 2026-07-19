@@ -22,7 +22,9 @@ ReturningColumnArg = ExpressionOrLiteral | AliasedExpression | Star_
 def resolve_returning_column(
     arg: ReturningColumnArg,
 ) -> Star_ | Expression | AliasedExpression:
-    if arg == "*":
+    # The isinstance guard matters: Expression.__eq__ builds a (truthy)
+    # EqExpression instead of returning False.
+    if isinstance(arg, str) and arg == "*":
         return Star
     if isinstance(arg, (Expression, AliasedExpression, Star_)):
         return arg

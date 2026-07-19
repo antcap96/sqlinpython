@@ -41,7 +41,9 @@ _ResultColumnArg = (
 def _resolve_result_column(arg: _ResultColumnArg) -> ResultColumn:
     from sqlinpython.expression import Star as StarSingleton
 
-    if arg == "*":
+    # The isinstance guard matters: Expression.__eq__ builds a (truthy)
+    # EqExpression instead of returning False.
+    if isinstance(arg, str) and arg == "*":
         return StarSingleton
     if isinstance(arg, (Expression, AliasedExpression, Star_, TableStarResultColumn)):
         return arg

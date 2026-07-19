@@ -390,12 +390,61 @@ def test_eq_double() -> None:
     assert to_str(true.eq(false, double_eq=True)) == "TRUE == FALSE"
 
 
+def test_dunder_eq() -> None:
+    assert to_str(true == false) == "TRUE = FALSE"
+
+
+def test_dunder_eq_accepts_python_literal() -> None:
+    assert to_str(a == 1) == "'a' = 1"
+
+
+def test_dunder_eq_precedence() -> None:
+    assert to_str((one == two).And(true)) == "1 = 2 AND TRUE"
+
+
+def test_expressions_remain_hashable() -> None:
+    # Defining __eq__ must not cost hashability (identity-based, as before).
+    assert len({one, two}) == 2
+
+
+def test_expression_truth_test_raises() -> None:
+    with pytest.raises(TypeError, match="boolean value of an Expression"):
+        _ = bool(one)
+
+
+def test_comparison_truth_test_raises() -> None:
+    # `if a == b:` must fail loudly, not silently take the truthy branch.
+    with pytest.raises(TypeError, match="boolean value of an Expression"):
+        _ = bool(one == two)
+
+
+def test_list_containment_raises() -> None:
+    # `in` truth-tests the __eq__ result, which would otherwise always be True.
+    with pytest.raises(TypeError, match="boolean value of an Expression"):
+        _ = one in [two]
+
+
+def test_chained_comparison_raises() -> None:
+    # 0 < a < 5 desugars to (0 < a) and (a < 5); the `and` truth-tests the
+    # first comparison, which would otherwise silently discard it.
+    with pytest.raises(TypeError, match="boolean value of an Expression"):
+        _ = 0 < one < 5
+
+
 def test_ne_arrows() -> None:
     assert to_str(true.ne(false, arrows=True)) == "TRUE <> FALSE"
 
 
 def test_ne_bang() -> None:
     assert to_str(true.ne(false, arrows=False)) == "TRUE != FALSE"
+
+
+def test_dunder_ne() -> None:
+    assert to_str(true != false) == "TRUE != FALSE"
+
+
+def test_dunder_ne_accepts_python_literal() -> None:
+    assert to_str(a != "b") == "'a' != 'b'"
 
 
 # ---------------------------------------------------------------------------

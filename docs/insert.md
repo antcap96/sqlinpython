@@ -72,7 +72,7 @@ q2 = (
     .Values((1, "Alice"))
     .OnConflict(id_col)
     .Do.UpdateSet(name="Updated")
-    .Where(ColumnName("name").ne("Admin"))
+    .Where(ColumnName("name") != "Admin")
 )
 assert q2.get_query() == (
     "INSERT INTO users (id, name) VALUES (1, 'Alice') "

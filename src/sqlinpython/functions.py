@@ -205,7 +205,9 @@ def Count(
     distinct: bool = False,
     order_by: tuple[OrderingTerm, ...] | None = None,
 ) -> FunctionCall:
-    if x == "*" or isinstance(x, Star_):
+    # The isinstance guard matters: Expression.__eq__ builds a (truthy)
+    # EqExpression instead of returning False.
+    if (isinstance(x, str) and x == "*") or isinstance(x, Star_):
         return _COUNT(x)
     return _COUNT(x, distinct=distinct, order_by=order_by)
 
